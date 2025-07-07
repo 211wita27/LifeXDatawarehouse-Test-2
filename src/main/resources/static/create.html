@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Neuen Account erstellen</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 2rem;
+    }
+    .top-nav {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+    }
+    input, button {
+      padding: 0.5rem;
+      font-size: 1rem;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-nav">
+  <a href="index.html" title="Zurück zur Suche">🔍</a>
+</div>
+
+<h1>Account anlegen</h1>
+<form id="createForm">
+  <label for="name">Name:</label>
+  <input type="text" id="name" name="name" required />
+  <button type="submit">Erstellen</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+  document.getElementById("createForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    const name = document.getElementById("name").value;
+    const resultDiv = document.getElementById("result");
+
+    try {
+      const response = await fetch('/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name })
+      });
+
+      if (response.ok) {
+        const created = await response.json();
+        resultDiv.innerHTML = `<p class="success">Account mit ID ${created.id} erfolgreich erstellt.</p>`;
+      } else {
+        const errText = await response.text();
+        resultDiv.innerHTML = `<p class="error">Fehler: ${errText}</p>`;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `<p class="error">Netzwerkfehler oder ungültige Antwort.</p>`;
+    }
+  });
+</script>
+</body>
+</html>

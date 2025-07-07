@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Lucene Account-Suche</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2rem;
+        }
+        .top-nav {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
+        input, button {
+            padding: 0.5rem;
+            font-size: 1rem;
+        }
+        #result {
+            margin-top: 1rem;
+        }
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-nav">
+    <a href="create.html" title="Neuen Account anlegen">📝</a>
+</div>
+
+<h1>Lucene-Suche nach Accountnamen</h1>
+<form id="searchForm">
+    <label for="query">Suchbegriff:</label>
+    <input type="text" id="query" name="query" required />
+    <button type="submit">Suchen</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+    async function performSearch(query) {
+        const resultDiv = document.getElementById("result");
+        resultDiv.innerHTML = "Suche läuft...";
+
+        try {
+            const response = await fetch(`/accounts/lucene-search?query=${encodeURIComponent(query)}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.length === 0) {
+                    resultDiv.innerHTML = `<p class="error">Keine Treffer gefunden.</p>`;
+                } else {
+                    let table = `<h3>Ergebnisse:</h3><table border="1" cellpadding="6"><tr><th>ID</th><th>Name</th></tr>`;
+                    data.forEach(account => {
+                        table += `<tr><td>${account.id}</td><td>${account.name}</td></tr>`;
+                    });
+                    table += `</table>`;
+                    resultDiv.innerHTML = table;
+                }
+            } else {
+                resultDiv.innerHTML = `<p class="error">Fehler bei der Suche.</p>`;
+            }
+        } catch (err) {
+            resultDiv.innerHTML = `<p class="error">Verbindungsfehler.</p>`;
+        }
+    }
+
+    document.getElementById("searchForm").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const query = document.getElementById("query").value;
+        performSearch(query);
+    });
+
+    // 🔁 Beim Laden der Seite direkt alle Accounts anzeigen
+    window.addEventListener("DOMContentLoaded", function () {
+        performSearch("*:*");
+    });
+</script>
+</body>
+</html>
