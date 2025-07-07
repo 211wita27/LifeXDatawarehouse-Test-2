@@ -2,15 +2,15 @@ package at.htlle.freq.web;
 
 import at.htlle.freq.application.AccountService;
 import at.htlle.freq.domain.Account;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * REST-Endpunkte rund um Accounts + Lucene-Suche.
+ */
 @RestController
 @RequestMapping("/accounts")
 public class AccountController {
@@ -21,46 +21,48 @@ public class AccountController {
         this.accountService = accountService;
     }
 
-    @PostMapping
-    public ResponseEntity<?> create(@RequestBody Map<String, String> body) {
-        String name = body.get("name");
-        try {
-            Account created = accountService.createAccount(name);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
-    }
+    /* ────────────────────────────────
+     * CRUD-Operationen
+     * ──────────────────────────────── */
 
-    @PutMapping("/by-name/{name}")
-    public ResponseEntity<?> updateByName(@PathVariable String name, @RequestBody Map<String, String> body) {
-        String newName = body.get("name");
-        try {
-            accountService.updateAccountByName(name, newName);
-            return ResponseEntity.ok().build();
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        }
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<Account> search(@RequestParam(required = false) String name,
-                                          @RequestParam(required = false) UUID id) {
-        Optional<Account> result = accountService.searchAccount(name, id);
-        return result.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/lucene-search")
-    public ResponseEntity<List<Account>> luceneSearch(@RequestParam String query) {
-        List<Account> results = accountService.searchAccountsByName(query);
-        if (results.isEmpty()) {
-            return ResponseEntity.noContent().build();
-        }
-        return ResponseEntity.ok(results);
-    }
     @GetMapping
-    public ResponseEntity<List<Account>> findAll() {
-        return ResponseEntity.ok(accountService.findAllAccounts());
+    public List<Account> findAll() {
+        return accountService.getAllAccounts();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Account> findById(@PathVariable UUID id) {
+        return accountService.getAccountById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping
+    public Account create(@RequestBody Account account) {
+        return accountService.createAccount(account);
+    }
+
+    /* ────────────────────────────────
+     * Lucene-Volltextsuche
+     * ──────────────────────────────── */
+
+    /**
+     * Sucht Accounts per Lucene nach ihrem Namen.
+     * <p>
+     * - Leere oder fehlende <code>query</code> ⇒ <b>*:*</b> (alle Dokumente).<br>
+     * - Antwort ist immer <b>200 OK</b> und enthält <i>immer</i> eine (ggf. leere) Liste,
+     *   sodass das Front-End gefahrlos <code>response.json()</code> aufrufen kann.
+     */
+    @GetMapping("/lucene-search")
+    public ResponseEntity<List<Account>> luceneSearch(@RequestParam(required = false) String query) {
+
+        /*  ▼▼▼  Änderung gegenüber vorher  ▼▼▼  */
+        if (query == null || query.isBlank()) {
+            query = "*:*";                    // leeres Feld ⇒ alle Accounts anzeigen
+        }
+        /*  ▲▲▲  -------------------------  ▲▲▲  */
+
+        List<Account> results = accountService.searchAccountsByName(query);
+        return ResponseEntity.ok(results);     // kein 204 No Content mehr
+    }
 }
