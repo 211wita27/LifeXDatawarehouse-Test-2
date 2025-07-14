@@ -2,6 +2,7 @@ package at.htlle.freq.infrastructure.lucene;
 
 import at.htlle.freq.domain.Account;
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -67,6 +68,17 @@ public class LuceneIndexService {
 
         } catch (Exception e) {
             throw new RuntimeException("Error searching index", e);
+        }
+    }
+
+    @PreDestroy
+    public void close() {
+        if (writer != null) {
+            try {
+                writer.close();
+            } catch (IOException e) {
+                throw new RuntimeException("Error closing writer", e);
+            }
         }
     }
 }
