@@ -22,6 +22,6 @@ public class IndexSingleAccountRoute extends RouteBuilder {
                     Account acc = exchange.getIn().getBody(Account.class);
                     luceneIndexService.index(acc);
                 })
-                .log("✅ Einzelner Account indexiert: ${body.name}");
+                .log("✅ Einzelner Account indexiert: ${body.accountName}");
     }
 }

@@ -4,8 +4,15 @@ import at.htlle.freq.domain.Account;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.*;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -18,7 +25,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class LuceneIndexService {
@@ -30,47 +36,59 @@ public class LuceneIndexService {
         FSDirectory dir = FSDirectory.open(Path.of("lucene-index"));
         IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
         this.writer = new IndexWriter(dir, config);
+        // Alten Index komplett löschen, damit nur int-IDs drin stehen
+        writer.deleteAll();
+        writer.commit();
     }
 
     public void index(Account account) {
         try {
+            String idStr = String.valueOf(account.getAccountID());
             Document doc = new Document();
-            doc.add(new StringField("id", account.getId().toString(), Field.Store.YES));
-            doc.add(new TextField("name", account.getName(), Field.Store.YES));
-
-            writer.updateDocument(new Term("id", account.getId().toString()), doc);
+            doc.add(new StringField("id", idStr, Field.Store.YES));
+            doc.add(new TextField("name", account.getAccountName(), Field.Store.YES));
+            doc.add(new TextField("contactEmail",account.getContactEmail(), Field.Store.YES));
+            doc.add(new TextField("contactPhone", account.getContactPhone(), Field.Store.YES));
+            doc.add(new TextField("vatNumber",account.getVATNumber(),Field.Store.YES));
+            doc.add(new TextField("country", account.getCountry(), Field.Store.YES));
+            writer.updateDocument(new Term("id", idStr), doc);
             writer.commit();
         } catch (IOException e) {
             throw new RuntimeException("Error indexing account", e);
         }
     }
+
     public List<Account> search(String queryString) {
-        try {
-            List<Account> results = new ArrayList<>();
+        List<Account> results = new ArrayList<>();
+        String[] fields = { "name", "contactEmail", "contactPhone", "vatNumber", "country" };
 
-            DirectoryReader reader = DirectoryReader.open(writer); // Reuse writer's directory
+        try (DirectoryReader reader = DirectoryReader.open(writer)) {
             IndexSearcher searcher = new IndexSearcher(reader);
-
-            QueryParser parser = new QueryParser("name", new StandardAnalyzer());
+            MultiFieldQueryParser parser = new MultiFieldQueryParser(fields, new StandardAnalyzer());
             Query query = parser.parse(queryString);
 
-            TopDocs topDocs = searcher.search(query, 10); // Top 10 Ergebnisse
+            TopDocs topDocs = searcher.search(query, 10);
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                Document doc = searcher.doc(sd.doc);
+                String idStr   = doc.get("id");
+                String name    = doc.get("name");
+                String email   = doc.get("contactEmail");
+                String phone   = doc.get("contactPhone");
+                String vat     = doc.get("vatNumber");
+                String country = doc.get("country");
 
-            for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-                Document doc = searcher.doc(scoreDoc.doc);
-                String id = doc.get("id");
-                String name = doc.get("name");
-                results.add(new Account(UUID.fromString(id), name));
+                try {
+                    int id = Integer.parseInt(idStr);
+                    results.add(new Account(id, name, email, phone, vat, country));
+                } catch (NumberFormatException nf) {
+                    // überspringen, falls id nicht int ist
+                }
             }
-
-            reader.close();
-            return results;
-
         } catch (Exception e) {
             throw new RuntimeException("Error searching index", e);
         }
+        return results;
     }
-
     @PreDestroy
     public void close() {
         if (writer != null) {

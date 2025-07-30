@@ -31,7 +31,7 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Account> findById(@PathVariable UUID id) {
+    public ResponseEntity<Account> findById(@PathVariable int id) {
         return accountService.getAccountById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());

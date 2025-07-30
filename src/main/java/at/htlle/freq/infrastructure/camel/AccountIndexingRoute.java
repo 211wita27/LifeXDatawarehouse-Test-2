@@ -27,6 +27,6 @@ public class AccountIndexingRoute extends RouteBuilder {
                     var acc = exchange.getIn().getBody(at.htlle.freq.domain.Account.class);
                     luceneIndexService.index(acc);
                 })
-                .log("✅ Account indexiert: ${body.name}");
+                .log("✅ Account indexiert: ${body.accountName}");
     }
 }

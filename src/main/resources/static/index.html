@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Lucene Account-Suche</title>
+    <title>Lucene Account‑Suche</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,8 +51,9 @@
         .layout {
             display: flex;
             flex-wrap: wrap;
-            margin: 2rem;
+            margin: 2rem auto;
             gap: 1rem;
+            max-width: 1200px;
         }
         .layout > div {
             flex: 1;
@@ -91,34 +92,33 @@
 
 <header>
     <nav>
-        <img src="img/LifeXDatawarehouseLogo.png" alt="LifeXDatawarehouse Logo" class="logo">
-        <a href="index.html">Account-Suche</a>
-        <a href="create.html">Account erstellen</a>
+        <img src="/img/LifeXDatawarehouseLogo.png" alt="LifeXDatawarehouse Logo" class="logo">
+        <a href="/index.html">Account‑Suche</a>
+        <a href="/create.html">Account erstellen</a>
     </nav>
 </header>
 
 <div class="container">
-    <h1>Lucene-Suche nach Accountnamen</h1>
+    <h1>Lucene‑Suche nach Accountnamen</h1>
     <form id="searchForm">
         <label for="query">Suchbegriff:</label>
         <input type="text" id="query" name="query" required />
         <button type="submit">Suchen</button>
     </form>
-
     <div id="result"></div>
 </div>
 
 <div class="layout">
     <div class="shortcuts">
-        <h2>Shortkut Buttons</h2>
-        <button>Button 1</button>
-        <button>Button 2</button>
-        <button>Button 3</button>
-        <button>Button 4</button>
-        <button>Button 5</button>
-        <button>Button 6</button>
-        <button>Button 7</button>
-        <button>Button 8</button>
+        <h2>Shortcut‑Buttons</h2>
+        <button>Button 1</button>
+        <button>Button 2</button>
+        <button>Button 3</button>
+        <button>Button 4</button>
+        <button>Button 5</button>
+        <button>Button 6</button>
+        <button>Button 7</button>
+        <button>Button 8</button>
     </div>
     <div class="tables">
         <h2>Tabellenübersicht</h2>
@@ -135,11 +135,11 @@
     </div>
     <div class="lucene">
         <h2>Apache Lucene Anleitung</h2>
-        <p>Apache Lucene ist eine Java-Bibliothek zur Volltextsuche in Textfeldern.</p>
+        <p>Apache Lucene ist eine Java‑Bibliothek zur Volltextsuche in Textfeldern.</p>
         <ul>
-            <li><code>Tech*</code> – Wildcard-Suche</li>
-            <li><code>"Green Valley"</code> – Phrasensuche</li>
-            <li><code>+Grocers +Green</code> – AND-Verknüpfung</li>
+            <li><code>Tech*</code> – Wildcard‑Suche</li>
+            <li><code>"Green Valley"</code> – Phrasensuche</li>
+            <li><code>+Grocers +Green</code> – AND‑Verknüpfung</li>
         </ul>
     </div>
 </div>
@@ -156,9 +156,14 @@
                 if (data.length === 0) {
                     resultDiv.innerHTML = `<p class="error">Keine Treffer gefunden.</p>`;
                 } else {
-                    let table = `<h3>Ergebnisse:</h3><table border="1" cellpadding="6"><tr><th>ID</th><th>Name</th></tr>`;
+                    let table = `<h3>Ergebnisse:</h3>
+                         <table>
+                           <tr><th>ID</th><th>Name</th></tr>`;
                     data.forEach(account => {
-                        table += `<tr><td>${account.id}</td><td>${account.name}</td></tr>`;
+                        table += `<tr>
+                          <td>${account.accountID}</td>
+                          <td>${account.accountName}</td>
+                        </tr>`;
                     });
                     table += `</table>`;
                     resultDiv.innerHTML = table;
@@ -170,17 +175,13 @@
             resultDiv.innerHTML = `<p class="error">Verbindungsfehler.</p>`;
         }
     }
+    document.getElementById("searchForm")
+        .addEventListener("submit", e => {
+            e.preventDefault();
+            performSearch(document.getElementById("query").value);
+        });
 
-    document.getElementById("searchForm").addEventListener("submit", function (e) {
-        e.preventDefault();
-        const query = document.getElementById("query").value;
-        performSearch(query);
-    });
-
-    // 🔁 Beim Laden der Seite direkt alle Accounts anzeigen
-    window.addEventListener("DOMContentLoaded", function () {
-        performSearch("*:*");
-    });
+    window.addEventListener("DOMContentLoaded", () => performSearch("*:*"));
 </script>
 </body>
 </html>

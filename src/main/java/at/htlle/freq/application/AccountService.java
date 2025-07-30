@@ -44,11 +44,11 @@ public class AccountService {
      * <p>
      * Wirft eine {@link IllegalArgumentException}, falls der Name bereits existiert.
      */
-    public Account createAccount(String name) {
-        if (accountRepository.findByName(name).isPresent()) {
-            throw new IllegalArgumentException("Account with name already exists: " + name);
+    public Account createAccount(String AccountName,String ContactEmail,String ContactPhone,String VATNumber,String Country) {
+        if (accountRepository.findByName(AccountName).isPresent()) {
+            throw new IllegalArgumentException("Account with name already exists: " + AccountName);
         }
-        Account account = accountFactory.create(name);
+        Account account = accountFactory.create(AccountName,ContactEmail,ContactPhone,VATNumber,Country);
         accountRepository.save(account);
         // 👉 nach dem Insert sofort Lucene-Re-Index starten
         camel.sendBody("direct:index-account", account);
@@ -60,7 +60,7 @@ public class AccountService {
      * (z. B. wenn es per JSON in den Controller kam).
      */
     public Account createAccount(Account account) {
-        return createAccount(account.getName());
+        return createAccount(account.getAccountName(),account.getContactEmail(),account.getContactPhone(), account.getVATNumber(), account.getCountry());
     }
 
     /** Alle Accounts aus der Datenbank. */
@@ -69,7 +69,7 @@ public class AccountService {
     }
 
     /** Einzelnen Account per ID aus der Datenbank lesen. */
-    public Optional<Account> getAccountById(UUID id) {
+    public Optional<Account> getAccountById(int id) {
         return accountRepository.findById(id);
     }
 
@@ -92,18 +92,19 @@ public class AccountService {
         if (accountRepository.findByName(newName).isPresent()) {
             throw new IllegalArgumentException("New name already in use: " + newName);
         }
-        account.setName(newName);
+        account.setAccountName(newName);
         accountRepository.save(account);
         camel.sendBody("direct:index-account", account);
     }
 
-    public Optional<Account> searchAccount(String name, UUID id) {
-        if (id != null) {
-            return getAccountById(id);
-        } else if (name != null) {
-            return accountRepository.findByName(name);
-        }
-        return Optional.empty();
+    public Optional<Account> searchAccount(String name, int id) {
+       if(getAccountById(id) != null) {
+           return getAccountById(id);
+       }else if (name != null) {
+           return accountRepository.findByName(name);
+       }else{
+           return Optional.empty();
+       }
     }
 
     /** Delegiert an Lucene und liefert Trefferliste zurück. */
