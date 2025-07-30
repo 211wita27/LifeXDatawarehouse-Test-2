@@ -12,7 +12,16 @@
         header {
             background-color: #4A90E2;
             color: white;
-            padding: 1rem;
+            padding: 0.5rem 1rem;
+        }
+        nav {
+            display: flex;
+            align-items: center;
+        }
+        nav img.logo {
+            height: 40px;
+            width: auto;
+            margin-right: 1rem;
         }
         nav a {
             color: white;
@@ -38,12 +47,51 @@
         table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
         th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
         .error { color: red; }
+
+        .layout {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 2rem;
+            gap: 1rem;
+        }
+        .layout > div {
+            flex: 1;
+            min-width: 220px;
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .shortcuts button {
+            display: block;
+            width: 100%;
+            margin-bottom: 0.5rem;
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        .tables ul {
+            list-style: none;
+            padding: 0;
+        }
+        .tables li {
+            background-color: #eee;
+            margin-bottom: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+        .lucene ul {
+            list-style: none;
+            padding-left: 1rem;
+        }
     </style>
 </head>
 <body>
 
 <header>
     <nav>
+        <img src="img/LifeXDatawarehouseLogo.png" alt="LifeXDatawarehouse Logo" class="logo">
         <a href="index.html">Account-Suche</a>
         <a href="create.html">Account erstellen</a>
     </nav>
@@ -58,6 +106,42 @@
     </form>
 
     <div id="result"></div>
+</div>
+
+<div class="layout">
+    <div class="shortcuts">
+        <h2>Shortkut Buttons</h2>
+        <button>Button 1</button>
+        <button>Button 2</button>
+        <button>Button 3</button>
+        <button>Button 4</button>
+        <button>Button 5</button>
+        <button>Button 6</button>
+        <button>Button 7</button>
+        <button>Button 8</button>
+    </div>
+    <div class="tables">
+        <h2>Tabellenübersicht</h2>
+        <ul>
+            <li>Kunden</li>
+            <li>Bestellungen</li>
+            <li>Produkte</li>
+            <li>Lieferanten</li>
+            <li>Lager</li>
+            <li>Rechnungen</li>
+            <li>Mitarbeiter</li>
+            <li>Filialen</li>
+        </ul>
+    </div>
+    <div class="lucene">
+        <h2>Apache Lucene Anleitung</h2>
+        <p>Apache Lucene ist eine Java-Bibliothek zur Volltextsuche in Textfeldern.</p>
+        <ul>
+            <li><code>Tech*</code> – Wildcard-Suche</li>
+            <li><code>"Green Valley"</code> – Phrasensuche</li>
+            <li><code>+Grocers +Green</code> – AND-Verknüpfung</li>
+        </ul>
+    </div>
 </div>
 
 <script>
