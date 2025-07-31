@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Account-Details</title>
+    <style>
+        body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4;padding:2rem}
+        h1{margin-top:0}
+        .card{background:#fff;padding:1.5rem;border-radius:8px;max-width:700px;
+            margin:auto;box-shadow:0 2px 4px rgba(0,0,0,.1)}
+        ul{list-style:none;padding:0}
+        li{margin:.3rem 0}
+        table{width:100%;border-collapse:collapse;margin-top:1rem}
+        th,td{border:1px solid #ccc;padding:.4rem;text-align:left}
+        a.back{display:inline-block;margin-bottom:1rem;color:#4A90E2;text-decoration:none}
+    </style>
+</head>
+<body>
+<a href="index.html" class="back">← zurück zur Suche</a>
+
+<div id="view" class="card">lade …</div>
+
+<script>
+    (async () => {
+        const id = new URLSearchParams(location.search).get("id");
+        if (!id){document.getElementById("view").textContent="ID fehlt.";return;}
+
+        /* --- Account laden --------------------------------------------------*/
+        const accRes = await fetch(`/accounts/${id}`);
+        if (!accRes.ok){
+            document.getElementById("view").textContent="Account nicht gefunden.";
+            return;
+        }
+        const a = await accRes.json();
+
+        /* --- Projekte laden -------------------------------------------------*/
+        let projHtml = "<p><em>(keine Projekte)</em></p>";
+        try{
+            const pRes = await fetch(`/projects?accountId=${id}`);
+            if (pRes.ok){
+                const projects = await pRes.json();
+                if (projects.length){
+                    projHtml = `<table>
+            <tr><th>ID</th><th>Name</th><th>Bundle</th></tr>
+            ${projects.map(p=>`<tr>
+                 <td>${p.projectID}</td>
+                 <td>${p.projectName}</td>
+                 <td>${p.deploymentVariant}</td></tr>`).join("")}
+          </table>`;
+                }
+            }
+        }catch(_){/* ignoriere Fehler */}
+
+        /* --- Seite rendern --------------------------------------------------*/
+        document.getElementById("view").innerHTML = `
+      <h1>${a.accountName}</h1>
+      <ul>
+        <li><strong>E-Mail:</strong> ${a.contactEmail}</li>
+        <li><strong>Telefon:</strong> ${a.contactPhone}</li>
+        <li><strong>USt-ID:</strong> ${a.vatNumber}</li>
+        <li><strong>Land:</strong> ${a.country}</li>
+      </ul>
+      <h2>Verknüpfte Projekte</h2>
+      ${projHtml}`;
+    })();
+</script>
+</body>
+</html>

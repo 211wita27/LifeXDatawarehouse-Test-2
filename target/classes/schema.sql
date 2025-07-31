@@ -157,7 +157,7 @@ CREATE TABLE AudioDevice (
 CREATE TABLE PhoneIntegration (
                                   PhoneIntegrationID  INT          AUTO_INCREMENT PRIMARY KEY,
                                   ClientID            INT          NOT NULL,
-                                  PhoneType           VARCHAR(10)  NOT NULL,
+                                  PhoneType           VARCHAR(15)  NOT NULL,
                                   PhoneBrand          VARCHAR(50)  NOT NULL,
                                   PhoneSerialNr       VARCHAR(100) NOT NULL,
                                   PhoneFirmware       VARCHAR(50)  NOT NULL,

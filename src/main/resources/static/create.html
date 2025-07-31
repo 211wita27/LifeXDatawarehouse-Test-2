@@ -2,96 +2,161 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Neuen Account erstellen</title>
+  <title>Datensatz anlegen</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background-color: #f4f4f4;
-    }
-    header {
-      background-color: #4A90E2;
-      color: white;
-      padding: 0.5rem 1rem;
-    }
-    nav {
-      display: flex;
-      align-items: center;
-    }
-    nav img.logo {
-      height: 40px;
-      width: auto;
-      margin-right: 1rem;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-right: 1rem;
-      font-weight: bold;
-    }
-    .container {
-      max-width: 800px;
-      margin: 2rem auto;
-      background: white;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    input, button {
-      padding: 0.5rem;
-      font-size: 1rem;
-      margin-top: 0.5rem;
-    }
-    button { cursor: pointer; }
-    .success { color: green; }
-    .error { color: red; }
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
+    header{background:#003a70;padding:.5rem 1rem;display:flex;align-items:center;gap:1rem}
+    header img.logo{height:160px;background:#fff;padding:6px;border-radius:6px}
+    header a{color:#fff;text-decoration:none;font-weight:bold}
+    .container{max-width:900px;margin:2rem auto;background:#fff;padding:2rem;
+      border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+    fieldset{border:none;margin:0;padding:0}
+    label{display:block;margin-top:1rem}
+    input,select,button{padding:.4rem;font-size:1rem;margin-top:.3rem}
+    button{cursor:pointer;margin-top:1.2rem}
+    .success{color:green}.error{color:red}
+    .hidden{display:none}
   </style>
 </head>
 <body>
-
 <header>
-  <nav>
-    <img src="img/LifeXDatawarehouseLogo.png" alt="LifeXDatawarehouse Logo" class="logo">
-    <a href="index.html">Account-Suche</a>
-    <a href="create.html">Account erstellen</a>
-  </nav>
+  <img src="/img/LifeXDatawarehouseLogo.png" class="logo" alt="Logo">
+  <a href="/index.html">Dashboard</a>
+  <a href="/create.html">Daten anlegen</a>
 </header>
 
 <div class="container">
-  <h1>Account anlegen</h1>
-  <form id="createForm">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" required />
-    <button type="submit">Erstellen</button>
-  </form>
+  <h1>Datensatz anlegen</h1>
+
+  <!-- Schritt 1 -->
+  <fieldset id="step1">
+    <label>Welche Entität möchtest du anlegen?</label>
+    <select id="entity">
+      <option>Account</option>
+      <option>Project</option>
+      <option>Site</option>
+      <option>Server</option>
+      <option>WorkingPosition</option>
+      <option>Radio</option>
+      <option>AudioDevice</option>
+      <option>PhoneIntegration</option>
+    </select>
+    <button onclick="next()">Weiter</button>
+  </fieldset>
+
+  <!-- Schritt 2 -->
+  <form id="dynamicForm" class="hidden" onsubmit="submitForm(event)"></form>
 
   <div id="result"></div>
 </div>
 
 <script>
-  document.getElementById("createForm").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const name = document.getElementById("name").value;
-    const resultDiv = document.getElementById("result");
+  function back(){
+    document.getElementById('dynamicForm').classList.add('hidden');
+    document.getElementById('step1').classList.remove('hidden');
+    document.getElementById('dynamicForm').innerHTML='';
+    document.getElementById('result').textContent='';
+  }
 
-    try {
-      const response = await fetch('/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name })
-      });
+  function next(){
+    const type=document.getElementById('entity').value;
+    buildForm(type);
+    document.getElementById('step1').classList.add('hidden');
+    document.getElementById('dynamicForm').classList.remove('hidden');
+  }
 
-      if (response.ok) {
-        const created = await response.json();
-        resultDiv.innerHTML = `<p class="success">Account mit ID ${created.id} erfolgreich erstellt.</p>`;
-      } else {
-        const errText = await response.text();
-        resultDiv.innerHTML = `<p class="error">Fehler: ${errText}</p>`;
-      }
-    } catch (err) {
-      resultDiv.innerHTML = `<p class="error">Netzwerkfehler oder ungültige Antwort.</p>`;
+  /* -------- Formulargenerator --------------------------------------- */
+  const add=(id,label,req=true)=>`<label>${label}<input id="${id}" ${req?'required':''}></label>`;
+  function buildForm(t){
+    const f=document.getElementById('dynamicForm'); f.dataset.type=t;
+    let h='';
+
+    switch(t){
+      case 'Account':
+        h+=add('name','Name')+add('email','E-Mail')+add('phone','Telefon')
+                +add('vat','USt-ID')+add('country','Land'); break;
+
+      case 'Project':
+        h+=add('sap','SAP-ID')+add('pname','Projektname')
+                +add('variant','Deployment-Variant')+add('bundle','Bundle-Type',false)
+                +add('accId','Account-ID'); break;
+
+      case 'Site':
+        h+=add('pId','Project-ID')+add('name','Site-Name')
+                +add('addr','Address-ID')+add('ha','HighAvailability (true/false)')
+                +add('red','Redundant-Servers')+add('zone','FireZone')
+                +add('tenant','TenantCount'); break;
+
+      case 'Server':
+        h+=add('siteId','Site-ID')+add('name','Servername')+add('brand','Marke')
+                +add('serial','Serien-Nr.')+add('os','Betriebssystem')
+                +add('patch','Patch-Level')+add('vplat','Virtual-Platform'); break;
+
+      case 'WorkingPosition':
+        h+=add('siteId','Site-ID')+add('name','Client-Name')+add('brand','Marke')
+                +add('serial','Serien-Nr.')+add('os','OS')+add('patch','Patch-Level')
+                +add('local','LocallyInstalled (true/false)'); break;
+
+      case 'Radio':
+        h+=add('siteId','Site-ID')+add('brand','Marke')+add('serial','Serien-Nr.')
+                +add('mode','Mode (Analog/Digital)')+add('standard','Digital-Standard',false)
+                +add('client','Assigned-ClientID',false); break;
+
+      case 'AudioDevice':
+        h+=add('client','Client-ID')+add('brand','Marke')+add('serial','Serien-Nr.')
+                +add('fw','Firmware')+add('dir','Direction (IN/OUT/INOUT)'); break;
+
+      case 'PhoneIntegration':
+        h+=add('client','Client-ID')+add('type','PhoneType (Emergency/…)')
+                +add('brand','Marke')+add('serial','Serien-Nr.')+add('fw','Firmware'); break;
     }
-  });
+    f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
+  }
+
+  /* -------- Submit --------------------------------------------------- */
+  const v=id=>document.getElementById(id)?.value?.trim();
+  async function submitForm(e){
+    e.preventDefault();
+    const t=e.target.dataset.type, out=document.getElementById('result'); out.textContent='';
+    let url='',p={};
+
+    switch(t){
+      case 'Account': url='/accounts'; p={accountName:v('name'),contactEmail:v('email'),
+        contactPhone:v('phone'),vatNumber:v('vat'),country:v('country')}; break;
+
+      case 'Project': url='/projects'; p={projectSAPID:v('sap'),projectName:v('pname'),
+        deploymentVariant:v('variant'),bundleType:v('bundle')||null,accountID:+v('accId')}; break;
+
+      case 'Site': url='/sites'; p={projectID:+v('pId'),siteName:v('name'),
+        addressID:+v('addr'),highAvailability:v('ha')==='true',redundantServers:+v('red'),
+        fireZone:v('zone'),tenantCount:+v('tenant')}; break;
+
+      case 'Server': url='/servers'; p={siteID:+v('siteId'),serverName:v('name'),
+        serverBrand:v('brand'),serverSerialNr:v('serial'),serverOS:v('os'),
+        patchLevel:v('patch'),virtualPlatform:v('vplat')}; break;
+
+      case 'WorkingPosition': url='/clients'; p={siteID:+v('siteId'),clientName:v('name'),
+        clientBrand:v('brand'),clientSerialNr:v('serial'),clientOS:v('os'),
+        patchLevel:v('patch'),locallyInstalled:v('local')==='true'}; break;
+
+      case 'Radio': url='/radios'; p={siteID:+v('siteId'),radioBrand:v('brand'),
+        radioSerialNr:v('serial'),mode:v('mode'),digitalStandard:v('standard')||null,
+        assignedClientID:v('client')||null}; break;
+
+      case 'AudioDevice': url='/audio'; p={clientID:+v('client'),audioDeviceBrand:v('brand'),
+        deviceSerialNr:v('serial'),audioDeviceFirmware:v('fw'),direction:v('dir')}; break;
+
+      case 'PhoneIntegration': url='/phones'; p={clientID:+v('client'),phoneType:v('type'),
+        phoneBrand:v('brand'),phoneSerialNr:v('serial'),phoneFirmware:v('fw')}; break;
+    }
+
+    try{
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(p)});
+      if(r.ok){out.innerHTML=`<p class="success">${t} angelegt.</p>`;e.target.reset();}
+      else   {out.innerHTML=`<p class="error">${await r.text()}</p>`;}
+    }catch(err){out.innerHTML=`<p class="error">Netzwerkfehler.</p>`;}
+  }
 </script>
 </body>
 </html>

@@ -2,186 +2,141 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Lucene Account‑Suche</title>
+    <title>LifeX Data Warehouse – Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css"><!-- optional -->
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            background-color: #f4f4f4;
-        }
-        header {
-            background-color: #4A90E2;
-            color: white;
-            padding: 0.5rem 1rem;
-        }
-        nav {
-            display: flex;
-            align-items: center;
-        }
-        nav img.logo {
-            height: 40px;
-            width: auto;
-            margin-right: 1rem;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin-right: 1rem;
-            font-weight: bold;
-        }
-        .container {
-            max-width: 800px;
-            margin: 2rem auto;
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        input, button {
-            padding: 0.5rem;
-            font-size: 1rem;
-            margin-top: 0.5rem;
-        }
-        button { cursor: pointer; }
-        #result { margin-top: 1rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-        .error { color: red; }
+        /* ===== Grundlayout ================================================= */
+        *{box-sizing:border-box}
+        body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
+        header{background:#003a70;padding:.5rem 1rem;display:flex;align-items:center;gap:1rem}
+        header img.logo{height:160px;background:#fff;padding:6px;border-radius:6px}
+        header a{color:#fff;text-decoration:none;font-weight:bold}
 
-        .layout {
-            display: flex;
-            flex-wrap: wrap;
-            margin: 2rem auto;
-            gap: 1rem;
-            max-width: 1200px;
-        }
-        .layout > div {
-            flex: 1;
-            min-width: 220px;
-            background: white;
-            padding: 1rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .shortcuts button {
-            display: block;
-            width: 100%;
-            margin-bottom: 0.5rem;
-            background-color: #4A90E2;
-            color: white;
-            border: none;
-            border-radius: 4px;
-        }
-        .tables ul {
-            list-style: none;
-            padding: 0;
-        }
-        .tables li {
-            background-color: #eee;
-            margin-bottom: 0.5rem;
-            padding: 0.5rem;
-            border-radius: 4px;
-        }
-        .lucene ul {
-            list-style: none;
-            padding-left: 1rem;
-        }
+        .layout{max-width:1600px;margin:2rem auto;display:flex;gap:1rem}
+        .sidebar{flex:0 0 280px;display:flex;flex-direction:column;gap:1rem}
+        .content{flex:1 1 auto;background:#fff;padding:1.5rem;border-radius:8px;
+            box-shadow:0 2px 6px rgba(0,0,0,.1);min-height:400px}
+        .help{flex:0 0 330px;background:#fff;padding:1.5rem;border-radius:8px;
+            box-shadow:0 2px 6px rgba(0,0,0,.1)}
+
+        /* ===== Lucene-Suchleiste =========================================== */
+        #search-bar{display:flex;gap:.5rem;margin-bottom:1rem}
+        #search-input{flex:1 1 auto;padding:.4rem}
+        #search-btn{padding:.4rem 1rem;cursor:pointer}
+
+        /* ===== Shortcut-Buttons ============================================ */
+        .shortcut{margin:.5rem 0;border-radius:4px;overflow:hidden;border:1px solid #0067c2}
+        .shortcut .head{
+            display:flex;align-items:center;gap:.4rem;background:#0067c2;color:#fff;
+            width:100%;padding:.5rem;cursor:pointer;font-weight:bold;border:none}
+        .shortcut .chevron{margin-left:auto;user-select:none;transition:.2s}
+        .shortcut.open .chevron{transform:rotate(90deg)}
+        .shortcut .panel{display:none;padding:.6rem;background:#e9f1ff}
+        .shortcut.open .panel{display:block}
+        .shortcut .panel input{width:100%;padding:.4rem;font-family:monospace}
+        .rename{background:transparent;border:none;color:#fff;font-size:.8rem;cursor:pointer}
+
+        /* ===== Tabellenliste =============================================== */
+        .tables ul{list-style:none;padding:0;margin:0}
+        .tables li{background:#eee;margin:.3rem 0;padding:.5rem;border-radius:4px;cursor:pointer}
+        .tables li:hover{background:#d5e4ff}
+
+        /* ===== Ergebnis-Tabellen =========================================== */
+        .table-scroll{overflow-x:auto}
+        table{border-collapse:collapse;width:100%;min-width:600px;margin:0}
+        th,td{border:1px solid #ccc;padding:.4rem;text-align:left}
+        #error{color:red;margin-top:1rem}
     </style>
 </head>
 <body>
-
 <header>
-    <nav>
-        <img src="/img/LifeXDatawarehouseLogo.png" alt="LifeXDatawarehouse Logo" class="logo">
-        <a href="/index.html">Account‑Suche</a>
-        <a href="/create.html">Account erstellen</a>
-    </nav>
+    <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo" class="logo">
+    <a href="/index.html">Dashboard</a>
+    <a href="/create.html">Daten anlegen</a>
 </header>
 
-<div class="container">
-    <h1>Lucene‑Suche nach Accountnamen</h1>
-    <form id="searchForm">
-        <label for="query">Suchbegriff:</label>
-        <input type="text" id="query" name="query" required />
-        <button type="submit">Suchen</button>
-    </form>
-    <div id="result"></div>
-</div>
-
 <div class="layout">
-    <div class="shortcuts">
-        <h2>Shortcut‑Buttons</h2>
-        <button>Button 1</button>
-        <button>Button 2</button>
-        <button>Button 3</button>
-        <button>Button 4</button>
-        <button>Button 5</button>
-        <button>Button 6</button>
-        <button>Button 7</button>
-        <button>Button 8</button>
-    </div>
-    <div class="tables">
-        <h2>Tabellenübersicht</h2>
+    <!-- ╭─ Sidebar ────────────────────────────────────────────────────╮ -->
+    <aside class="sidebar">
+
+        <!-- Shortcuts -->
+        <section class="shortcuts">
+            <h2>Shortcuts</h2>
+
+            <!-- Schablone -->
+            <div class="shortcut" data-id="sc-1" data-default="*:*">
+                <button class="head">
+                    <span class="rename" title="Namen ändern">✏️</span>
+                    <span class="label">Alle Accounts</span>
+                    <span class="chevron">▶</span>
+                </button>
+                <div class="panel"><input></div>
+            </div>
+
+            <div class="shortcut" data-id="sc-2" data-default="country:Germany">
+                <button class="head"><span class="rename">✏️</span><span class="label">Accounts 🇩🇪</span><span class="chevron">▶</span></button>
+                <div class="panel"><input></div>
+            </div>
+
+            <div class="shortcut" data-id="sc-3" data-default="deploymentVariant:CustomL">
+                <button class="head"><span class="rename">✏️</span><span class="label">Große Projekte</span><span class="chevron">▶</span></button>
+                <div class="panel"><input></div>
+            </div>
+
+            <!-- zwei freie Slots -->
+            <div class="shortcut" data-id="sc-4" data-default="">
+                <button class="head"><span class="rename">✏️</span><span class="label">(frei 1)</span><span class="chevron">▶</span></button>
+                <div class="panel"><input placeholder="Lucene-Query"></div>
+            </div>
+
+            <div class="shortcut" data-id="sc-5" data-default="">
+                <button class="head"><span class="rename">✏️</span><span class="label">(frei 2)</span><span class="chevron">▶</span></button>
+                <div class="panel"><input placeholder="Lucene-Query"></div>
+            </div>
+        </section>
+
+        <!-- Tabellenübersicht -->
+        <section class="tables">
+            <h2>Tabellen</h2>
+            <ul id="table-list">
+                <li onclick="showTable('Account')">Account</li>
+                <li onclick="showTable('Project')">Project</li>
+                <li onclick="showTable('Site')">Site</li>
+                <li onclick="showTable('Server')">Server</li>
+                <li onclick="showTable('WorkingPosition')">WorkingPosition</li>
+                <li onclick="showTable('Radio')">Radio</li>
+                <li onclick="showTable('AudioDevice')">AudioDevice</li>
+                <li onclick="showTable('PhoneIntegration')">PhoneIntegration</li>
+            </ul>
+        </section>
+    </aside>
+
+    <!-- ╭─ Content ─────────────────────────────────────────────────────╮ -->
+    <main class="content">
+        <!-- Suchleiste bleibt immer sichtbar -->
+        <div id="search-bar">
+            <input id="search-input" placeholder="Volltextsuche …">
+            <button id="search-btn">Suchen</button>
+        </div>
+
+        <!-- Ergebniscontainer -->
+        <div id="resultArea">
+            <p>Nutze die Suchleiste oder die Bedienelemente links.</p>
+        </div>
+    </main>
+
+    <!-- ╭─ Hilfe ───────────────────────────────────────────────────────╮ -->
+    <aside class="help">
+        <h2>Lucene Cheatsheet</h2>
         <ul>
-            <li>Kunden</li>
-            <li>Bestellungen</li>
-            <li>Produkte</li>
-            <li>Lieferanten</li>
-            <li>Lager</li>
-            <li>Rechnungen</li>
-            <li>Mitarbeiter</li>
-            <li>Filialen</li>
+            <li><code>tech*</code> → Wildcard</li>
+            <li><code>"green valley"</code> → Phrase</li>
+            <li><code>+foo -bar</code> → Muss / Nicht</li>
+            <li><code>date:[2025-01-01 TO 2025-12-31]</code></li>
         </ul>
-    </div>
-    <div class="lucene">
-        <h2>Apache Lucene Anleitung</h2>
-        <p>Apache Lucene ist eine Java‑Bibliothek zur Volltextsuche in Textfeldern.</p>
-        <ul>
-            <li><code>Tech*</code> – Wildcard‑Suche</li>
-            <li><code>"Green Valley"</code> – Phrasensuche</li>
-            <li><code>+Grocers +Green</code> – AND‑Verknüpfung</li>
-        </ul>
-    </div>
+    </aside>
 </div>
 
-<script>
-    async function performSearch(query) {
-        const resultDiv = document.getElementById("result");
-        resultDiv.innerHTML = "Suche läuft...";
-
-        try {
-            const response = await fetch(`/accounts/lucene-search?query=${encodeURIComponent(query)}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data.length === 0) {
-                    resultDiv.innerHTML = `<p class="error">Keine Treffer gefunden.</p>`;
-                } else {
-                    let table = `<h3>Ergebnisse:</h3>
-                         <table>
-                           <tr><th>ID</th><th>Name</th></tr>`;
-                    data.forEach(account => {
-                        table += `<tr>
-                          <td>${account.accountID}</td>
-                          <td>${account.accountName}</td>
-                        </tr>`;
-                    });
-                    table += `</table>`;
-                    resultDiv.innerHTML = table;
-                }
-            } else {
-                resultDiv.innerHTML = `<p class="error">Fehler bei der Suche.</p>`;
-            }
-        } catch (err) {
-            resultDiv.innerHTML = `<p class="error">Verbindungsfehler.</p>`;
-        }
-    }
-    document.getElementById("searchForm")
-        .addEventListener("submit", e => {
-            e.preventDefault();
-            performSearch(document.getElementById("query").value);
-        });
-
-    window.addEventListener("DOMContentLoaded", () => performSearch("*:*"));
-</script>
+<script src="/js/app.js"></script>
 </body>
 </html>
