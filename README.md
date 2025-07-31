@@ -4,7 +4,7 @@
 
 ## 📑 Projektüberblick
 
-LifeX Data Warehouse ist eine schlanke, aber funktionsreiche Demo-Applikation, die im Rahmen einer Diplomarbeit an der HTL Leoben (Abteilung Informationstechnik) entsteht.  
+LifeX Data Warehouse ist eine schlanke, aber funktionsreiche Applikation, die im Rahmen einer Diplomarbeit an der HTL Leoben (Abteilung Informationstechnik) entsteht.  
 Sie vereint **ETL-ähnliche Datenhaltung**, **Volltextsuche via Lucene**, ein **leichtgewichtiges Web-UI** und eine **REST-API** in einem einzigen Spring-Boot-Projekt.
 
 > **Mission Statement**  
@@ -163,12 +163,6 @@ erDiagram
 - Mario Ziegerhofer – Entwickler
 - Marcel Papic – Entwickler
 - Alexander Schüller – Team-Lead
-
----
-
-## 📄 Lizenz
-
-Dieses Projekt steht unter der MIT-Lizenz – siehe `LICENSE`.
 
 ---
 
