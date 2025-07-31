@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Detailansicht</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<header>
+    <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo">
+    <a href="/index.html">Dashboard</a>
+    <a href="/create.html">Daten anlegen</a>
+</header>
+
+<div style="max-width:900px;margin:2rem auto">
+    <a id="back" href="index.html">← zurück</a>
+    <div id="view" class="card">lade …</div>
+</div>
+
+<script>
+    (async () => {
+        const p=new URLSearchParams(location.search),
+            type=p.get('type'),
+            id=+p.get('id'),
+            box=document.getElementById('view');
+
+        if(!type||!id){box.textContent='Parameter fehlen.';return;}
+
+        try{
+            const res=await fetch(`/row/${type}/${id}`);
+            if(!res.ok){box.textContent='Eintrag nicht gefunden.';return;}
+            const row=await res.json();
+
+            const kvRows=Object.entries(row)
+                .map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join('');
+
+            box.innerHTML=`<h1>${type} #${id}</h1><table id="kv">${kvRows}</table>`;
+        }catch(e){box.textContent='Fehler: '+e;}
+    })();
+</script>
+</body>
+</html>

@@ -1,102 +1,90 @@
-/* ====================================================================
-   Hilfsreferenzen
-==================================================================== */
+/* ========== DOM-Referenzen ========== */
 const resultArea  = document.getElementById('resultArea');
 const searchInput = document.getElementById('search-input');
+document.getElementById('search-btn').onclick = () => runLucene(searchInput.value);
+searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') runLucene(searchInput.value); });
 
-/* ====================================================================
-   Globale Suche   (Enter-Taste & Button)
-==================================================================== */
-document.getElementById('search-btn').onclick = ()=>runLucene(searchInput.value);
-searchInput.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){ runLucene(searchInput.value); }
-});
+/* ========== Lucene – globale Suche ========== */
+async function runLucene(q) {
+    const query = q.trim();
+    if (!query) return;
+    try {
+        const res  = await fetch('/search?q=' + encodeURIComponent(query));
+        const hits = await res.json();
+        if (!hits.length) { resultArea.textContent = '(keine Treffer)'; return; }
 
-async function runLucene(q){
-    const query=q.trim(); if(!query){return;}
-    resultArea.innerHTML='';                       // nichts Unprofessionelles :-)
+        const rows = hits.map(h => `
+            <tr onclick="toDetails('${h.type}',${h.id})">
+              <td>${h.type}</td><td>${h.id}</td><td>${h.text}</td>
+            </tr>`).join('');
 
-    try{
-        const res=await fetch(`/accounts/lucene-search?query=${encodeURIComponent(query)}`);
-        const data=await res.json();
-        if(!data.length){ resultArea.textContent='(keine Treffer)'; return;}
-
-        const rows=data.map(a=>`
-        <tr><td>${a.accountID}</td><td>${a.accountName}</td><td>${a.country}</td></tr>`).join('');
-        resultArea.innerHTML=`
-       <div class="table-scroll">
-         <table>
-           <tr><th>ID</th><th>Name</th><th>Land</th></tr>${rows}
-         </table>
-       </div>`;
-    }catch(e){ resultArea.innerHTML=`<p id="error">Fehler (${e.message})</p>`;}
+        resultArea.innerHTML = `
+          <div class="table-scroll">
+            <table>
+              <tr><th>Typ</th><th>ID</th><th>Text</th></tr>${rows}
+            </table>
+          </div>`;
+    } catch (e) {
+        resultArea.innerHTML = `<p id="error">Fehler ${e}</p>`;
+    }
 }
 
-/* ====================================================================
-   Tabellenanzeige (max 100 Zeilen)
-==================================================================== */
-async function showTable(name){
-    resultArea.innerHTML='';
-    try{
-        const res=await fetch(`/table/${name}`);
-        const rows=await res.json();
-        if(!rows.length){resultArea.textContent='(leer)';return;}
+/* ========== Tabellen-Listing ========== */
+async function showTable(name) {
+    try {
+        const res  = await fetch('/table/' + name);
+        const rows = await res.json();
+        if (!rows.length) { resultArea.textContent = '(leer)'; return; }
 
-        const cols=Object.keys(rows[0]);
-        const head=cols.map(c=>`<th>${c}</th>`).join('');
-        const body=rows.map(r=>`<tr>${cols.map(c=>`<td>${r[c]}</td>`).join('')}</tr>`).join('');
-        resultArea.innerHTML=`
-        <h2>${name}</h2>
-        <div class="table-scroll">
-          <table><tr>${head}</tr>${body}</table>
-        </div>`;
-    }catch(e){ resultArea.innerHTML=`<p id="error">Fehler (${e.message})</p>`;}
+        const cols = Object.keys(rows[0]);
+        const hdr  = cols.map(c => `<th>${c}</th>`).join('');
+        const body = rows.map(r =>
+            `<tr>${cols.map(c => `<td>${r[c]}</td>`).join('')}</tr>`).join('');
+
+        resultArea.innerHTML = `
+          <h2>${name}</h2><div class="table-scroll">
+            <table><tr>${hdr}</tr>${body}</table></div>`;
+    } catch (e) {
+        resultArea.innerHTML = `<p id="error">Fehler ${e}</p>`;
+    }
 }
 
-/* ====================================================================
-   Shortcuts
-==================================================================== */
-document.querySelectorAll('.shortcut').forEach(box=>{
-    const id      = box.dataset.id;
-    const inp     = box.querySelector('input');
-    const labelEl = box.querySelector('.label');
-    const chev    = box.querySelector('.chevron');
-    const rename  = box.querySelector('.rename');
-    const headBtn = box.querySelector('.head');
+/* ========== Shortcut-Initialisierung ========== */
+document.querySelectorAll('.shortcut').forEach(box => {
+    const id   = box.dataset.id,
+        inp  = box.querySelector('input'),
+        lbl  = box.querySelector('.label'),
+        chev = box.querySelector('.chev');
 
     /* gespeicherte Query laden */
-    const savedQ = localStorage.getItem(id) ?? box.dataset.default;
-    inp.value = savedQ;
+    inp.value = localStorage.getItem(id) ?? box.dataset.default;
 
-    /* gespeicherte Label laden */
-    const savedL = localStorage.getItem(id+'-label');
-    if(savedL) labelEl.textContent = savedL;
+    /* gespeicherten Label-Text laden */
+    const lblStored = localStorage.getItem(id + '-label');
+    if (lblStored) lbl.textContent = lblStored;
 
-    /* — Klick auf Chevron = auf/zu — */
-    chev.addEventListener('click',e=>{
+    /* Pfeil auf/zu */
+    chev.onclick = e => { e.stopPropagation(); box.classList.toggle('open'); };
+
+    /* Shortcut ausführen */
+    box.querySelector('.head').addEventListener('click', e => {
+        if (e.target.classList.contains('chev') ||
+            e.target.classList.contains('rename')) return;
+        runLucene(inp.value.trim());
+    });
+
+    /* Label umbenennen */
+    box.querySelector('.rename').onclick = e => {
         e.stopPropagation();
-        box.classList.toggle('open');
-    });
+        const neu = prompt('Neuer Name?', lbl.textContent);
+        if (neu) { lbl.textContent = neu; localStorage.setItem(id + '-label', neu); }
+    };
 
-    /* — Klick auf Rename-Icon — */
-    rename.addEventListener('click',e=>{
-        e.stopPropagation();
-        const neu = prompt('Neuer Button-Name?', labelEl.textContent);
-        if(neu){
-            labelEl.textContent = neu;
-            localStorage.setItem(id+'-label', neu);
-        }
-    });
-
-    /* — Klick auf Head (ohne Chevron/Rename) = Query ausführen — */
-    headBtn.addEventListener('click',e=>{
-        if(e.target!==headBtn){return;}      // Chevron oder Rename ignorieren
-        const query=inp.value.trim();
-        if(query){
-            runLucene(query);
-        }
-    });
-
-    /* — Query ändern → speichern — */
-    inp.addEventListener('change',()=>localStorage.setItem(id, inp.value.trim()));
+    /* Query speichern */
+    inp.onchange = () => localStorage.setItem(id, inp.value.trim());
 });
+
+/* ========== Details-Navigation ========== */
+function toDetails(type, id) {
+    location.href = `/details.html?type=${type}&id=${id}`;
+}

@@ -2,14 +2,15 @@ package at.htlle.freq.web;
 
 import at.htlle.freq.application.AccountService;
 import at.htlle.freq.domain.Account;
+import at.htlle.freq.domain.SearchHit;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 /**
- * REST-Endpunkte rund um Accounts + Lucene-Suche.
+ * REST-Endpunkte rund um Accounts + globale Lucene-Suche.
  */
 @RestController
 @RequestMapping("/accounts")
@@ -21,9 +22,9 @@ public class AccountController {
         this.accountService = accountService;
     }
 
-    /* ────────────────────────────────
-     * CRUD-Operationen
-     * ──────────────────────────────── */
+    /* ───────────────────────────────
+     *        CRUD-Operationen
+     * ─────────────────────────────── */
 
     @GetMapping
     public List<Account> findAll() {
@@ -32,9 +33,8 @@ public class AccountController {
 
     @GetMapping("/{id}")
     public ResponseEntity<Account> findById(@PathVariable int id) {
-        return accountService.getAccountById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        Optional<Account> acc = accountService.getAccountById(id);
+        return acc.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
@@ -42,27 +42,26 @@ public class AccountController {
         return accountService.createAccount(account);
     }
 
-    /* ────────────────────────────────
-     * Lucene-Volltextsuche
-     * ──────────────────────────────── */
+    /* ───────────────────────────────
+     *   L U C E N E  –  S U C H E
+     * ─────────────────────────────── */
 
     /**
-     * Sucht Accounts per Lucene nach ihrem Namen.
-     * <p>
-     * - Leere oder fehlende <code>query</code> ⇒ <b>*:*</b> (alle Dokumente).<br>
-     * - Antwort ist immer <b>200 OK</b> und enthält <i>immer</i> eine (ggf. leere) Liste,
-     *   sodass das Front-End gefahrlos <code>response.json()</code> aufrufen kann.
+     * Globale Volltextsuche über **alle** Entitäten.
+     * <ul>
+     *   <li>Leerer oder fehlender <code>query</code> ⇒ <b>*:*</b> (alle Dokumente)</li>
+     *   <li>Antwort ist immer 200 OK + (ggf. leere) Liste von {@link SearchHit}</li>
+     * </ul>
      */
     @GetMapping("/lucene-search")
-    public ResponseEntity<List<Account>> luceneSearch(@RequestParam(required = false) String query) {
+    public ResponseEntity<List<SearchHit>> luceneSearch(
+            @RequestParam(required = false) String query) {
 
-        /*  ▼▼▼  Änderung gegenüber vorher  ▼▼▼  */
         if (query == null || query.isBlank()) {
-            query = "*:*";                    // leeres Feld ⇒ alle Accounts anzeigen
+            query = "*:*";                          // alle Dokumente
         }
-        /*  ▲▲▲  -------------------------  ▲▲▲  */
 
-        List<Account> results = accountService.searchAccountsByName(query);
-        return ResponseEntity.ok(results);     // kein 204 No Content mehr
+        List<SearchHit> results = accountService.searchAccountsByName(query);
+        return ResponseEntity.ok(results);
     }
 }

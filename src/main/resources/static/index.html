@@ -2,95 +2,71 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>LifeX Data Warehouse – Dashboard</title>
-    <link rel="stylesheet" href="/css/style.css"><!-- optional -->
-    <style>
-        /* ===== Grundlayout ================================================= */
-        *{box-sizing:border-box}
-        body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
-        header{background:#003a70;padding:.5rem 1rem;display:flex;align-items:center;gap:1rem}
-        header img.logo{height:160px;background:#fff;padding:6px;border-radius:6px}
-        header a{color:#fff;text-decoration:none;font-weight:bold}
-
-        .layout{max-width:1600px;margin:2rem auto;display:flex;gap:1rem}
-        .sidebar{flex:0 0 280px;display:flex;flex-direction:column;gap:1rem}
-        .content{flex:1 1 auto;background:#fff;padding:1.5rem;border-radius:8px;
-            box-shadow:0 2px 6px rgba(0,0,0,.1);min-height:400px}
-        .help{flex:0 0 330px;background:#fff;padding:1.5rem;border-radius:8px;
-            box-shadow:0 2px 6px rgba(0,0,0,.1)}
-
-        /* ===== Lucene-Suchleiste =========================================== */
-        #search-bar{display:flex;gap:.5rem;margin-bottom:1rem}
-        #search-input{flex:1 1 auto;padding:.4rem}
-        #search-btn{padding:.4rem 1rem;cursor:pointer}
-
-        /* ===== Shortcut-Buttons ============================================ */
-        .shortcut{margin:.5rem 0;border-radius:4px;overflow:hidden;border:1px solid #0067c2}
-        .shortcut .head{
-            display:flex;align-items:center;gap:.4rem;background:#0067c2;color:#fff;
-            width:100%;padding:.5rem;cursor:pointer;font-weight:bold;border:none}
-        .shortcut .chevron{margin-left:auto;user-select:none;transition:.2s}
-        .shortcut.open .chevron{transform:rotate(90deg)}
-        .shortcut .panel{display:none;padding:.6rem;background:#e9f1ff}
-        .shortcut.open .panel{display:block}
-        .shortcut .panel input{width:100%;padding:.4rem;font-family:monospace}
-        .rename{background:transparent;border:none;color:#fff;font-size:.8rem;cursor:pointer}
-
-        /* ===== Tabellenliste =============================================== */
-        .tables ul{list-style:none;padding:0;margin:0}
-        .tables li{background:#eee;margin:.3rem 0;padding:.5rem;border-radius:4px;cursor:pointer}
-        .tables li:hover{background:#d5e4ff}
-
-        /* ===== Ergebnis-Tabellen =========================================== */
-        .table-scroll{overflow-x:auto}
-        table{border-collapse:collapse;width:100%;min-width:600px;margin:0}
-        th,td{border:1px solid #ccc;padding:.4rem;text-align:left}
-        #error{color:red;margin-top:1rem}
-    </style>
+    <title>LifeX – Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <header>
-    <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo" class="logo">
+    <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo">
     <a href="/index.html">Dashboard</a>
     <a href="/create.html">Daten anlegen</a>
 </header>
 
 <div class="layout">
-    <!-- ╭─ Sidebar ────────────────────────────────────────────────────╮ -->
+    <!-- ─────────── Sidebar ─────────── -->
     <aside class="sidebar">
-
-        <!-- Shortcuts -->
-        <section class="shortcuts">
+        <section>
             <h2>Shortcuts</h2>
 
-            <!-- Schablone -->
-            <div class="shortcut" data-id="sc-1" data-default="*:*">
+            <!-- 0  Alle Accounts -->
+            <div class="shortcut" data-id="sc0" data-default="type:account">
                 <button class="head">
-                    <span class="rename" title="Namen ändern">✏️</span>
+                    <span class="rename">✏️</span>
                     <span class="label">Alle Accounts</span>
-                    <span class="chevron">▶</span>
+                    <span class="chev">▶</span>
                 </button>
                 <div class="panel"><input></div>
             </div>
 
-            <div class="shortcut" data-id="sc-2" data-default="country:Germany">
-                <button class="head"><span class="rename">✏️</span><span class="label">Accounts 🇩🇪</span><span class="chevron">▶</span></button>
+            <!-- 1  Große Projekte -->
+            <div class="shortcut" data-id="sc1"
+                 data-default='type:project AND (CustomL OR CustomXL)'>
+                <button class="head">
+                    <span class="rename">✏️</span>
+                    <span class="label">Große Projekte</span>
+                    <span class="chev">▶</span>
+                </button>
                 <div class="panel"><input></div>
             </div>
 
-            <div class="shortcut" data-id="sc-3" data-default="deploymentVariant:CustomL">
-                <button class="head"><span class="rename">✏️</span><span class="label">Große Projekte</span><span class="chevron">▶</span></button>
+            <!-- 2  Accounts 🇩🇪 -->
+            <div class="shortcut" data-id="sc2"
+                 data-default='type:account AND country:germany'>
+                <button class="head">
+                    <span class="rename">✏️</span>
+                    <span class="label">Accounts 🇩🇪</span>
+                    <span class="chev">▶</span>
+                </button>
                 <div class="panel"><input></div>
             </div>
 
-            <!-- zwei freie Slots -->
-            <div class="shortcut" data-id="sc-4" data-default="">
-                <button class="head"><span class="rename">✏️</span><span class="label">(frei 1)</span><span class="chevron">▶</span></button>
+            <!-- 3  frei1 -->
+            <div class="shortcut" data-id="sc3" data-default="">
+                <button class="head">
+                    <span class="rename">✏️</span>
+                    <span class="label">(frei 1)</span>
+                    <span class="chev">▶</span>
+                </button>
                 <div class="panel"><input placeholder="Lucene-Query"></div>
             </div>
 
-            <div class="shortcut" data-id="sc-5" data-default="">
-                <button class="head"><span class="rename">✏️</span><span class="label">(frei 2)</span><span class="chevron">▶</span></button>
+            <!-- 4  frei2 -->
+            <div class="shortcut" data-id="sc4" data-default="">
+                <button class="head">
+                    <span class="rename">✏️</span>
+                    <span class="label">(frei 2)</span>
+                    <span class="chev">▶</span>
+                </button>
                 <div class="panel"><input placeholder="Lucene-Query"></div>
             </div>
         </section>
@@ -98,7 +74,7 @@
         <!-- Tabellenübersicht -->
         <section class="tables">
             <h2>Tabellen</h2>
-            <ul id="table-list">
+            <ul>
                 <li onclick="showTable('Account')">Account</li>
                 <li onclick="showTable('Project')">Project</li>
                 <li onclick="showTable('Site')">Site</li>
@@ -111,28 +87,24 @@
         </section>
     </aside>
 
-    <!-- ╭─ Content ─────────────────────────────────────────────────────╮ -->
+    <!-- ─────────── Content ─────────── -->
     <main class="content">
-        <!-- Suchleiste bleibt immer sichtbar -->
         <div id="search-bar">
-            <input id="search-input" placeholder="Volltextsuche …">
+            <input id="search-input" placeholder="Global-Suche (Lucene)">
             <button id="search-btn">Suchen</button>
         </div>
-
-        <!-- Ergebniscontainer -->
-        <div id="resultArea">
-            <p>Nutze die Suchleiste oder die Bedienelemente links.</p>
-        </div>
+        <div id="resultArea"><p>Nutze die Suchleiste oder die Bedienelemente links.</p></div>
     </main>
 
-    <!-- ╭─ Hilfe ───────────────────────────────────────────────────────╮ -->
+    <!-- ─────────── Hilfe ─────────── -->
     <aside class="help">
-        <h2>Lucene Cheatsheet</h2>
+        <h2>Lucene Syntax</h2>
         <ul>
-            <li><code>tech*</code> → Wildcard</li>
-            <li><code>"green valley"</code> → Phrase</li>
-            <li><code>+foo -bar</code> → Muss / Nicht</li>
+            <li><code>tech*</code> Wildcard</li>
+            <li><code>"green valley"</code> Phrase</li>
+            <li><code>+foo -bar</code> Muss / Nicht</li>
             <li><code>date:[2025-01-01 TO 2025-12-31]</code></li>
+            <li>Projektsuche: <code>type:project AND CustomL</code></li>
         </ul>
     </aside>
 </div>
