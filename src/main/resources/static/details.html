@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <title>Detailansicht</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .section{margin-top:1.2rem}
+        .section h2{margin:.2rem 0 .6rem 0}
+        .pill{
+            display:inline-block;background:#e9f1ff;border:1px solid #cfe0ff;border-radius:999px;
+            padding:.15rem .55rem;margin:.12rem .2rem;cursor:pointer;text-decoration:none;color:inherit
+        }
+        .pill:hover{background:#dbeaff}
+        .empty{color:#666}
+    </style>
 </head>
 <body>
 
@@ -13,30 +23,176 @@
     <a href="/create.html">Daten anlegen</a>
 </header>
 
-<div style="max-width:900px;margin:2rem auto">
+<div style="max-width:1000px;margin:2rem auto">
     <a id="back" href="index.html">← zurück</a>
     <div id="view" class="card">lade …</div>
+    <div id="children"></div>
 </div>
 
 <script>
+    // Mappe URL-Typen auf Tabellen-Namen für /row/{name}/{id}
+    function tableForType(t){
+        const s=(t||'').toLowerCase();
+        switch(s){
+            case 'account': return 'Account';
+            case 'project': return 'Project';
+            case 'site': return 'Site';
+            case 'server': return 'Server';
+            case 'client': return 'WorkingPosition';     // Sonderfall
+            case 'radio': return 'Radio';
+            case 'audio': return 'AudioDevice';
+            case 'phone': return 'PhoneIntegration';
+            default: return t; // Fallback
+        }
+    }
+
+    // Helfer: sichere JSON-Fetches
+    async function fetchJson(url){
+        const res = await fetch(url);
+        if(!res.ok) return [];
+        return res.json();
+    }
+
+    // Rendert eine Abschnittsliste als klickbare Links
+    function addSection(container, title, items, toLink){
+        const sec = document.createElement('div');
+        sec.className = 'section';
+        sec.innerHTML = `<h2>${title} <span class="muted" style="font-size:.9rem">(${items.length})</span></h2>`;
+        if(!items.length){
+            sec.innerHTML += `<div class="empty">(keine Einträge)</div>`;
+            container.appendChild(sec);
+            return;
+        }
+        const wrap = document.createElement('div');
+        items.forEach(it => {
+            const { href, label } = toLink(it);
+            const a = document.createElement('a');
+            a.className = 'pill';
+            a.href = href;
+            a.textContent = label;
+            wrap.appendChild(a);
+        });
+        sec.appendChild(wrap);
+        container.appendChild(sec);
+    }
+
+    // "Kind-Listen" je Typ laden
+    async function loadChildren(type, id){
+        const box = document.getElementById('children');
+        box.innerHTML = ''; // leeren
+
+        if(type==='Account'){
+            // Projekte unter dem Account
+            const projects = await fetchJson(`/projects?accountId=${id}`);
+            addSection(box, 'Projects', projects, p => {
+                const pid = p.ProjectID ?? p.projectId ?? p.PROJECTID;
+                const name = p.ProjectName ?? p.projectName ?? p.PROJECTNAME;
+                return {
+                    href: `/details.html?type=project&id=${encodeURIComponent(pid)}`,
+                    label: `#${pid} – ${name}`
+                };
+            });
+        }
+        else if(type==='Project'){
+            // Sites unter dem Projekt
+            const sites = await fetchJson(`/sites?projectId=${id}`);
+            addSection(box, 'Sites', sites, s => {
+                const sid = s.SiteID ?? s.siteId ?? s.SITEID;
+                const name = s.SiteName ?? s.siteName ?? s.SITENAME;
+                return {
+                    href: `/details.html?type=site&id=${encodeURIComponent(sid)}`,
+                    label: `#${sid} – ${name}`
+                };
+            });
+        }
+        else if(type==='Site'){
+            // Server
+            const servers = await fetchJson(`/servers?siteId=${id}`);
+            addSection(box, 'Server', servers, s => {
+                const sid = s.ServerID ?? s.serverId ?? s.SERVERID;
+                const name = s.ServerName ?? s.serverName ?? s.SERVERNAME;
+                return {
+                    href: `/details.html?type=server&id=${encodeURIComponent(sid)}`,
+                    label: `#${sid} – ${name}`
+                };
+            });
+
+            // Clients
+            const clients = await fetchJson(`/clients?siteId=${id}`);
+            addSection(box, 'Clients', clients, c => {
+                const cid = c.ClientID ?? c.clientId ?? c.CLIENTID;
+                const name = c.ClientName ?? c.clientName ?? c.CLIENTNAME;
+                return {
+                    href: `/details.html?type=client&id=${encodeURIComponent(cid)}`,
+                    label: `#${cid} – ${name}`
+                };
+            });
+
+            // Radios
+            const radios = await fetchJson(`/radios?siteId=${id}`);
+            addSection(box, 'Radios', radios, r => {
+                const rid = r.RadioID ?? r.radioId ?? r.RADIOID;
+                const brand = r.RadioBrand ?? r.radioBrand ?? r.RADIOBRAND;
+                return {
+                    href: `/details.html?type=radio&id=${encodeURIComponent(rid)}`,
+                    label: `#${rid} – ${brand}`
+                };
+            });
+        }
+        else if(type==='WorkingPosition' || type==='Client'){
+            // Audio
+            const aud = await fetchJson(`/audio?clientId=${id}`);
+            addSection(box, 'Audio Devices', aud, a => {
+                const aid = a.AudioDeviceID ?? a.audioDeviceId ?? a.AUDIODEVICEID;
+                const brand = a.AudioDeviceBrand ?? a.audioDeviceBrand ?? a.AUDIODEVICEBRAND;
+                return {
+                    href: `/details.html?type=audio&id=${encodeURIComponent(aid)}`,
+                    label: `#${aid} – ${brand}`
+                };
+            });
+            // Phones
+            const ph = await fetchJson(`/phones?clientId=${id}`);
+            addSection(box, 'Phone Integrations', ph, p => {
+                const pid = p.PhoneIntegrationID ?? p.phoneIntegrationId ?? p.PHONEINTEGRATIONID;
+                const brand = p.PhoneBrand ?? p.phoneBrand ?? p.PHONEBRAND;
+                return {
+                    href: `/details.html?type=phone&id=${encodeURIComponent(pid)}`,
+                    label: `#${pid} – ${brand}`
+                };
+            });
+        }
+    }
+
     (async () => {
-        const p=new URLSearchParams(location.search),
-            type=p.get('type'),
-            id=+p.get('id'),
-            box=document.getElementById('view');
+        const p = new URLSearchParams(location.search);
+        const rawType = p.get('type');
+        const id = +p.get('id');
+        const box = document.getElementById('view');
 
-        if(!type||!id){box.textContent='Parameter fehlen.';return;}
+        if(!rawType || !id){ box.textContent = 'Parameter fehlen.'; return; }
 
+        // Row laden (mit Sonderfall-Map für Client)
+        const table = tableForType(rawType);
         try{
-            const res=await fetch(`/row/${type}/${id}`);
-            if(!res.ok){box.textContent='Eintrag nicht gefunden.';return;}
-            const row=await res.json();
+            const res = await fetch(`/row/${table}/${id}`);
+            if(!res.ok){ box.textContent = 'Eintrag nicht gefunden.'; return; }
+            const row = await res.json();
 
-            const kvRows=Object.entries(row)
+            // Key/Value rendern
+            const kvRows = Object.entries(row)
                 .map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join('');
+            const title = `${(rawType||table).charAt(0).toUpperCase() + (rawType||table).slice(1)} #${id}`;
 
-            box.innerHTML=`<h1>${type} #${id}</h1><table id="kv">${kvRows}</table>`;
-        }catch(e){box.textContent='Fehler: '+e;}
+            box.innerHTML = `<h1>${title}</h1><table id="kv">${kvRows}</table>`;
+
+            // Drill-down laden
+            const tNorm = table; // kanonischer Tabellenname
+            const typeKey = (tNorm==='WorkingPosition') ? 'Client' : tNorm; // für die Typverzweigung
+            await loadChildren(typeKey, id);
+
+        }catch(e){
+            box.textContent = 'Fehler: ' + e;
+        }
     })();
 </script>
 </body>
