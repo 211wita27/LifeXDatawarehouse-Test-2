@@ -13,6 +13,7 @@
         }
         .pill:hover{background:#dbeaff}
         .empty{color:#666}
+        .sep{margin:0 .35rem;color:#999}
     </style>
 </head>
 <body>
@@ -26,11 +27,16 @@
 <div style="max-width:1000px;margin:2rem auto">
     <a id="back" href="index.html">← zurück</a>
     <div id="view" class="card">lade …</div>
+
+    <!-- NEU: Eltern-Beziehungen -->
+    <div id="parents"></div>
+
+    <!-- Kinder-Listen -->
     <div id="children"></div>
 </div>
 
 <script>
-    // Mappe URL-Typen auf Tabellen-Namen für /row/{name}/{id}
+    /* -------------------- Helpers -------------------- */
     function tableForType(t){
         const s=(t||'').toLowerCase();
         switch(s){
@@ -38,22 +44,49 @@
             case 'project': return 'Project';
             case 'site': return 'Site';
             case 'server': return 'Server';
-            case 'client': return 'WorkingPosition';     // Sonderfall
+            case 'client': return 'WorkingPosition'; // Sonderfall
             case 'radio': return 'Radio';
             case 'audio': return 'AudioDevice';
             case 'phone': return 'PhoneIntegration';
-            default: return t; // Fallback
+            default: return t;
         }
     }
-
-    // Helfer: sichere JSON-Fetches
+    function val(row, ...keys){
+        for(const k of keys){
+            if (row[k] !== undefined) return row[k];
+            const u = k.toUpperCase(), l = k.toLowerCase();
+            for (const kk in row) {
+                if (kk === u || kk === l) return row[kk];
+            }
+        }
+        return undefined;
+    }
+    function labelFor(type, row){
+        switch((type||'').toLowerCase()){
+            case 'account': return `${val(row,'AccountName') ?? 'Account'}`;
+            case 'project': return `${val(row,'ProjectName') ?? 'Project'}`;
+            case 'site':    return `${val(row,'SiteName') ?? 'Site'}`;
+            case 'server':  return `${val(row,'ServerName') ?? 'Server'}`;
+            case 'client':
+            case 'workingposition': return `${val(row,'ClientName') ?? 'Client'}`;
+            case 'radio':   return `${val(row,'RadioBrand') ?? 'Radio'}`;
+            case 'audio':   return `${val(row,'AudioDeviceBrand') ?? 'AudioDevice'}`;
+            case 'phone':   return `${val(row,'PhoneBrand') ?? 'Phone'}`;
+            default:        return '';
+        }
+    }
     async function fetchJson(url){
         const res = await fetch(url);
-        if(!res.ok) return [];
+        if(!res.ok) return null;
         return res.json();
     }
-
-    // Rendert eine Abschnittsliste als klickbare Links
+    function pillLink(href, text){
+        const a = document.createElement('a');
+        a.className = 'pill';
+        a.href = href;
+        a.textContent = text;
+        return a;
+    }
     function addSection(container, title, items, toLink){
         const sec = document.createElement('div');
         sec.className = 'section';
@@ -64,105 +97,254 @@
             return;
         }
         const wrap = document.createElement('div');
-        items.forEach(it => {
-            const { href, label } = toLink(it);
-            const a = document.createElement('a');
-            a.className = 'pill';
-            a.href = href;
-            a.textContent = label;
-            wrap.appendChild(a);
-        });
+        items.forEach(it => wrap.appendChild(toLink(it)));
         sec.appendChild(wrap);
         container.appendChild(sec);
     }
 
-    // "Kind-Listen" je Typ laden
-    async function loadChildren(type, id){
-        const box = document.getElementById('children');
-        box.innerHTML = ''; // leeren
+    /* -------------------- Eltern laden -------------------- */
+    async function loadParents(type, id, row){
+        const box = document.getElementById('parents');
+        box.innerHTML = '';
 
-        if(type==='Account'){
-            // Projekte unter dem Account
-            const projects = await fetchJson(`/projects?accountId=${id}`);
-            addSection(box, 'Projects', projects, p => {
-                const pid = p.ProjectID ?? p.projectId ?? p.PROJECTID;
-                const name = p.ProjectName ?? p.projectName ?? p.PROJECTNAME;
-                return {
-                    href: `/details.html?type=project&id=${encodeURIComponent(pid)}`,
-                    label: `#${pid} – ${name}`
-                };
-            });
-        }
-        else if(type==='Project'){
-            // Sites unter dem Projekt
-            const sites = await fetchJson(`/sites?projectId=${id}`);
-            addSection(box, 'Sites', sites, s => {
-                const sid = s.SiteID ?? s.siteId ?? s.SITEID;
-                const name = s.SiteName ?? s.siteName ?? s.SITENAME;
-                return {
-                    href: `/details.html?type=site&id=${encodeURIComponent(sid)}`,
-                    label: `#${sid} – ${name}`
-                };
-            });
-        }
-        else if(type==='Site'){
-            // Server
-            const servers = await fetchJson(`/servers?siteId=${id}`);
-            addSection(box, 'Server', servers, s => {
-                const sid = s.ServerID ?? s.serverId ?? s.SERVERID;
-                const name = s.ServerName ?? s.serverName ?? s.SERVERNAME;
-                return {
-                    href: `/details.html?type=server&id=${encodeURIComponent(sid)}`,
-                    label: `#${sid} – ${name}`
-                };
-            });
+        // Hilfsfunktionen für Row-Fetches
+        const rowAccount = async (accountId) => await fetchJson(`/row/Account/${accountId}`);
+        const rowProject = async (projectId) => await fetchJson(`/row/Project/${projectId}`);
+        const rowSite    = async (siteId)    => await fetchJson(`/row/Site/${siteId}`);
+        const rowClient  = async (clientId)  => await fetchJson(`/row/WorkingPosition/${clientId}`);
 
-            // Clients
-            const clients = await fetchJson(`/clients?siteId=${id}`);
-            addSection(box, 'Clients', clients, c => {
-                const cid = c.ClientID ?? c.clientId ?? c.CLIENTID;
-                const name = c.ClientName ?? c.clientName ?? c.CLIENTNAME;
-                return {
-                    href: `/details.html?type=client&id=${encodeURIComponent(cid)}`,
-                    label: `#${cid} – ${name}`
-                };
-            });
+        const sections = [];
 
-            // Radios
-            const radios = await fetchJson(`/radios?siteId=${id}`);
-            addSection(box, 'Radios', radios, r => {
-                const rid = r.RadioID ?? r.radioId ?? r.RADIOID;
-                const brand = r.RadioBrand ?? r.radioBrand ?? r.RADIOBRAND;
-                return {
-                    href: `/details.html?type=radio&id=${encodeURIComponent(rid)}`,
-                    label: `#${rid} – ${brand}`
-                };
-            });
+        if (type === 'Project') {
+            const accId = val(row,'AccountID');
+            if (accId != null) {
+                const acc = await rowAccount(accId);
+                if (acc) sections.push({
+                    title: 'Gehört zu',
+                    pills: [ pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`) ]
+                });
+            }
+        } else if (type === 'Site') {
+            const projId = val(row,'ProjectID');
+            if (projId != null) {
+                const proj = await rowProject(projId);
+                const pills = [];
+                if (proj) {
+                    pills.push(pillLink(`/details.html?type=project&id=${projId}`, `Project #${projId} – ${labelFor('project', proj)}`));
+                    const accId = val(proj,'AccountID');
+                    if (accId != null) {
+                        const acc = await rowAccount(accId);
+                        if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`));
+                    }
+                }
+                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            }
+        } else if (type === 'Server') {
+            const siteId = val(row,'SiteID');
+            if (siteId != null) {
+                const site = await rowSite(siteId);
+                const pills = [];
+                if (site) {
+                    pills.push(pillLink(`/details.html?type=site&id=${siteId}`, `Site #${siteId} – ${labelFor('site', site)}`));
+                    const projId = val(site,'ProjectID');
+                    if (projId != null) {
+                        const proj = await rowProject(projId);
+                        if (proj) {
+                            pills.push(pillLink(`/details.html?type=project&id=${projId}`, `Project #${projId} – ${labelFor('project', proj)}`));
+                            const accId = val(proj,'AccountID');
+                            if (accId != null) {
+                                const acc = await rowAccount(accId);
+                                if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`));
+                            }
+                        }
+                    }
+                }
+                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            }
+        } else if (type === 'Client') {
+            const siteId = val(row,'SiteID');
+            if (siteId != null) {
+                const site = await rowSite(siteId);
+                const pills = [];
+                if (site) {
+                    pills.push(pillLink(`/details.html?type=site&id=${siteId}`, `Site #${siteId} – ${labelFor('site', site)}`));
+                    const projId = val(site,'ProjectID');
+                    if (projId != null) {
+                        const proj = await rowProject(projId);
+                        if (proj) {
+                            pills.push(pillLink(`/details.html?type=project&id=${projId}`, `Project #${projId} – ${labelFor('project', proj)}`));
+                            const accId = val(proj,'AccountID');
+                            if (accId != null) {
+                                const acc = await rowAccount(accId);
+                                if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`));
+                            }
+                        }
+                    }
+                }
+                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            }
+        } else if (type === 'Radio') {
+            const pills = [];
+            const siteId = val(row,'SiteID');
+            if (siteId != null) {
+                const site = await rowSite(siteId);
+                if (site) {
+                    pills.push(pillLink(`/details.html?type=site&id=${siteId}`, `Site #${siteId} – ${labelFor('site', site)}`));
+                    const projId = val(site,'ProjectID');
+                    if (projId != null) {
+                        const proj = await rowProject(projId);
+                        if (proj) {
+                            pills.push(pillLink(`/details.html?type=project&id=${projId}`, `Project #${projId} – ${labelFor('project', proj)}`));
+                            const accId = val(proj,'AccountID');
+                            if (accId != null) {
+                                const acc = await rowAccount(accId);
+                                if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`));
+                            }
+                        }
+                    }
+                }
+            }
+            const clientId = val(row,'AssignedClientID');
+            if (clientId != null) {
+                const client = await rowClient(clientId);
+                if (client) pills.push(pillLink(`/details.html?type=client&id=${clientId}`, `Client #${clientId} – ${labelFor('client', client)}`));
+            }
+            if (pills.length) sections.push({ title: 'Gehört zu', pills });
+        } else if (type === 'Audio') {
+            const clientId = val(row,'ClientID');
+            if (clientId != null) {
+                const client = await rowClient(clientId);
+                const pills = [];
+                if (client) {
+                    pills.push(pillLink(`/details.html?type=client&id=${clientId}`, `Client #${clientId} – ${labelFor('client', client)}`));
+                    const siteId = val(client,'SiteID');
+                    if (siteId != null) {
+                        const site = await rowSite(siteId);
+                        if (site) {
+                            pills.push(pillLink(`/details.html?type=site&id=${siteId}`, `Site #${siteId} – ${labelFor('site', site)}`));
+                            const projId = val(site,'ProjectID');
+                            if (projId != null) {
+                                const proj = await rowProject(projId);
+                                if (proj) {
+                                    pills.push(pillLink(`/details.html?type=project&id=${projId}`, `Project #${projId} – ${labelFor('project', proj)}`));
+                                    const accId = val(proj,'AccountID');
+                                    if (accId != null) {
+                                        const acc = await rowAccount(accId);
+                                        if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            }
+        } else if (type === 'Phone') {
+            const clientId = val(row,'ClientID');
+            if (clientId != null) {
+                const client = await rowClient(clientId);
+                const pills = [];
+                if (client) {
+                    pills.push(pillLink(`/details.html?type=client&id=${clientId}`, `Client #${clientId} – ${labelFor('client', client)}`));
+                    const siteId = val(client,'SiteID');
+                    if (siteId != null) {
+                        const site = await rowSite(siteId);
+                        if (site) {
+                            pills.push(pillLink(`/details.html?type=site&id=${siteId}`, `Site #${siteId} – ${labelFor('site', site)}`));
+                            const projId = val(site,'ProjectID');
+                            if (projId != null) {
+                                const proj = await rowProject(projId);
+                                if (proj) {
+                                    pills.push(pillLink(`/details.html?type=project&id=${projId}`, `Project #${projId} – ${labelFor('project', proj)}`));
+                                    const accId = val(proj,'AccountID');
+                                    if (accId != null) {
+                                        const acc = await rowAccount(accId);
+                                        if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, `Account #${accId} – ${labelFor('account', acc)}`));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            }
         }
-        else if(type==='WorkingPosition' || type==='Client'){
-            // Audio
-            const aud = await fetchJson(`/audio?clientId=${id}`);
-            addSection(box, 'Audio Devices', aud, a => {
-                const aid = a.AudioDeviceID ?? a.audioDeviceId ?? a.AUDIODEVICEID;
-                const brand = a.AudioDeviceBrand ?? a.audioDeviceBrand ?? a.AUDIODEVICEBRAND;
-                return {
-                    href: `/details.html?type=audio&id=${encodeURIComponent(aid)}`,
-                    label: `#${aid} – ${brand}`
-                };
-            });
-            // Phones
-            const ph = await fetchJson(`/phones?clientId=${id}`);
-            addSection(box, 'Phone Integrations', ph, p => {
-                const pid = p.PhoneIntegrationID ?? p.phoneIntegrationId ?? p.PHONEINTEGRATIONID;
-                const brand = p.PhoneBrand ?? p.phoneBrand ?? p.PHONEBRAND;
-                return {
-                    href: `/details.html?type=phone&id=${encodeURIComponent(pid)}`,
-                    label: `#${pid} – ${brand}`
-                };
+
+        // Rendern
+        if (sections.length){
+            sections.forEach(s => {
+                const sec = document.createElement('div');
+                sec.className = 'section';
+                sec.innerHTML = `<h2>${s.title}</h2>`;
+                const wrap = document.createElement('div');
+                s.pills.forEach(p => wrap.appendChild(p));
+                sec.appendChild(wrap);
+                box.appendChild(sec);
             });
         }
     }
 
+    /* -------------------- Kinder laden -------------------- */
+    async function loadChildren(type, id){
+        const box = document.getElementById('children');
+        box.innerHTML = '';
+
+        if(type==='Account'){
+            const projects = await fetchJson(`/projects?accountId=${id}`);
+            addSection(box, 'Projects', projects, p => {
+                const pid = val(p,'ProjectID');
+                const name = val(p,'ProjectName');
+                return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, `#${pid} – ${name}`);
+            });
+        }
+        else if(type==='Project'){
+            const sites = await fetchJson(`/sites?projectId=${id}`);
+            addSection(box, 'Sites', sites, s => {
+                const sid = val(s,'SiteID');
+                const name = val(s,'SiteName');
+                return pillLink(`/details.html?type=site&id=${encodeURIComponent(sid)}`, `#${sid} – ${name}`);
+            });
+        }
+        else if(type==='Site'){
+            const servers = await fetchJson(`/servers?siteId=${id}`);
+            addSection(box, 'Server', servers, s => {
+                const sid = val(s,'ServerID');
+                const name = val(s,'ServerName');
+                return pillLink(`/details.html?type=server&id=${encodeURIComponent(sid)}`, `#${sid} – ${name}`);
+            });
+
+            const clients = await fetchJson(`/clients?siteId=${id}`);
+            addSection(box, 'Clients', clients, c => {
+                const cid = val(c,'ClientID');
+                const name = val(c,'ClientName');
+                return pillLink(`/details.html?type=client&id=${encodeURIComponent(cid)}`, `#${cid} – ${name}`);
+            });
+
+            const radios = await fetchJson(`/radios?siteId=${id}`);
+            addSection(box, 'Radios', radios, r => {
+                const rid = val(r,'RadioID');
+                const brand = val(r,'RadioBrand');
+                return pillLink(`/details.html?type=radio&id=${encodeURIComponent(rid)}`, `#${rid} – ${brand}`);
+            });
+        }
+        else if(type==='Client'){
+            const aud = await fetchJson(`/audio?clientId=${id}`);
+            addSection(box, 'Audio Devices', aud, a => {
+                const aid = val(a,'AudioDeviceID');
+                const brand = val(a,'AudioDeviceBrand');
+                return pillLink(`/details.html?type=audio&id=${encodeURIComponent(aid)}`, `#${aid} – ${brand}`);
+            });
+
+            const ph = await fetchJson(`/phones?clientId=${id}`);
+            addSection(box, 'Phone Integrations', ph, p => {
+                const pid = val(p,'PhoneIntegrationID');
+                const brand = val(p,'PhoneBrand');
+                return pillLink(`/details.html?type=phone&id=${encodeURIComponent(pid)}`, `#${pid} – ${brand}`);
+            });
+        }
+    }
+
+    /* -------------------- Boot -------------------- */
     (async () => {
         const p = new URLSearchParams(location.search);
         const rawType = p.get('type');
@@ -178,17 +360,17 @@
             if(!res.ok){ box.textContent = 'Eintrag nicht gefunden.'; return; }
             const row = await res.json();
 
-            // Key/Value rendern
             const kvRows = Object.entries(row)
                 .map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join('');
             const title = `${(rawType||table).charAt(0).toUpperCase() + (rawType||table).slice(1)} #${id}`;
 
             box.innerHTML = `<h1>${title}</h1><table id="kv">${kvRows}</table>`;
 
-            // Drill-down laden
-            const tNorm = table; // kanonischer Tabellenname
-            const typeKey = (tNorm==='WorkingPosition') ? 'Client' : tNorm; // für die Typverzweigung
-            await loadChildren(typeKey, id);
+            // Normierter Typ-Name für Verzweigungen
+            const typeKey = (table==='WorkingPosition') ? 'Client' : table;
+
+            await loadParents(typeKey, id, row);   // <- NEU: hochspringen
+            await loadChildren(typeKey, id);       // bestehend: runter springen
 
         }catch(e){
             box.textContent = 'Fehler: ' + e;

@@ -15,7 +15,6 @@ const searchBtn   = document.getElementById('search-btn');
 const idxBox  = document.getElementById('idx-box');
 const idxBar  = document.querySelector('#idx-bar > span');
 const idxText = document.getElementById('idx-text');
-const idxBtn  = document.getElementById('idx-reindex');
 const idxBtnSide = document.getElementById('idx-reindex-side');
 
 const sugList = document.getElementById('sug');
@@ -26,11 +25,44 @@ const debounce = (fn, ms=250) => { let t; return (...a)=>{clearTimeout(t); t=set
 const stGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
 const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
+/* ---------- Lucene-Heuristik & QoL-Query-Builder ---------- */
+/** Erkennen: sieht nach „echter“ Lucene-Syntax aus? (dann nicht anfassen) */
+function looksLikeLucene(q){
+    if (!q) return false;
+    const s = q.trim();
+    return s.includes(':') || s.includes('"') || s.includes(' AND ') || s.includes(' OR ') || s.endsWith('*');
+}
+/** Nutzerfreundlich: bei „normalem Text“ automatisch Prefix-Suche (token*) */
+function buildUserQuery(raw){
+    const s = (raw || '').trim();
+    if (!s) return s;
+    if (looksLikeLucene(s)) return s;                // Nutzer weiß, was er tut
+    // jeden Token mit * suffixen, wenn noch keiner vorhanden ist
+    return s.split(/\s+/).map(tok => /[*?]$/.test(tok) ? tok : (tok + '*')).join(' ');
+}
+
 /* ===================== Event-Wiring ===================== */
 function wireEvents() {
-    // Hauptsuche
-    searchBtn.onclick = () => runLucene(searchInput.value);
-    searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') runLucene(searchInput.value); });
+    // Hauptsuche (Button)
+    searchBtn.onclick = () => runSearch(searchInput.value);
+
+    // Enter → suchen | Tab → Top-Vorschlag übernehmen + sofort suchen
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            runSearch(searchInput.value);
+        } else if (e.key === 'Tab') {
+            const completed = completeFromSuggestions();
+            if (completed) {
+                e.preventDefault();               // im Feld bleiben
+                runSearch(searchInput.value);     // direkt suchen nach Autocomplete
+            }
+        }
+    });
+
+    // Auswahl eines datalist-Eintrags per Maus → automatisch suchen
+    searchInput.addEventListener('change', () => {
+        if ((searchInput.value || '').trim()) runSearch(searchInput.value);
+    });
 
     // Autocomplete (debounced)
     searchInput.addEventListener('input', debounce(async () => {
@@ -44,8 +76,7 @@ function wireEvents() {
         } catch {}
     }, 180));
 
-    // Reindex-Buttons (oben im Balken + rechts im Hilfe-Panel)
-    if (idxBtn)     idxBtn.onclick     = () => startReindex(idxBtn);
+    // Reindex (rechter Button)
     if (idxBtnSide) idxBtnSide.onclick = () => startReindex(idxBtnSide);
 
     // Fortschritt regelmäßig prüfen
@@ -55,8 +86,24 @@ function wireEvents() {
     // Shortcuts initialisieren
     setupShortcuts();
 }
-
 document.addEventListener('DOMContentLoaded', wireEvents);
+
+// Top-Suggestion finden/übernehmen (case-insensitive); true = übernommen
+function completeFromSuggestions(){
+    if (!sugList) return false;
+    const cur = (searchInput.value || '').trim().toLowerCase();
+    if (!cur) return false;
+    // erster Vorschlag, der mit cur anfängt
+    let best = null;
+    [...sugList.options].some(opt => {
+        const v = (opt.value || '').toLowerCase();
+        if (v.startsWith(cur)) { best = opt.value; return true; }
+        return false;
+    });
+    if (!best) return false;
+    searchInput.value = best;
+    return true;
+}
 
 // Startet den Reindex und stößt sofort ein Polling an
 async function startReindex(btn) {
@@ -96,7 +143,7 @@ function setupShortcuts() {
             const q = (inputEl.value || '').trim() || defVal;
             if (q) {
                 stSet(stQueryKey, q);
-                runLucene(q);
+                runSearch(q);
             }
         });
 
@@ -127,7 +174,7 @@ function setupShortcuts() {
                 const q = inputEl.value.trim();
                 if (q) {
                     stSet(stQueryKey, q);
-                    runLucene(q);
+                    runSearch(q);
                 }
             } else if (e.key === 'Escape') {
                 sc.classList.remove('open');
@@ -139,6 +186,11 @@ function setupShortcuts() {
 }
 
 /* ===================== Suche ===================== */
+function runSearch(raw){
+    const prepared = buildUserQuery(raw);      // QoL: token*
+    runLucene(prepared);
+}
+
 async function runLucene(q) {
     const query = (q ?? '').trim();
     if (!query) return;
