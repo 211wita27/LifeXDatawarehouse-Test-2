@@ -2,13 +2,25 @@ package at.htlle.freq.domain;
 
 import org.springframework.stereotype.Component;
 
-import java.util.Random;
-import java.util.UUID;
-
+/**
+ * Erzeugt Accounts ohne manuelle IDs – die DB vergibt die ID (AUTO_INCREMENT).
+ */
 @Component
 public class AccountFactory {
-    Random random = new Random();
-    public Account create(String AccountName,String ContactEmail,String ContactPhone,String VATNumber,String Country) {
-        return new Account(random.nextInt(), AccountName, ContactEmail, ContactPhone, VATNumber, Country);
+
+    public Account create(String accountName,
+                          String contactEmail,
+                          String contactPhone,
+                          String vatNumber,
+                          String country) {
+        // AccountID = 0 -> Repository macht INSERT und liest die generierte ID zurück
+        return new Account(
+                0,
+                accountName,
+                contactEmail,
+                contactPhone,
+                vatNumber,
+                country
+        );
     }
 }

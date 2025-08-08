@@ -24,6 +24,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const debounce = (fn, ms=250) => { let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);} };
 const stGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
 const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
 /* ---------- Lucene-Heuristik & QoL-Query-Builder ---------- */
 /** Erkennen: sieht nach „echter“ Lucene-Syntax aus? (dann nicht anfassen) */
@@ -39,6 +40,84 @@ function buildUserQuery(raw){
     if (looksLikeLucene(s)) return s;                // Nutzer weiß, was er tut
     // jeden Token mit * suffixen, wenn noch keiner vorhanden ist
     return s.split(/\s+/).map(tok => /[*?]$/.test(tok) ? tok : (tok + '*')).join(' ');
+}
+
+/* ===================== Ergebnis-Vorschau (Anreicherung) ===================== */
+/** Mappt API-Types → Tabellennamen für /row/{table}/{id} */
+function tableForType(t){
+    const s=(t||'').toLowerCase();
+    switch(s){
+        case 'account': return 'Account';
+        case 'project': return 'Project';
+        case 'site':    return 'Site';
+        case 'server':  return 'Server';
+        case 'client':  return 'WorkingPosition'; // Sonderfall
+        case 'radio':   return 'Radio';
+        case 'audio':   return 'AudioDevice';
+        case 'phone':   return 'PhoneIntegration';
+        default:        return t;
+    }
+}
+/** Case-insensitive Zugriff auf Row-Property */
+function val(row, ...keys){
+    for(const k of keys){
+        if (row[k] !== undefined) return row[k];
+        const u = k.toUpperCase(), l = k.toLowerCase();
+        for (const kk in row) { if (kk === u || kk === l) return row[kk]; }
+    }
+    return undefined;
+}
+/** Baut eine kurze menschenlesbare Infozeile je Typ */
+function formatPreview(type, row){
+    const t=(type||'').toLowerCase();
+    const parts=[];
+    if (t==='account'){
+        // ContactName existiert in DB, zur Not AccountName
+        const contact = val(row,'ContactName') || val(row,'AccountName');
+        if (contact) parts.push(contact);
+        const country = val(row,'Country'); if (country) parts.push(country);
+        const email   = val(row,'ContactEmail'); if (email) parts.push(email);
+    } else if (t==='project'){
+        const v=val(row,'DeploymentVariant'); if (v) parts.push(v);
+        const sap=val(row,'ProjectSAPID');    if (sap) parts.push('SAP '+sap);
+    } else if (t==='site'){
+        const fz=val(row,'FireZone'); if (fz) parts.push('Zone '+fz);
+        const tc=val(row,'TenantCount'); if (tc!=null) parts.push(tc+' Tenants');
+    } else if (t==='server'){
+        ['ServerBrand','ServerOS','VirtualPlatform'].forEach(k=>{
+            const v=val(row,k); if(v) parts.push(v);
+        });
+    } else if (t==='client'){
+        ['ClientBrand','ClientOS'].forEach(k=>{
+            const v=val(row,k); if(v) parts.push(v);
+        });
+    } else if (t==='radio'){
+        const br=val(row,'RadioBrand'); if (br) parts.push(br);
+        const md=val(row,'Mode'); if (md) parts.push(md);
+        const ds=val(row,'DigitalStandard'); if (ds) parts.push(ds);
+    } else if (t==='audio'){
+        const br=val(row,'AudioDeviceBrand'); if (br) parts.push(br);
+        const dir=val(row,'Direction'); if (dir) parts.push(dir);
+    } else if (t==='phone'){
+        const br=val(row,'PhoneBrand'); if (br) parts.push(br);
+        const tp=val(row,'PhoneType'); if (tp) parts.push(tp);
+    }
+    return parts.join(' · ');
+}
+/** Holt für jede Trefferzeile die Row und füllt die „Info“-Spalte */
+async function enrichRows(hits){
+    const jobs = hits.map(async (h, i) => {
+        try{
+            const table = tableForType(h.type);
+            const res = await fetch(`/row/${table}/${h.id}`);
+            if (!res.ok) return;
+            const row = await res.json();
+            const info = formatPreview(h.type, row) || '';
+            const cell = document.getElementById(`info-${i}`);
+            if (cell) cell.textContent = info;
+        } catch {}
+    });
+    await Promise.allSettled(jobs);
 }
 
 /* ===================== Event-Wiring ===================== */
@@ -202,20 +281,25 @@ async function runLucene(q) {
             return;
         }
 
-        const rows = hits.map(h => `
+        const rows = hits.map((h, i) => `
       <tr onclick="toDetails('${h.type}',${h.id})" style="cursor:pointer">
-        <td>${h.type}</td>
+        <td>${escapeHtml(h.type)}</td>
         <td>${h.id}</td>
-        <td>${h.text ?? ''}</td>
+        <td>${escapeHtml(h.text ?? '')}</td>
+        <td id="info-${i}"></td>
       </tr>`).join('');
 
         resultArea.innerHTML = `
       <div class="table-scroll">
         <table>
-          <tr><th>Typ</th><th>ID</th><th>Text</th></tr>
+          <tr><th>Typ</th><th>ID</th><th>Text</th><th>Info</th></tr>
           ${rows}
         </table>
       </div>`;
+
+        // Info-Spalte nachladen (kompakte Vorschau je Treffer)
+        enrichRows(hits);
+
     } catch (e) {
         resultArea.innerHTML = `<p id="error">Fehler: ${e}</p>`;
     }
