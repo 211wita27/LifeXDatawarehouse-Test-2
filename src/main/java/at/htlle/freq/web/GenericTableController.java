@@ -25,7 +25,12 @@ public class GenericTableController {
     @GetMapping("/row/{name}/{id}")
     public Map<String,Object> row(@PathVariable String name,
                                   @PathVariable int    id){
-        String pk = name + "ID";
+        String pk;
+        if ("workingposition".equalsIgnoreCase(name)) {
+            pk = "ClientID";                 // abweichender PK
+        } else {
+            pk = name + "ID";
+        }
         return jdbc.queryForMap("SELECT * FROM " + name +
                 " WHERE " + pk + " = ?", id);
     }

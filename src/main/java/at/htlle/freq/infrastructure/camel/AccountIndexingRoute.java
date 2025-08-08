@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Indexiert alle Accounts alle 60 s inkrementell neu.
- * (Ergänzt den Full-Reindex sinnvoll für Live-Änderungen.)
+ * Log-Ausgabe: Start + Zusammenfassung, kein Spam pro Account.
  */
 @Component
 public class AccountIndexingRoute extends RouteBuilder {
@@ -27,17 +27,22 @@ public class AccountIndexingRoute extends RouteBuilder {
 
         from("timer://indexAccounts?period=60000")              // alle 60 s
                 .routeId("LuceneAccountSync")
-                .log("🔁 Starte Lucene Account-Sync …")
-                .bean(accountRepository, "findAll")                   // liefert List<Account>
-                .split(body())                                        // 1 Account pro Message
+                .log("🔁 Lucene Account-Sync gestartet …")
+                .bean(accountRepository, "findAll")                 // List<Account>
+                .process(ex -> ex.setProperty("cnt", 0))            // Zähler zurücksetzen
+                .split(body())
                 .process(ex -> {
                     Account a = ex.getIn().getBody(Account.class);
                     lucene.indexAccount(
                             a.getAccountID(),
                             a.getAccountName(),
-                            a.getCountry()
+                            a.getCountry(),
+                            a.getContactEmail()
                     );
+                    Integer c = ex.getProperty("cnt", Integer.class);
+                    ex.setProperty("cnt", (c == null ? 1 : c + 1));
                 })
-                .log("✅ Account indexiert: ${body.accountName}");
+                .end()
+                .log("✅ Lucene Account-Sync fertig: ${exchangeProperty.cnt} Accounts aktualisiert");
     }
 }

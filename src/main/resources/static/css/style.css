@@ -18,10 +18,16 @@ header a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.15rem}
 #search-input{flex:1 1 auto;padding:.45rem;font-size:1rem}
 #search-btn{padding:.45rem 1rem;cursor:pointer}
 
+/* ===============  Progress-Bar  =============== */
+#idx-box{display:none;margin:.5rem 0 1rem 0}
+#idx-box.active{display:flex;align-items:center;gap:.6rem}
+#idx-bar{flex:1 1 auto;height:10px;background:#eee;border-radius:6px;overflow:hidden}
+#idx-bar > span{display:block;height:100%;width:0%;background:#0067c2;transition:width .2s}
+#idx-text{font-size:.9rem;color:#333;min-width:220px;text-align:right}
+#idx-reindex{padding:.25rem .6rem;cursor:pointer}
+
 /* ===============  Shortcuts  =============== */
 .shortcut{background:#0067c2;border-radius:6px;margin:.55rem 0;box-shadow:0 2px 4px rgba(0,0,0,.12)}
-
-/* Haupt-Schaltfläche – flex Layout */
 .head{
     display:flex;align-items:center;justify-content:center;gap:.4rem;
     width:100%;background:none;border:none;cursor:pointer;
@@ -29,15 +35,9 @@ header a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.15rem}
     border-radius:6px;
 }
 .head:hover{opacity:.9}
-
-/* Label mittig & dehnbar */
 .label{flex:1 1 auto;text-align:center;pointer-events:none;color:#fff}
-
-/* ✏️  links  |  ▶ rechts */
 .rename, .chev{flex:0 0 auto;color:#fff;font-size:1rem;background:none;border:none;cursor:pointer}
 .shortcut.open .chev{transform:rotate(90deg);transition:.2s}
-
-/* Panel mit gespeichertem Query */
 .panel{display:none;background:#e9f1ff;padding:.7rem}
 .shortcut.open .panel{display:block}
 .panel input{width:100%;padding:.4rem;font-family:monospace}
@@ -62,3 +62,8 @@ th,td{border:1px solid #ccc;padding:.45rem;text-align:left}
 #kv{border-collapse:collapse;width:100%}
 #kv td{border:1px solid #ddd;padding:.45rem}
 #kv td.key{font-weight:bold;width:180px;background:#f3f7ff}
+
+/* ===============  Buttons / Hilfe  =============== */
+.btn-primary{background:#0067c2;color:#fff;border:none;border-radius:6px;padding:.45rem .8rem;cursor:pointer}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.muted{font-size:.85rem;color:#666}

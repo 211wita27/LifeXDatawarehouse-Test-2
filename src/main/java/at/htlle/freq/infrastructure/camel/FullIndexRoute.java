@@ -4,10 +4,7 @@ import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
-/**
- * Re-indexiert ALLE Tabellen alle 60 s.
- * (Für Demo völlig ausreichend; in Produktion besser Events nutzen.)
- */
+/** Re-indexiert ALLE Tabellen alle 60 s. */
 @Component
 public class FullIndexRoute extends RouteBuilder {
 
@@ -19,7 +16,7 @@ public class FullIndexRoute extends RouteBuilder {
 
     @Override
     public void configure() {
-        from("timer://fullReindex?period=60000")           // 60 000 ms
+        from("timer://fullReindex?period=60000")
                 .routeId("FullLuceneReindex")
                 .log("🔄 Re-Index ALL tables …")
                 .bean(lucene, "reindexAll")

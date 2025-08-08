@@ -5,10 +5,6 @@ import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
-/**
- * Wird von AccountService nach jedem INSERT / UPDATE
- * mit <code>camel.sendBody("direct:index-account", account)</code> aufgerufen.
- */
 @Component
 public class IndexSingleAccountRoute extends RouteBuilder {
 
@@ -20,7 +16,6 @@ public class IndexSingleAccountRoute extends RouteBuilder {
 
     @Override
     public void configure() {
-
         from("direct:index-account")
                 .routeId("IndexSingleAccount")
                 .process(ex -> {
@@ -28,7 +23,8 @@ public class IndexSingleAccountRoute extends RouteBuilder {
                     lucene.indexAccount(
                             a.getAccountID(),
                             a.getAccountName(),
-                            a.getCountry()
+                            a.getCountry(),
+                            a.getContactEmail()   // <— 4. Parameter ergänzt
                     );
                 })
                 .log("✅ Einzelner Account indexiert: ${body.accountName}");
