@@ -20,49 +20,54 @@
 
             <!-- 0  Alle Accounts -->
             <div class="shortcut" data-id="sc0" data-default="type:account">
-                <button class="head" type="button">
-                    <span class="rename" title="Shortcut umbenennen">✏️</span>
+                <button class="head">
+                    <span class="rename">✏️</span>
                     <span class="label">Alle Accounts</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input placeholder="Lucene-Query"></div>
+                <div class="panel"><input></div>
             </div>
 
             <!-- 1  Große Projekte -->
-            <div class="shortcut" data-id="sc1" data-default='type:project AND (CustomL OR CustomXL)'>
-                <button class="head" type="button">
-                    <span class="rename" title="Shortcut umbenennen">✏️</span>
+            <div class="shortcut" data-id="sc1"
+                 data-default='type:project AND (CustomL OR CustomXL)'>
+                <button class="head">
+                    <span class="rename">✏️</span>
                     <span class="label">Große Projekte</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input placeholder="Lucene-Query"></div>
+                <div class="panel"><input></div>
             </div>
 
             <!-- 2  Accounts 🇩🇪 -->
-            <div class="shortcut" data-id="sc2" data-default='type:account AND country:germany'>
-                <button class="head" type="button">
-                    <span class="rename" title="Shortcut umbenennen">✏️</span>
+            <div class="shortcut" data-id="sc2"
+                 data-default='type:account AND country:germany'>
+                <button class="head">
+                    <span class="rename">✏️</span>
                     <span class="label">Accounts 🇩🇪</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input placeholder="Lucene-Query"></div>
+                <div class="panel"><input></div>
             </div>
 
-            <!-- 3  frei1 -->
-            <div class="shortcut" data-id="sc3" data-default="">
-                <button class="head" type="button">
-                    <span class="rename" title="Shortcut umbenennen">✏️</span>
-                    <span class="label">(frei 1)</span>
+            <!-- 3  Showcase: Sites mit Lenovo-Servern -->
+            <div class="shortcut" data-id="sc3"
+                 data-default='type:site AND serverBrand:lenovo'>
+                <button class="head">
+                    <span class="rename">✏️</span>
+                    <span class="label">Sites – Lenovo-Server</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input placeholder="Lucene-Query"></div>
+                <div class="panel">
+                    <input placeholder="Lucene-Query (z. B. type:site AND serverBrand:lenovo)">
+                </div>
             </div>
 
-            <!-- 4  frei2 -->
+            <!-- 4  frei 1 (umbenannt) -->
             <div class="shortcut" data-id="sc4" data-default="">
-                <button class="head" type="button">
-                    <span class="rename" title="Shortcut umbenennen">✏️</span>
-                    <span class="label">(frei 2)</span>
+                <button class="head">
+                    <span class="rename">✏️</span>
+                    <span class="label">(frei 1)</span>
                     <span class="chev">▶</span>
                 </button>
                 <div class="panel"><input placeholder="Lucene-Query"></div>
@@ -87,23 +92,19 @@
 
     <!-- ─────────── Content ─────────── -->
     <main class="content">
-
-        <!-- Index-Fortschritt (ohne zweiten Button) -->
+        <!-- Fortschritt-Balken -->
         <div id="idx-box">
             <div id="idx-bar"><span></span></div>
             <div id="idx-text"></div>
         </div>
 
-        <!-- Suche -->
         <div id="search-bar">
-            <input id="search-input" placeholder="Global-Suche (Lucene oder normal)" list="sug">
+            <!-- datalist bleibt für Autocomplete, Icon wird via CSS versteckt -->
+            <input id="search-input" placeholder="Global-Suche (Lucene oder normal)" list="sug" autocomplete="off">
             <datalist id="sug"></datalist>
-            <button id="search-btn" type="button">Suchen</button>
+            <button id="search-btn">Suchen</button>
         </div>
-
-        <div id="resultArea">
-            <p>Nutze die Suchleiste oder die Bedienelemente links.</p>
-        </div>
+        <div id="resultArea"><p>Nutze die Suchleiste oder die Bedienelemente links.</p></div>
     </main>
 
     <!-- ─────────── Hilfe ─────────── -->
@@ -117,10 +118,10 @@
             <li>Projektsuche: <code>type:project AND CustomL</code></li>
         </ul>
 
-        <hr style="margin:1rem 0">
-        <h3 style="margin:.2rem 0 .4rem 0">Index-Verwaltung</h3>
-        <button id="idx-reindex-side" class="btn-primary" type="button">Neu indexieren</button>
-        <p class="muted">Startet einen kompletten Reindex; der Fortschritt erscheint oben als Balken.</p>
+        <hr>
+        <h3>Index-Verwaltung</h3>
+        <button id="idx-reindex-side" class="btn-primary">Neu indexieren</button>
+        <p style="font-size:.9rem;color:#555">Startet einen kompletten Reindex; der Fortschritt erscheint oben als Balken.</p>
     </aside>
 </div>
 

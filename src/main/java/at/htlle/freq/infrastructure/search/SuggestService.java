@@ -17,26 +17,21 @@ import java.util.stream.Collectors;
 
 /**
  * Einfache Autovervollständigung über Lucene-Terms.
- * Geht segmentweise über die Index-Reader (ohne MultiFields),
- * sammelt passende Terms und dedupliziert sie.
  */
 @Service
 public class SuggestService {
 
     // Felder, aus denen Vorschläge kommen sollen
     private static final List<String> FIELDS = List.of(
-            "txt", "brand", "country", "variant", "fireZone", "os", "vplat", "sap", "email"
+            "txt", "brand", "country", "variant", "fireZone", "os", "vplat", "sap", "email",
+            // NEU: Rollup-Felder (damit „lenovo“ etc. auch von Site/Account vorgeschlagen wird)
+            "serverBrand","serverOS","serverVplat"
     );
 
-    /**
-     * Liefert bis zu {@code max} Vorschläge für das Präfix {@code prefix}.
-     * Rückgabe ist kleingeschrieben (entspricht StandardAnalyzer).
-     */
+    /** Liefert bis zu {@code max} Vorschläge für das Präfix {@code prefix}. */
     public List<String> suggest(String prefix, int max) {
         if (prefix == null) return List.of();
         String pfx = prefix.toLowerCase();
-
-        // sehr kurze Präfixe ausbremsen
         if (pfx.length() < 2) return List.of();
 
         Set<String> out = new LinkedHashSet<>();
@@ -44,11 +39,8 @@ public class SuggestService {
         try (var dir = FSDirectory.open(LuceneIndexService.INDEX_PATH);
              var rd  = DirectoryReader.open(dir)) {
 
-            // Für jedes gewünschte Feld …
             outer:
             for (String field : FIELDS) {
-
-                // … über alle Segmente (Leaves) iterieren
                 for (LeafReaderContext leaf : rd.leaves()) {
                     Terms terms = leaf.reader().terms(field);
                     if (terms == null) continue;
@@ -56,7 +48,7 @@ public class SuggestService {
                     TermsEnum te = terms.iterator();
                     BytesRef br;
                     while ((br = te.next()) != null) {
-                        String term = br.utf8ToString(); // bereits lowercase bei StandardAnalyzer
+                        String term = br.utf8ToString();
                         if (term.startsWith(pfx)) {
                             out.add(term);
                             if (out.size() >= max) break outer;
@@ -64,9 +56,7 @@ public class SuggestService {
                     }
                 }
             }
-        } catch (IOException ignored) {
-            // Im Fehlerfall lieber leer zurückgeben
-        }
+        } catch (IOException ignored) { }
 
         return out.stream().limit(max).collect(Collectors.toList());
     }

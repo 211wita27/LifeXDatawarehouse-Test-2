@@ -11,10 +11,13 @@ public class SmartQueryBuilder {
 
     private static final StandardAnalyzer ANALYZER = new StandardAnalyzer();
 
-    // Muss zu den Feldern im LuceneIndexService passen
+    // MUSS zu LuceneIndexService passen
     private static final String[] SEARCH_FIELDS = {
             "txt","type","country","variant","fireZone","os","brand","vplat",
-            "sap","email","mode","digitalStandard","direction","phoneType"
+            "sap","email","mode","digitalStandard","direction","phoneType",
+            // NEU: Relations & Rollups
+            "accountId","projectId","siteId","clientId",
+            "serverBrand","serverOS","serverVplat","hasServer"
     };
 
     /** Heuristik: sieht der String nach Lucene-Syntax aus? */
@@ -33,10 +36,8 @@ public class SmartQueryBuilder {
             }
             MultiFieldQueryParser p = new MultiFieldQueryParser(SEARCH_FIELDS, ANALYZER);
             p.setDefaultOperator(QueryParser.Operator.AND);
-            // nicht escapen -> field:term & Wildcards bleiben erlaubt
             return p.parse(userInput.trim());
         } catch (Exception e) {
-            // keine checked Exception nach außen
             throw new IllegalArgumentException("Ungültige Suchanfrage: " + userInput, e);
         }
     }
