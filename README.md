@@ -5,10 +5,12 @@
 ## 📑 Projektüberblick
 
 LifeX Data Warehouse ist eine schlanke, aber funktionsreiche Applikation, die im Rahmen einer Diplomarbeit an der HTL Leoben (Abteilung Informationstechnik) entsteht.  
-Sie vereint **ETL-ähnliche Datenhaltung**, **Volltextsuche via Lucene**, ein **leichtgewichtiges Web-UI** und eine **REST-API** in einem einzigen Spring-Boot-Projekt.
+Sie vereint **ETL-ähnliche Datenhaltung**, **Volltextsuche via Lucene** (oder normale Suche mit Autocomplete), ein **leichtgewichtiges Web-UI** und eine **REST-API** in einem einzigen Spring-Boot-Projekt.
 
 > **Mission Statement**  
 > „Statische Stammdaten (Account → Project → Site …) sollen schnell erfasst, durchsucht und exportiert werden können – ohne schwergewichtige BI-Tools.“
+
+Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben** mit automatischer Präfix-Erweiterung (token\*), Autocomplete-Vorschlägen und angereicherten Ergebnislisten.
 
 ---
 
@@ -16,9 +18,17 @@ Sie vereint **ETL-ähnliche Datenhaltung**, **Volltextsuche via Lucene**, ein **
 
 - **Datenmodell** – relationale H2-In-Memory-DB (Account, Project, Site, Server …)
 - **API** – CRUD-REST-Controller je Entität + generischer Read-Only-Controller
-- **Indexing** – Apache Lucene 8 (Full-Reindex alle 60 s + inkrementeller Camel-Sync)
-- **Suche** – globale Lucene-Query-Syntax im Dashboard und via `/search?q=`
-- **UI** – rein statisches HTML / CSS / JS (kein Build-Tool erforderlich)
+- **Indexing** – Apache Lucene 8 (Full-Reindex alle 60 s + inkrementeller Camel-Sync, manuelles Reindexing über UI)
+- **Suche**
+  - Globale Lucene-Query-Syntax im Dashboard und via `/search?q=`
+  - Normale Suchbegriffe werden automatisch zu Präfix-Suchen (`beispiel*`)
+  - Autocomplete mit Vorschlägen
+  - Ergebnislisten mit zusätzlicher Info-Spalte (z. B. Kontaktdaten, Marken, Varianten)
+- **UI**
+  - Rein statisches HTML / CSS / JS (kein Build-Tool erforderlich)
+  - Shortcut-Buttons direkt editierbar (Name + Query)
+  - Fortschrittsanzeige für laufenden Index-Build
+  - Generischer Tabellen-Viewer (100 Zeilen Vorschau)
 - **Automation** – Apache Camel 4 Timer-Routes (Sync, Full-Reindex, Einzel-Index)
 - **Dev-Ergonomie** – Spring Boot DevTools, LiveReload, H2-Console, Lombok
 
@@ -86,9 +96,10 @@ mvn spring-boot:run
 - `GET  /accounts` – alle Accounts
 - `GET  /accounts/{id}` – einzelner Account
 - `POST /accounts` – neuen Account anlegen (JSON-Body)
-- `GET  /search?q=…` – globale Lucene-Suche
+- `GET  /search?q=…` – globale Suche (Lucene oder normal)  
+  → Liefert `type`, `id`, `text`, das Frontend lädt Details aus `/row/{table}/{id}` nach
 - `GET  /table/{name}` – 100-Zeilen-Dump einer Tabelle
-- `GET  /row/{name}/{id}` – Einzel Zeile (Detail-View)
+- `GET  /row/{name}/{id}` – Einzel-Zeile (Detail-View)
 
 Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
 
@@ -96,12 +107,25 @@ Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
 
 ## 🖥️ Frontend-Seiten
 
-- `index.html` – Dashboard
-    - Suchleiste (Lucene)
-    - Shortcut-Buttons (editierbar)
-    - Tabellen-Explorer
-- `create.html` – Wizard zum Anlegen neuer Datensätze
-- `details.html` – generische Key/Value-Detailseite
+- **`index.html` – Dashboard**
+  - Globale Suche (Lucene + normale Suche mit automatischem `*`)
+  - Autocomplete-Vorschläge beim Tippen
+  - Editierbare Shortcut-Buttons
+  - Tabellen-Explorer
+  - Ergebnisliste mit zusätzlicher Info-Spalte
+  - Reindex-Button und Fortschrittsbalken für Indexaufbau
+
+- **`create.html` – Datensatz-Erstellung**
+  - Schritt-für-Schritt-Wizard zur Anlage neuer Datensätze
+  - Dynamische Formularfelder je Entitätstyp
+  - Direkte Validierung der Eingaben im Browser
+  - Abschließende Übersicht vor dem Speichern
+
+- **`details.html` – Detailansicht**
+  - Generische Key/Value-Darstellung aller Felder
+  - Verknüpfte Entitäten werden als klickbare Links angezeigt
+  - Einheitliches Layout für alle Entitätstypen
+  - Kompaktansicht und Vollansicht umschaltbar
 
 **Alle Assets:**  
 Liegen unter `src/main/resources/static/` – kein Frontend-Build nötig.
@@ -117,6 +141,9 @@ tech*                       # Wildcard
 country:germany             # Feldsuche  
 (type:project AND CustomL) OR CustomXL
 ```
+
+**Frontend-Feature:**  
+Wenn keine Lucene-Syntax erkannt wird, fügt das Frontend automatisch ein `*` an den Suchbegriff an (Präfixsuche).
 
 **Indexierte Felder (Beispiele):**
 
@@ -144,6 +171,7 @@ erDiagram
 - (geplant) Unit-Tests mit JUnit 5
 - Beispiel-GitHub Actions Workflow (`mvn test` + Docker build)
 - Checkstyle und SpotBugs (TODO)
+- Frontend: Debouncing, Autocomplete-Handling, API-Fallbacks
 
 ---
 
@@ -152,6 +180,8 @@ erDiagram
 - ✔️ Lucene-Index + globale Suche
 - ✔️ Shortcut-UI (editierbar)
 - ✔️ Create-Wizard
+- ✔️ Autocomplete in Suche
+- ✔️ Zusatzinfos in Ergebnisliste
 - ☐ CSV / Excel-Export per REST
 - ☐ Benutzer-Auth (Spring Security + JWT)
 - ☐ Docker-Compose (PostgreSQL + OpenSearch)
