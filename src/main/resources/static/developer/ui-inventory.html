@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>LifeX – UI Inventory (Screenshot Helper)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* =================== Base / Tokens =================== */
+    :root{
+      --brand:#003a70;
+      --primary:#0067c2;
+      --primary-hover:#0054a6;
+      --text:#111;
+      --muted:#555;
+      --border:#ccc;
+      --border-soft:#ddd;
+      --bg:#f5f7fb;
+      --panel:#e9f1ff;
+      --panel-border:#cfe0ff;
+      --ok:#1e8e3e;
+      --err:#c5221f;
+      --card-shadow:0 2px 6px rgba(0,0,0,.1);
+      --radius:12px;
+      --btn-radius:8px;
+      --stage-w:900px;
+      --stage-h:560px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);background:var(--bg)}
+    h1,h2,h3{margin:.2rem 0 .6rem}
+    p{margin:.2rem 0 .8rem}
+    small{color:var(--muted)}
+    code{background:#f1f3f9;border:1px solid #e6e8ef;border-radius:4px;padding:0 .25rem}
+
+    /* =================== Header =================== */
+    header{position:sticky;top:0;z-index:4;background:var(--brand);color:#fff;
+      display:flex;align-items:center;gap:.75rem;padding:.45rem 1rem}
+    header .menu-toggle{all:unset;cursor:pointer;font-size:1.2rem;line-height:1;padding:.25rem .4rem;border-radius:6px}
+    header .menu-toggle:hover{background:rgba(255,255,255,.12)}
+    header .title{font-weight:bold;font-size:1.05rem;letter-spacing:.2px}
+    header .badge{margin-left:auto;font-size:.9rem;opacity:.9}
+
+    /* =================== Layout =================== */
+    .layout{max-width:1600px;margin:1rem auto;display:grid;grid-template-columns:320px 1fr;gap:1rem;padding:0 1rem;transition:grid-template-columns .2s ease}
+    body.collapsed .layout{grid-template-columns:0 1fr}
+
+    .sidebar{background:#fff;border-radius:var(--radius);box-shadow:var(--card-shadow);padding:1rem;height:calc(100vh - 110px);
+      position:sticky;top:70px;overflow:auto;transition:padding .2s ease, width .2s ease, opacity .15s}
+    body.collapsed .sidebar{padding:0;width:0;opacity:0;overflow:hidden;border:0;box-shadow:none}
+
+    .stage-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 110px)}
+    .stage{background:#fff;border-radius:var(--radius);box-shadow:var(--card-shadow);padding:2rem;
+      min-height:var(--stage-h);width:var(--stage-w);
+      display:flex;align-items:center;justify-content:center;position:relative;margin:auto;
+      transition:min-height .2s ease,width .2s ease, box-shadow .2s ease}
+    .stage.grid{background-image:linear-gradient(#f0f2f7 1px,transparent 1px),linear-gradient(90deg,#f0f2f7 1px,transparent 1px);
+      background-size:24px 24px; background-position:center center}
+
+    /* Scenes – FIX: only active is displayed */
+    .stage .scene{display:none;width:100%;height:100%}
+    .stage .scene.active{display:grid;place-items:center}
+
+    /* Sidebar nav */
+    .search{display:flex;gap:.5rem;margin-bottom:.75rem}
+    .search input{flex:1 1 auto;padding:.5rem .6rem;border:1px solid var(--border);border-radius:6px}
+    .search button{padding:.5rem .75rem;border:1px solid var(--border);background:#fff;border-radius:6px;cursor:pointer}
+    .menu{display:flex;flex-direction:column;gap:.25rem}
+    .menu h4{margin:.8rem 0 .2rem;color:var(--muted);font-weight:bold;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase}
+    .menu button.item{all:unset;display:block;padding:.45rem .55rem;border-radius:6px;cursor:pointer}
+    .menu button.item:hover{background:#f5f7fb}
+    .menu button.item.active{background:var(--panel);border:1px solid var(--panel-border)}
+    .menu .item small{display:block;color:var(--muted)}
+
+    /* Top toolbar (state controls) */
+    .toolbar{position:absolute;top:.6rem;right:.6rem;background:#fff;border:1px solid var(--border);border-radius:10px;
+      box-shadow:var(--card-shadow);padding:.4rem .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    .toolbar label{display:flex;align-items:center;gap:.3rem;font-size:.9rem;color:#333}
+    .toolbar input[type="range"]{width:120px}
+    .toolbar .sep{width:1px;height:18px;background:#e6e6e6;margin:0 .25rem}
+    .toolbar .shot{border:1px solid var(--border);border-radius:8px;padding:.35rem .6rem;background:#fafbfd;cursor:pointer}
+    .toolbar .shot:hover{background:#eef2fb}
+    .toolbar select{padding:.2rem .35rem;border:1px solid var(--border);border-radius:6px;background:#fff}
+    .toolbar input[type="number"]{width:90px;padding:.2rem .35rem;border:1px solid var(--border);border-radius:6px}
+
+    /* =================== Components (shared) =================== */
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:var(--btn-radius);padding:.5rem 1rem;border:1px solid transparent;
+      line-height:1.2;cursor:pointer;font-weight:600}
+    .btn-primary{background:var(--primary);color:#fff}
+    .btn-primary:hover,.sim-hover .btn-primary{background:var(--primary-hover)}
+    .btn-primary:disabled,.sim-disabled .btn-primary{opacity:.6;cursor:not-allowed}
+    .btn-secondary{background:#f6f7fb;color:#0f172a;border:1px solid var(--border)}
+    .btn-secondary:hover,.sim-hover .btn-secondary{background:#eef1f8}
+    .btn-link{background:transparent;color:var(--brand);border:0;padding:0;font-weight:bold}
+    .btn-link:hover,.sim-hover .btn-link{color:var(--primary-hover);text-decoration:underline}
+
+    a#back{display:inline-block;color:#fff;background:var(--brand);
+      text-decoration:none;font-weight:bold;padding:.6rem 1rem;border-radius:8px}
+    a#back:hover,.sim-hover a#back{background:var(--primary-hover)}
+
+    .input{padding:.6rem .7rem;border:1px solid var(--border);border-radius:8px;width:100%}
+    .input:focus,.sim-focus .input{outline:3px solid #cde1ff;border-color:#7fb4ff}
+
+    .select{padding:.6rem .7rem;border:1px solid var(--border);border-radius:8px;min-width:260px;background:#fff}
+
+    .field{display:flex;flex-direction:column;gap:.25rem;margin-bottom:.9rem}
+    .field label{font-weight:bold}
+
+    .pill{display:inline-flex;align-items:center;gap:.4rem;background:var(--panel);border:1px solid var(--panel-border);
+      padding:.25rem .6rem;border-radius:999px;font-size:.9rem}
+
+    .card{background:#fff;padding:1.4rem;border-radius:var(--radius);max-width:730px;margin:auto;box-shadow:var(--card-shadow)}
+
+    .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:.9rem}
+    .panel input{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas, "Liberation Mono","Courier New",monospace}
+
+    /* Progress bar */
+    #idx-box{border:1px dashed var(--border);border-radius:10px;padding:1rem;width:100%}
+    #idx-bar{height:16px;background:#eef3ff;border:1px solid var(--panel-border);border-radius:999px;overflow:hidden}
+    #idx-bar span{display:block;height:100%;width:35%;background:linear-gradient(90deg,var(--primary) 0%,#4f8dd9 100%)}
+
+    /* Tables */
+    .table-scroll{overflow-x:auto;width:100%}
+    table{border-collapse:collapse;width:100%;min-width:650px}
+    th,td{border:1px solid var(--border);padding:.6rem;text-align:left}
+    th{background:#f6f8fc}
+    tr:hover td{background:#fafcff}
+    #kv{border-collapse:collapse;width:100%}
+    #kv td{border:1px solid var(--border-soft);padding:.6rem}
+    #kv td.key{font-weight:bold;width:180px;background:#f3f7ff}
+
+    /* Alerts */
+    .alert{padding:.7rem 1rem;border-radius:8px;border:1px solid}
+    .alert.ok{background:#ecf6ef;border-color:#cfe9d6;color:#136b2e}
+    .alert.err{background:#fdecec;border-color:#f8c8c6;color:#8e1c18}
+
+    /* ============== Screenshot Mode ============== */
+    body.shot header{display:none}
+    body.shot .layout{max-width:none;width:100%;padding:0;gap:0;display:flex;justify-content:center}
+    body.shot .sidebar{display:none}
+    body.shot .stage{ box-shadow:0 0 0 1px rgba(0,0,0,.06),0 12px 40px rgba(0,0,0,.18) }
+    body.shot .toolbar{display:none}
+    body.shot .stage-wrap{min-height:100vh;padding:2rem;display:flex;align-items:center;justify-content:center}
+    body.shot .stage{margin:0}
+    body.shot{background:#e9eef7}
+    /* Hinweis-Badge im Shot-Layout */
+    .shot-banner{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:.35rem .6rem;border-radius:8px;box-shadow:var(--card-shadow);z-index:9999;font-size:.9rem;opacity:.9}
+  </style>
+</head>
+<body>
+<header>
+  <button class="menu-toggle" id="toggleMenu" title="Sidebar ein-/ausblenden">☰</button>
+  <div class="title">LifeX UI Inventory</div>
+  <div class="badge">Screenshot-Helfer • Komponentenkatalog</div>
+</header>
+<div id="shotBanner" class="shot-banner" style="display:none">Shot‑Layout aktiv – ESC zum Beenden</div>
+
+<div class="layout">
+  <!-- =================== Sidebar =================== -->
+  <aside class="sidebar">
+    <div class="search">
+      <input id="filter" placeholder="Komponente filtern …" />
+      <button id="clearFilter" title="Filter löschen">✕</button>
+    </div>
+    <nav class="menu" id="menu">
+      <h4>Buttons</h4>
+      <button class="item" data-target="btn-primary"><strong>Primärer Button</strong><small>Hauptaktion</small></button>
+      <button class="item" data-target="btn-secondary"><strong>Sekundärer Button</strong><small>Standard</small></button>
+      <button class="item" data-target="btn-back"><strong>Zurück-Link</strong><small>Button-Stil</small></button>
+
+      <h4>Shortcuts & Panels</h4>
+      <button class="item" data-target="shortcut-closed"><strong>Shortcut – geschlossen</strong><small>Akkordeon-Kopf</small></button>
+      <button class="item" data-target="shortcut-open"><strong>Shortcut – offen</strong><small>mit Panel-Input</small></button>
+      <button class="item" data-target="panel-input"><strong>Panel-Input</strong><small>Monospace</small></button>
+
+      <h4>Suche</h4>
+      <button class="item" data-target="searchbar"><strong>Suchfeld + Vorschläge</strong><small>mit Button</small></button>
+      <button class="item" data-target="progress"><strong>Reindex-Fortschritt</strong><small>Progress-Bar</small></button>
+
+      <h4>Tabellen</h4>
+      <button class="item" data-target="result-table"><strong>Ergebnis-Tabelle</strong><small>Suchresultate</small></button>
+      <button class="item" data-target="table-viewer"><strong>Tabellen-Viewer</strong><small>100-Zeilen-Preview</small></button>
+      <button class="item" data-target="kv-table"><strong>Key-Value Tabelle</strong><small>Details</small></button>
+
+      <h4>Formulare</h4>
+      <button class="item" data-target="entity-select"><strong>Entitätsauswahl</strong><small>select#entity</small></button>
+      <button class="item" data-target="project-form"><strong>Form „Project“</strong><small>Text/Number/Boolean</small></button>
+
+      <h4>Feedback</h4>
+      <button class="item" data-target="alert-ok"><strong>Success-Meldung</strong><small>.success</small></button>
+      <button class="item" data-target="alert-err"><strong>Error-Meldung</strong><small>.error</small></button>
+
+      <h4>Chips</h4>
+      <button class="item" data-target="pills"><strong>Pills</strong><small>verlinkte Chips</small></button>
+    </nav>
+  </aside>
+
+  <!-- =================== Stage =================== -->
+  <main class="stage-wrap">
+    <section class="stage grid" id="stage">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <label><input type="checkbox" id="toggleGrid" checked> Grid</label>
+        <span class="sep"></span>
+        <label><input type="checkbox" id="stateHover"> Hover</label>
+        <label><input type="checkbox" id="stateFocus"> Fokus</label>
+        <label><input type="checkbox" id="stateDisabled"> Disabled</label>
+        <span class="sep"></span>
+        <label>Breite
+          <input type="range" id="widthRange" min="600" max="1200" step="10" value="900">
+        </label>
+        <label>Höhe
+          <input type="range" id="heightRange" min="420" max="900" step="10" value="560">
+        </label>
+        <span class="sep"></span>
+        <label>Progress
+          <input type="range" id="progressRange" min="0" max="100" step="1" value="35">
+        </label>
+        <span class="sep"></span>
+        <!-- ==== Screenshot Controls ==== -->
+        <label>Größe
+          <select id="shotPreset" title="Zielgröße für Screenshot">
+            <option value="stage">Stage (Regler)</option>
+            <option value="1200x820">1200×820 (Shot)</option>
+            <option value="1280x720">1280×720</option>
+            <option value="1600x900">1600×900</option>
+            <option value="1920x1080">1920×1080</option>
+            <option value="custom">Benutzerdefiniert…</option>
+          </select>
+        </label>
+        <label id="customSize" style="display:none">
+          W <input type="number" id="shotW" min="300" max="4000" step="10" value="1200">
+          H <input type="number" id="shotH" min="300" max="4000" step="10" value="820">
+        </label>
+        <span class="sep"></span>
+        <button class="shot" id="shotBtn" title="PNG speichern (S)">📸 Screenshot</button>
+        <button class="shot" id="shotCopy" title="In Zwischenablage kopieren">📋 Kopieren</button>
+        <button class="shot" id="shotMode" title="Shot-Layout an/aus">🖼️ Shot‑Layout</button>
+      </div>
+
+      <!-- ============ SCENES (one per component) ============ -->
+
+      <!-- Buttons -->
+      <div class="scene" id="scene-btn-primary">
+        <button class="btn btn-primary">Neu indexieren</button>
+      </div>
+      <div class="scene" id="scene-btn-secondary">
+        <button class="btn btn-secondary">Suchen</button>
+      </div>
+      <div class="scene" id="scene-btn-back">
+        <a id="back" href="../index.html">← zurück</a>
+      </div>
+
+      <!-- Shortcuts & Panels -->
+      <div class="scene" id="scene-shortcut-closed">
+        <div class="card" style="max-width:520px">
+          <div class="shortcut">
+            <div class="head" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+              <span class="rename" title="Umbenennen">✏️</span>
+              <span class="label" style="font-weight:600">Große Projekte</span>
+              <span class="chev" style="margin-left:auto">▶</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scene" id="scene-shortcut-open">
+        <div class="card" style="max-width:520px">
+          <div class="shortcut">
+            <div class="head" style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+              <span class="rename" title="Umbenennen">✏️</span>
+              <span class="label" style="font-weight:600">Große Projekte</span>
+              <span class="chev" style="margin-left:auto;transform:rotate(90deg)">▶</span>
+            </div>
+            <div class="panel" style="margin-top:.5rem">
+              <label class="field">
+                <span>Query-Override</span>
+                <input class="input" placeholder='type:project AND size:>100GB' value='type:project AND size:>100GB'>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="scene" id="scene-panel-input">
+        <div class="card" style="max-width:520px">
+          <div class="panel">
+            <label class="field">
+              <span>Query-Override</span>
+              <input class="input" placeholder='type:project AND "LifeX"' value='type:project AND "LifeX"'>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suche -->
+      <div class="scene" id="scene-searchbar">
+        <div style="display:flex;gap:.5rem;align-items:center;width:100%;max-width:780px">
+          <input id="search-input" class="input" list="sug" placeholder="Global-Suche (Lucene oder normal)" value="type:project AND Life*">
+          <datalist id="sug">
+            <option>type:project AND LifeX</option>
+            <option>owner:team-data</option>
+            <option>status:active AND site:eu</option>
+          </datalist>
+          <button id="search-btn" class="btn btn-secondary">Suchen</button>
+        </div>
+      </div>
+
+      <div class="scene" id="scene-progress">
+        <div id="idx-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+            <strong>Neuindexierung läuft …</strong>
+            <small id="progressText">35 %</small>
+          </div>
+          <div id="idx-bar"><span id="idx-fill" style="width:35%"></span></div>
+        </div>
+      </div>
+
+      <!-- Tabellen -->
+      <div class="scene" id="scene-result-table">
+        <div class="table-scroll">
+          <table>
+            <thead>
+            <tr><th>ID</th><th>Name</th><th>Type</th><th>Owner</th><th>Region</th><th>Updated</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>p-1001</td><td>LifeX Onboarding</td><td>project</td><td>team-data</td><td>eu</td><td>2025‑07‑02</td></tr>
+            <tr><td>p-1002</td><td>ETL v2</td><td>project</td><td>engineering</td><td>eu</td><td>2025‑06‑28</td></tr>
+            <tr><td>a-11</td><td>ACME Corp</td><td>account</td><td>sales</td><td>us</td><td>2025‑06‑11</td></tr>
+            <tr><td>s-77</td><td>eu-prod‑01</td><td>server</td><td>ops</td><td>eu</td><td>2025‑05‑30</td></tr>
+            <tr><td>p-1099</td><td>Archive Migration</td><td>project</td><td>ops</td><td>apac</td><td>2025‑05‑12</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="scene" id="scene-table-viewer">
+        <div class="table-scroll">
+          <table>
+            <thead>
+            <tr><th>#</th><th>CityName</th><th>PostalCode</th><th>Country</th><th>Notes</th><th>Created</th></tr>
+            </thead>
+            <tbody>
+            <tr><td>1</td><td>Wien</td><td>1010</td><td>AT</td><td>Hauptstadt; UTF‑8 ✓</td><td>2025‑05‑01</td></tr>
+            <tr><td>2</td><td>Graz</td><td>8010</td><td>AT</td><td>—</td><td>2025‑05‑01</td></tr>
+            <tr><td>3</td><td>Linz</td><td>4020</td><td>AT</td><td>Lange Beschreibung, die horizontales Scrollen demonstriert …</td><td>2025‑05‑01</td></tr>
+            <tr><td>4</td><td>Salzburg</td><td>5020</td><td>AT</td><td>—</td><td>2025‑05‑01</td></tr>
+            <tr><td>5</td><td>Innsbruck</td><td>6020</td><td>—</td><td>—</td><td>2025‑05‑01</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="scene" id="scene-kv-table">
+        <div class="card">
+          <table id="kv">
+            <tbody>
+            <tr><td class="key">ProjectID</td><td>p-1001</td></tr>
+            <tr><td class="key">Name</td><td>LifeX Onboarding</td></tr>
+            <tr><td class="key">Owner</td><td><span class="pill">team-data</span></td></tr>
+            <tr><td class="key">Region</td><td><span class="pill">eu</span> <span class="pill">primary</span></td></tr>
+            <tr><td class="key">Updated</td><td>2025‑07‑02 14:21</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Formulare -->
+      <div class="scene" id="scene-entity-select">
+        <label class="field" style="min-width:280px">
+          <span>Entität wählen</span>
+          <select class="select" id="entity">
+            <option>Account</option>
+            <option selected>Project</option>
+            <option>Site</option>
+            <option>Server</option>
+            <option>WorkingPosition</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="scene" id="scene-project-form">
+        <form class="card" style="width:100%;max-width:560px">
+          <h3>Project anlegen</h3>
+          <div class="field">
+            <label for="p-name">Project Name</label>
+            <input id="p-name" class="input" placeholder="z. B. LifeX Onboarding">
+          </div>
+          <div class="field">
+            <label for="p-owner">Owner</label>
+            <input id="p-owner" class="input" placeholder="team-data">
+          </div>
+          <div class="field">
+            <label for="p-size">Estimated Size (GB)</label>
+            <input id="p-size" class="input" type="number" value="120">
+          </div>
+          <div class="field">
+            <label for="p-ha">High Availability</label>
+            <input id="p-ha" class="input" placeholder="true/false" value="true">
+          </div>
+          <div style="display:flex;gap:.5rem;margin-top:.6rem">
+            <button type="button" class="btn btn-primary">Speichern</button>
+            <button type="button" class="btn btn-secondary">Abbrechen</button>
+          </div>
+          <p class="alert ok" style="margin-top:1rem;display:none" id="ok-msg">Project gespeichert.</p>
+          <p class="alert err" style="margin-top:1rem;display:none" id="err-msg">Fehler beim Speichern.</p>
+        </form>
+      </div>
+
+      <!-- Feedback -->
+      <div class="scene" id="scene-alert-ok">
+        <p class="alert ok"><strong>Erfolg:</strong> Operation erfolgreich abgeschlossen.</p>
+      </div>
+      <div class="scene" id="scene-alert-err">
+        <p class="alert err"><strong>Fehler:</strong> Eingabe ungültig oder Serverfehler.</p>
+      </div>
+
+      <!-- Chips -->
+      <div class="scene" id="scene-pills">
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <span class="pill">team-data</span>
+          <span class="pill">eu</span>
+          <span class="pill">primary</span>
+          <span class="pill">read‑only</span>
+        </div>
+      </div>
+
+    </section>
+  </main>
+</div>
+
+<!-- html2canvas für saubere Screenshots -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+<script>
+  /* ========= Simple router for scenes ========= */
+  const map = {
+    'btn-primary':'scene-btn-primary',
+    'btn-secondary':'scene-btn-secondary',
+    'btn-back':'scene-btn-back',
+    'shortcut-closed':'scene-shortcut-closed',
+    'shortcut-open':'scene-shortcut-open',
+    'panel-input':'scene-panel-input',
+    'searchbar':'scene-searchbar',
+    'progress':'scene-progress',
+    'result-table':'scene-result-table',
+    'table-viewer':'scene-table-viewer',
+    'kv-table':'scene-kv-table',
+    'entity-select':'scene-entity-select',
+    'project-form':'scene-project-form',
+    'alert-ok':'scene-alert-ok',
+    'alert-err':'scene-alert-err',
+    'pills':'scene-pills',
+  };
+  const stage = document.getElementById('stage');
+  const scenes = [...stage.querySelectorAll('.scene')];
+  const menu = document.getElementById('menu');
+  const filter = document.getElementById('filter');
+  const clearFilter = document.getElementById('clearFilter');
+  const progressRange = document.getElementById('progressRange');
+  const progressText = document.getElementById('progressText');
+  const idxFill = document.getElementById('idx-fill');
+  const toggleMenuBtn = document.getElementById('toggleMenu');
+  const heightRange = document.getElementById('heightRange');
+
+  function activate(id){
+    scenes.forEach(s => s.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (el){ el.classList.add('active'); }
+    // reset state toggles to visible effects
+    applyStates();
+    // auto focus first input for focus screenshots
+    const firstInput = el && el.querySelector('input,select,button,a#back');
+    if (firstInput && document.getElementById('stateFocus').checked){
+      firstInput.focus();
+    } else if (firstInput) {
+      firstInput.blur();
+    }
+    // update selected button state
+    [...menu.querySelectorAll('.item')].forEach(b=>b.classList.remove('active'));
+    const btn = [...menu.querySelectorAll('.item')].find(b => map[b.dataset.target] === id);
+    if (btn) btn.classList.add('active');
+  }
+
+  // init menu handlers
+  menu.addEventListener('click', (e)=>{
+    const b = e.target.closest('button.item');
+    if(!b) return;
+    const target = b.dataset.target;
+    activate(map[target]);
+  });
+
+  // filter menu
+  filter.addEventListener('input', ()=>{
+    const q = filter.value.trim().toLowerCase();
+    [...menu.querySelectorAll('button.item')].forEach(b => {
+      const t = b.innerText.toLowerCase();
+      b.style.display = t.includes(q) ? '' : 'none';
+    });
+  });
+  clearFilter.addEventListener('click', ()=>{
+    filter.value=''; filter.dispatchEvent(new Event('input')); filter.focus();
+  });
+
+  // Toolbar toggles
+  const grid = document.getElementById('toggleGrid');
+  const hover = document.getElementById('stateHover');
+  const focus = document.getElementById('stateFocus');
+  const disabled = document.getElementById('stateDisabled');
+  const widthRange = document.getElementById('widthRange');
+
+  function applyStates(){
+    stage.classList.toggle('grid', grid.checked);
+    stage.classList.toggle('sim-hover', hover.checked);
+    stage.classList.toggle('sim-focus', focus.checked);
+    stage.classList.toggle('sim-disabled', disabled.checked);
+  }
+  grid.addEventListener('change', applyStates);
+  hover.addEventListener('change', applyStates);
+  focus.addEventListener('change', applyStates);
+  disabled.addEventListener('change', applyStates);
+
+  widthRange.addEventListener('input', ()=>{
+    stage.style.setProperty('--stage-w', widthRange.value + 'px');
+  });
+  heightRange.addEventListener('input', ()=>{
+    stage.style.setProperty('--stage-h', heightRange.value + 'px');
+  });
+
+  if (progressRange){
+    progressRange.addEventListener('input', ()=>{
+      const v = progressRange.value;
+      if (idxFill) idxFill.style.width = v + '%';
+      if (progressText) progressText.textContent = v + ' %';
+    });
+  }
+
+  // Sidebar toggle
+  toggleMenuBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('collapsed');
+    setTimeout(()=>{ window.dispatchEvent(new Event('resize')); }, 210);
+  });
+
+  // ======== Screenshot Helper ========
+  const shotBtn = document.getElementById('shotBtn');
+  const shotCopy = document.getElementById('shotCopy');
+  const shotModeBtn = document.getElementById('shotMode');
+  const shotPreset = document.getElementById('shotPreset');
+  const customSize = document.getElementById('customSize');
+  const shotW = document.getElementById('shotW');
+  const shotH = document.getElementById('shotH');
+
+  shotPreset.addEventListener('change', ()=>{
+    customSize.style.display = (shotPreset.value === 'custom') ? '' : 'none';
+  });
+
+  function getTargetSize(){
+    const v = shotPreset.value;
+    if (v === 'stage'){
+      return { w: +widthRange.value, h: +heightRange.value };
+    }
+    if (v === 'custom'){
+      return { w: Math.max(300, +shotW.value||1200), h: Math.max(300, +shotH.value||820) };
+    }
+    const [w,h] = v.split('x').map(Number);
+    return { w, h };
+  }
+
+  function activeSceneKey(){
+    const active = stage.querySelector('.scene.active');
+    if (!active) return 'scene';
+    const id = active.id || 'scene';
+    return id.replace(/^scene-/, '');
+  }
+
+  function currentStatesTag(){
+    const tags = [];
+    if (grid.checked) tags.push('grid');
+    if (hover.checked) tags.push('hover');
+    if (focus.checked) tags.push('focus');
+    if (disabled.checked) tags.push('disabled');
+    return tags.length ? ('_' + tags.join('-')) : '';
+  }
+
+  async function html2canvasSafe(el, opts){
+    if (typeof html2canvas !== 'function') throw new Error('html2canvas nicht geladen');
+    // Warte einen Tick, damit Layout-Änderungen greifen
+    await new Promise(r=>setTimeout(r, 40));
+    return await html2canvas(el, opts);
+  }
+
+  async function takeShot({copy=false}={}){
+    try{
+      const { w, h } = getTargetSize();
+      const active = stage.querySelector('.scene.active') || scenes[0];
+      if(!active) throw new Error('Keine aktive Szene.');
+
+      // Sichtbare Stage im WYSIWYG-Verfahren aufnehmen (zuverlässig in Safari)
+      const wasShot = document.body.classList.contains('shot');
+      document.body.classList.add('shot'); // UI ausblenden
+
+      // Stage temporär auf Zielgröße setzen
+      const prevW = stage.style.getPropertyValue('--stage-w');
+      const prevH = stage.style.getPropertyValue('--stage-h');
+      stage.style.setProperty('--stage-w', w + 'px');
+      stage.style.setProperty('--stage-h', h + 'px');
+
+      // kurz warten bis Layout stabil ist
+      await new Promise(r=>setTimeout(r, 50));
+
+      const scale = Math.min(3, (window.devicePixelRatio || 1));
+      const canvas = await html2canvasSafe(stage, {
+        backgroundColor:'#fff',
+        scale,
+        useCORS:true,
+        foreignObjectRendering:false,
+        allowTaint:true,
+      });
+
+      // Zustand zurücksetzen
+      if (prevW) stage.style.setProperty('--stage-w', prevW); else stage.style.removeProperty('--stage-w');
+      if (prevH) stage.style.setProperty('--stage-h', prevH); else stage.style.removeProperty('--stage-h');
+      if (!wasShot) document.body.classList.remove('shot');
+
+      // Dateiname
+      const ts = new Date();
+      const pad=(n)=>String(n).padStart(2,'0');
+      const stamp = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`;
+      const name = `lifex_${activeSceneKey()}_${w}x${h}${currentStatesTag()}_${stamp}.png`;
+
+      // Ausgabe
+      canvas.toBlob(async (blob)=>{
+        if(!blob) return alert('Konnte PNG nicht erzeugen.');
+        if (copy && navigator.clipboard && window.ClipboardItem){
+          try{
+            await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]);
+            toast('Screenshot kopiert');
+          }catch(err){
+            console.warn(err);
+            downloadBlob(blob, name);
+            toast('Konnte nicht kopieren – PNG gespeichert');
+          }
+        } else {
+          downloadBlob(blob, name);
+          toast('PNG gespeichert');
+        }
+      }, 'image/png');
+    }catch(e){
+      console.error(e);
+      alert('Screenshot fehlgeschlagen: '+ e.message);
+    }
+  }
+
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    a.remove(); URL.revokeObjectURL(url);
+  }
+
+  // Mini-Toast
+  function toast(msg){
+    const t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:.45rem .7rem;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9999;font-size:.9rem';
+    document.body.appendChild(t);
+    setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(()=>t.remove(), 320); }, 1000);
+  }
+
+  shotBtn.addEventListener('click', ()=>takeShot());
+  shotCopy.addEventListener('click', ()=>takeShot({copy:true}));
+  shotModeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('shot');
+    const b = document.getElementById('shotBanner');
+    if (b) b.style.display = document.body.classList.contains('shot') ? '' : 'none';
+  });
+
+  // Tastaturkürzel: "S" speichert Screenshot
+  document.addEventListener('keydown', (e)=>{
+    const tag = (e.target?.tagName||'').toLowerCase();
+    const typing = ['input','textarea','select'].includes(tag);
+    const key = (e.key||'').toLowerCase();
+    if (!typing && !e.ctrlKey && !e.metaKey && key==='s'){
+      e.preventDefault();
+      takeShot();
+    }
+    if (key==='escape' && document.body.classList.contains('shot')){
+      document.body.classList.remove('shot');
+      const b = document.getElementById('shotBanner');
+      if (b) b.style.display = 'none';
+    }
+  });
+
+  // default selection
+  activate('scene-btn-primary');
+</script>
+</body>
+</html>
