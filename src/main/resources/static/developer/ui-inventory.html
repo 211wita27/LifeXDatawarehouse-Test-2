@@ -24,6 +24,7 @@
       --btn-radius:8px;
       --stage-w:900px;
       --stage-h:560px;
+      --max-page-w:2560px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -42,7 +43,7 @@
     header .badge{margin-left:auto;font-size:.9rem;opacity:.9}
 
     /* =================== Layout =================== */
-    .layout{max-width:1600px;margin:1rem auto;display:grid;grid-template-columns:320px 1fr;gap:1rem;padding:0 1rem;transition:grid-template-columns .2s ease}
+    .layout{max-width:100%;margin:1rem auto;display:grid;grid-template-columns:320px 1fr;gap:1rem;padding:0 1rem;transition:grid-template-columns .2s ease}
     body.collapsed .layout{grid-template-columns:0 1fr}
 
     .sidebar{background:#fff;border-radius:var(--radius);box-shadow:var(--card-shadow);padding:1rem;height:calc(100vh - 110px);
@@ -50,16 +51,20 @@
     body.collapsed .sidebar{padding:0;width:0;opacity:0;overflow:hidden;border:0;box-shadow:none}
 
     .stage-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 110px)}
+    .stage-wrap.fullpage{align-items:flex-start;justify-content:center}
+
     .stage{background:#fff;border-radius:var(--radius);box-shadow:var(--card-shadow);padding:2rem;
       min-height:var(--stage-h);width:var(--stage-w);
       display:flex;align-items:center;justify-content:center;position:relative;margin:auto;
       transition:min-height .2s ease,width .2s ease, box-shadow .2s ease}
     .stage.grid{background-image:linear-gradient(#f0f2f7 1px,transparent 1px),linear-gradient(90deg,#f0f2f7 1px,transparent 1px);
       background-size:24px 24px; background-position:center center}
+    .stage.fullpage{width:100%;max-width:var(--max-page-w)}
 
-    /* Scenes – FIX: only active is displayed */
+    /* Scenes */
     .stage .scene{display:none;width:100%;height:100%}
     .stage .scene.active{display:grid;place-items:center}
+    .stage.fullpage .scene.active{display:block;place-items:initial}
 
     /* Sidebar nav */
     .search{display:flex;gap:.5rem;margin-bottom:.75rem}
@@ -72,9 +77,28 @@
     .menu button.item.active{background:var(--panel);border:1px solid var(--panel-border)}
     .menu .item small{display:block;color:var(--muted)}
 
-    /* Top toolbar (state controls) */
-    .toolbar{position:absolute;top:.6rem;right:.6rem;background:#fff;border:1px solid var(--border);border-radius:10px;
-      box-shadow:var(--card-shadow);padding:.4rem .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    /* Quick-Open */
+    .quickopen{margin:.6rem 0 0;padding:.6rem;border:1px solid var(--border);border-radius:8px;background:#fcfdff}
+    .quickopen label{display:block;font-weight:bold;margin-bottom:.35rem}
+    .qo-row{display:flex;gap:.4rem}
+    .quickopen select,.quickopen input{flex:1;padding:.4rem;border:1px solid var(--border);border-radius:6px}
+    .quickopen button{padding:.45rem .8rem;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer}
+    .quickopen small{display:block;margin-top:.4rem;color:#666}
+
+    /* Toolbar (FIXED, kollidiert nicht mit Sidebar) */
+    .toolbar{
+      position:fixed; /* vorher: absolute → konnte Sidebar überdecken */
+      top:68px;       /* unter dem Header */
+      left:calc(320px + 24px); /* rechts neben der Sidebar */
+      right:16px;
+      background:#fff;border:1px solid var(--border);border-radius:10px;
+      box-shadow:var(--card-shadow);padding:.4rem .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;z-index:9999;
+      pointer-events:none; /* Wrapper lässt Klicks durch, Interaktives wird unten wieder aktiviert */
+    }
+    .toolbar > *{pointer-events:auto}
+    body.collapsed .toolbar{left:16px} /* wenn Sidebar eingeklappt ist */
+    @media (max-width:1100px){ .toolbar{left:16px} }
+
     .toolbar label{display:flex;align-items:center;gap:.3rem;font-size:.9rem;color:#333}
     .toolbar input[type="range"]{width:120px}
     .toolbar .sep{width:1px;height:18px;background:#e6e6e6;margin:0 .25rem}
@@ -82,8 +106,9 @@
     .toolbar .shot:hover{background:#eef2fb}
     .toolbar select{padding:.2rem .35rem;border:1px solid var(--border);border-radius:6px;background:#fff}
     .toolbar input[type="number"]{width:90px;padding:.2rem .35rem;border:1px solid var(--border);border-radius:6px}
+    .previewOnly{display:none}
 
-    /* =================== Components (shared) =================== */
+    /* Components */
     .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:var(--btn-radius);padding:.5rem 1rem;border:1px solid transparent;
       line-height:1.2;cursor:pointer;font-weight:600}
     .btn-primary{background:var(--primary);color:#fff}
@@ -100,19 +125,15 @@
 
     .input{padding:.6rem .7rem;border:1px solid var(--border);border-radius:8px;width:100%}
     .input:focus,.sim-focus .input{outline:3px solid #cde1ff;border-color:#7fb4ff}
-
     .select{padding:.6rem .7rem;border:1px solid var(--border);border-radius:8px;min-width:260px;background:#fff}
-
     .field{display:flex;flex-direction:column;gap:.25rem;margin-bottom:.9rem}
     .field label{font-weight:bold}
-
     .pill{display:inline-flex;align-items:center;gap:.4rem;background:var(--panel);border:1px solid var(--panel-border);
       padding:.25rem .6rem;border-radius:999px;font-size:.9rem}
-
     .card{background:#fff;padding:1.4rem;border-radius:var(--radius);max-width:730px;margin:auto;box-shadow:var(--card-shadow)}
-
+    .page-card{background:#fff;padding:0;border-radius:var(--radius);box-shadow:var(--card-shadow);max-width:none;width:100%;margin:0}
     .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:.9rem}
-    .panel input{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas, "Liberation Mono","Courier New",monospace}
+    .panel input{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 
     /* Progress bar */
     #idx-box{border:1px dashed var(--border);border-radius:10px;padding:1rem;width:100%}
@@ -129,11 +150,6 @@
     #kv td{border:1px solid var(--border-soft);padding:.6rem}
     #kv td.key{font-weight:bold;width:180px;background:#f3f7ff}
 
-    /* Alerts */
-    .alert{padding:.7rem 1rem;border-radius:8px;border:1px solid}
-    .alert.ok{background:#ecf6ef;border-color:#cfe9d6;color:#136b2e}
-    .alert.err{background:#fdecec;border-color:#f8c8c6;color:#8e1c18}
-
     /* ============== Screenshot Mode ============== */
     body.shot header{display:none}
     body.shot .layout{max-width:none;width:100%;padding:0;gap:0;display:flex;justify-content:center}
@@ -143,8 +159,13 @@
     body.shot .stage-wrap{min-height:100vh;padding:2rem;display:flex;align-items:center;justify-content:center}
     body.shot .stage{margin:0}
     body.shot{background:#e9eef7}
-    /* Hinweis-Badge im Shot-Layout */
-    .shot-banner{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:.35rem .6rem;border-radius:8px;box-shadow:var(--card-shadow);z-index:9999;font-size:.9rem;opacity:.9}
+    .shot-banner{position:fixed;top:10px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:.35rem .6rem;border-radius:8px;box-shadow:var(--card-shadow);z-index:9999;font-size:.9rem;opacity:.9;display:flex;align-items:center;gap:.6rem}
+    .shot-banner button{border:1px solid #3b4151;background:#1f2633;color:#fff;border-radius:6px;padding:.25rem .5rem;cursor:pointer}
+
+    /* Page preview scaling */
+    .frame-outer{flex:1;min-height:480px;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;display:flex;justify-content:center;align-items:flex-start}
+    .frame-scale{transform-origin:top center}
+    .page-frame{width:100%;height:100%;border:0;background:#fff}
   </style>
 </head>
 <body>
@@ -153,7 +174,10 @@
   <div class="title">LifeX UI Inventory</div>
   <div class="badge">Screenshot-Helfer • Komponentenkatalog</div>
 </header>
-<div id="shotBanner" class="shot-banner" style="display:none">Shot‑Layout aktiv – ESC zum Beenden</div>
+<div id="shotBanner" class="shot-banner" style="display:none">
+  <span>Shot-Layout aktiv – Taste <strong>F</strong> oder Button zum Beenden</span>
+  <button id="shotExitBtn">Beenden</button>
+</div>
 
 <div class="layout">
   <!-- =================== Sidebar =================== -->
@@ -192,28 +216,53 @@
 
       <h4>Chips</h4>
       <button class="item" data-target="pills"><strong>Pills</strong><small>verlinkte Chips</small></button>
+
+      <h4>Seiten (Full Page)</h4>
+      <button class="item" data-target="page-index"><strong>Index – ganze Seite</strong><small>/index.html</small></button>
+      <button class="item" data-target="page-details"><strong>Details – ganze Seite</strong><small>/details.html</small></button>
+      <button class="item" data-target="page-create"><strong>Create – ganze Seite</strong><small>/create.html</small></button>
+
+      <!-- Schnell-Auswahl für Details -->
+      <div class="quickopen" id="quickOpen">
+        <label>Details öffnen</label>
+        <div class="qo-row">
+          <select id="qoType">
+            <option value="account">Account</option>
+            <option value="project">Project</option>
+            <option value="site">Site</option>
+            <option value="server">Server</option>
+            <option value="client">Client</option>
+            <option value="radio">Radio</option>
+            <option value="audio">Audio</option>
+            <option value="phone">Phone</option>
+          </select>
+          <input id="qoId" inputmode="numeric" placeholder="ID">
+          <button id="qoOpenBtn" title="Öffnen">Öffnen</button>
+        </div>
+        <small>Lädt automatisch <code>/details.html?type=…&amp;id=…</code></small>
+      </div>
     </nav>
   </aside>
 
   <!-- =================== Stage =================== -->
-  <main class="stage-wrap">
+  <main class="stage-wrap" id="stageWrap">
     <section class="stage grid" id="stage">
       <!-- Toolbar -->
       <div class="toolbar">
         <label><input type="checkbox" id="toggleGrid" checked> Grid</label>
         <span class="sep"></span>
-        <label><input type="checkbox" id="stateHover"> Hover</label>
-        <label><input type="checkbox" id="stateFocus"> Fokus</label>
-        <label><input type="checkbox" id="stateDisabled"> Disabled</label>
+        <label id="lblHover"><input type="checkbox" id="stateHover"> Hover</label>
+        <label id="lblFocus"><input type="checkbox" id="stateFocus"> Fokus</label>
+        <label id="lblDisabled"><input type="checkbox" id="stateDisabled"> Disabled</label>
         <span class="sep"></span>
-        <label>Breite
+        <label id="lblWidth">Breite
           <input type="range" id="widthRange" min="600" max="1200" step="10" value="900">
         </label>
-        <label>Höhe
+        <label id="lblHeight">Höhe
           <input type="range" id="heightRange" min="420" max="900" step="10" value="560">
         </label>
         <span class="sep"></span>
-        <label>Progress
+        <label id="lblProgress">Progress
           <input type="range" id="progressRange" min="0" max="100" step="1" value="35">
         </label>
         <span class="sep"></span>
@@ -222,36 +271,32 @@
           <select id="shotPreset" title="Zielgröße für Screenshot">
             <option value="stage">Stage (Regler)</option>
             <option value="1200x820">1200×820 (Shot)</option>
-            <option value="1280x720">1280×720</option>
+            <option value="1280x720" selected>1280×720</option>
             <option value="1600x900">1600×900</option>
             <option value="1920x1080">1920×1080</option>
             <option value="custom">Benutzerdefiniert…</option>
           </select>
         </label>
         <label id="customSize" style="display:none">
-          W <input type="number" id="shotW" min="300" max="4000" step="10" value="1200">
-          H <input type="number" id="shotH" min="300" max="4000" step="10" value="820">
+          W <input type="number" id="shotW" min="300" max="4000" step="10" value="1920">
+          H <input type="number" id="shotH" min="300" max="4000" step="10" value="1080">
         </label>
         <span class="sep"></span>
+        <label class="previewOnly">Vorschau-Zoom
+          <input type="range" id="previewZoom" min="50" max="110" step="1" value="90">
+        </label>
+        <span class="sep previewOnly"></span>
+
         <button class="shot" id="shotBtn" title="PNG speichern (S)">📸 Screenshot</button>
         <button class="shot" id="shotCopy" title="In Zwischenablage kopieren">📋 Kopieren</button>
-        <button class="shot" id="shotMode" title="Shot-Layout an/aus">🖼️ Shot‑Layout</button>
+        <button class="shot" id="shotMode" title="Shot-Layout an/aus">🖼️ Shot-Layout</button>
       </div>
 
       <!-- ============ SCENES (one per component) ============ -->
+      <div class="scene" id="scene-btn-primary"><button class="btn btn-primary">Neu indexieren</button></div>
+      <div class="scene" id="scene-btn-secondary"><button class="btn btn-secondary">Suchen</button></div>
+      <div class="scene" id="scene-btn-back"><a id="back" href="index.html">← zurück</a></div>
 
-      <!-- Buttons -->
-      <div class="scene" id="scene-btn-primary">
-        <button class="btn btn-primary">Neu indexieren</button>
-      </div>
-      <div class="scene" id="scene-btn-secondary">
-        <button class="btn btn-secondary">Suchen</button>
-      </div>
-      <div class="scene" id="scene-btn-back">
-        <a id="back" href="../index.html">← zurück</a>
-      </div>
-
-      <!-- Shortcuts & Panels -->
       <div class="scene" id="scene-shortcut-closed">
         <div class="card" style="max-width:520px">
           <div class="shortcut">
@@ -293,7 +338,6 @@
         </div>
       </div>
 
-      <!-- Suche -->
       <div class="scene" id="scene-searchbar">
         <div style="display:flex;gap:.5rem;align-items:center;width:100%;max-width:780px">
           <input id="search-input" class="input" list="sug" placeholder="Global-Suche (Lucene oder normal)" value="type:project AND Life*">
@@ -324,11 +368,11 @@
             <tr><th>ID</th><th>Name</th><th>Type</th><th>Owner</th><th>Region</th><th>Updated</th></tr>
             </thead>
             <tbody>
-            <tr><td>p-1001</td><td>LifeX Onboarding</td><td>project</td><td>team-data</td><td>eu</td><td>2025‑07‑02</td></tr>
-            <tr><td>p-1002</td><td>ETL v2</td><td>project</td><td>engineering</td><td>eu</td><td>2025‑06‑28</td></tr>
-            <tr><td>a-11</td><td>ACME Corp</td><td>account</td><td>sales</td><td>us</td><td>2025‑06‑11</td></tr>
-            <tr><td>s-77</td><td>eu-prod‑01</td><td>server</td><td>ops</td><td>eu</td><td>2025‑05‑30</td></tr>
-            <tr><td>p-1099</td><td>Archive Migration</td><td>project</td><td>ops</td><td>apac</td><td>2025‑05‑12</td></tr>
+            <tr><td>p-1001</td><td>LifeX Onboarding</td><td>project</td><td>team-data</td><td>eu</td><td>2025-07-02</td></tr>
+            <tr><td>p-1002</td><td>ETL v2</td><td>project</td><td>engineering</td><td>eu</td><td>2025-06-28</td></tr>
+            <tr><td>a-11</td><td>ACME Corp</td><td>account</td><td>sales</td><td>us</td><td>2025-06-11</td></tr>
+            <tr><td>s-77</td><td>eu-prod-01</td><td>server</td><td>ops</td><td>eu</td><td>2025-05-30</td></tr>
+            <tr><td>p-1099</td><td>Archive Migration</td><td>project</td><td>ops</td><td>apac</td><td>2025-05-12</td></tr>
             </tbody>
           </table>
         </div>
@@ -341,11 +385,11 @@
             <tr><th>#</th><th>CityName</th><th>PostalCode</th><th>Country</th><th>Notes</th><th>Created</th></tr>
             </thead>
             <tbody>
-            <tr><td>1</td><td>Wien</td><td>1010</td><td>AT</td><td>Hauptstadt; UTF‑8 ✓</td><td>2025‑05‑01</td></tr>
-            <tr><td>2</td><td>Graz</td><td>8010</td><td>AT</td><td>—</td><td>2025‑05‑01</td></tr>
-            <tr><td>3</td><td>Linz</td><td>4020</td><td>AT</td><td>Lange Beschreibung, die horizontales Scrollen demonstriert …</td><td>2025‑05‑01</td></tr>
-            <tr><td>4</td><td>Salzburg</td><td>5020</td><td>AT</td><td>—</td><td>2025‑05‑01</td></tr>
-            <tr><td>5</td><td>Innsbruck</td><td>6020</td><td>—</td><td>—</td><td>2025‑05‑01</td></tr>
+            <tr><td>1</td><td>Wien</td><td>1010</td><td>AT</td><td>Hauptstadt; UTF-8 ✓</td><td>2025-05-01</td></tr>
+            <tr><td>2</td><td>Graz</td><td>8010</td><td>AT</td><td>—</td><td>2025-05-01</td></tr>
+            <tr><td>3</td><td>Linz</td><td>4020</td><td>AT</td><td>Lange Beschreibung, die horizontales Scrollen demonstriert …</td><td>2025-05-01</td></tr>
+            <tr><td>4</td><td>Salzburg</td><td>5020</td><td>AT</td><td>—</td><td>2025-05-01</td></tr>
+            <tr><td>5</td><td>Innsbruck</td><td>6020</td><td>—</td><td>—</td><td>2025-05-01</td></tr>
             </tbody>
           </table>
         </div>
@@ -359,7 +403,7 @@
             <tr><td class="key">Name</td><td>LifeX Onboarding</td></tr>
             <tr><td class="key">Owner</td><td><span class="pill">team-data</span></td></tr>
             <tr><td class="key">Region</td><td><span class="pill">eu</span> <span class="pill">primary</span></td></tr>
-            <tr><td class="key">Updated</td><td>2025‑07‑02 14:21</td></tr>
+            <tr><td class="key">Updated</td><td>2025-07-02 14:21</td></tr>
             </tbody>
           </table>
         </div>
@@ -375,6 +419,9 @@
             <option>Site</option>
             <option>Server</option>
             <option>WorkingPosition</option>
+            <option>Radio</option>
+            <option>AudioDevice</option>
+            <option>PhoneIntegration</option>
           </select>
         </label>
       </div>
@@ -384,7 +431,7 @@
           <h3>Project anlegen</h3>
           <div class="field">
             <label for="p-name">Project Name</label>
-            <input id="p-name" class="input" placeholder="z. B. LifeX Onboarding">
+            <input id="p-name" class="input" placeholder="z. B. LifeX Onboarding">
           </div>
           <div class="field">
             <label for="p-owner">Owner</label>
@@ -408,21 +455,25 @@
       </div>
 
       <!-- Feedback -->
-      <div class="scene" id="scene-alert-ok">
-        <p class="alert ok"><strong>Erfolg:</strong> Operation erfolgreich abgeschlossen.</p>
-      </div>
-      <div class="scene" id="scene-alert-err">
-        <p class="alert err"><strong>Fehler:</strong> Eingabe ungültig oder Serverfehler.</p>
-      </div>
+      <div class="scene" id="scene-alert-ok"><p class="alert ok"><strong>Erfolg:</strong> Operation erfolgreich abgeschlossen.</p></div>
+      <div class="scene" id="scene-alert-err"><p class="alert err"><strong>Fehler:</strong> Eingabe ungültig oder Serverfehler.</p></div>
 
       <!-- Chips -->
       <div class="scene" id="scene-pills">
         <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <span class="pill">team-data</span>
-          <span class="pill">eu</span>
-          <span class="pill">primary</span>
-          <span class="pill">read‑only</span>
+          <span class="pill">team-data</span><span class="pill">eu</span><span class="pill">primary</span><span class="pill">read-only</span>
         </div>
+      </div>
+
+      <!-- ===== Full Page Scenes (iframe-based) ===== -->
+      <div class="scene" id="scene-page-index">
+        <div class="page-card"><div class="frame-outer"><div class="frame-scale"><iframe class="page-frame" data-url="/index.html"></iframe></div></div></div>
+      </div>
+      <div class="scene" id="scene-page-details">
+        <div class="page-card"><div class="frame-outer"><div class="frame-scale"><iframe class="page-frame" data-url="/details.html"></iframe></div></div></div>
+      </div>
+      <div class="scene" id="scene-page-create">
+        <div class="page-card"><div class="frame-outer"><div class="frame-scale"><iframe class="page-frame" data-url="/create.html"></iframe></div></div></div>
       </div>
 
     </section>
@@ -451,8 +502,12 @@
     'alert-ok':'scene-alert-ok',
     'alert-err':'scene-alert-err',
     'pills':'scene-pills',
+    'page-index':'scene-page-index',
+    'page-details':'scene-page-details',
+    'page-create':'scene-page-create',
   };
   const stage = document.getElementById('stage');
+  const stageWrap = document.getElementById('stageWrap');
   const scenes = [...stage.querySelectorAll('.scene')];
   const menu = document.getElementById('menu');
   const filter = document.getElementById('filter');
@@ -463,31 +518,113 @@
   const toggleMenuBtn = document.getElementById('toggleMenu');
   const heightRange = document.getElementById('heightRange');
 
+  /* ===== Toolbar State Switches ===== */
+  const grid = document.getElementById('toggleGrid');
+  const hover = document.getElementById('stateHover');
+  const focus = document.getElementById('stateFocus');
+  const disabled = document.getElementById('stateDisabled');
+  const widthRange = document.getElementById('widthRange');
+
+  const lblHover = document.getElementById('lblHover');
+  const lblFocus = document.getElementById('lblFocus');
+  const lblDisabled = document.getElementById('lblDisabled');
+  const lblProgress = document.getElementById('lblProgress');
+  const lblWidth = document.getElementById('lblWidth');
+  const lblHeight = document.getElementById('lblHeight');
+
+  /* ===== Capability-Matrix pro Szene ===== */
+  const CAPS = {
+    'scene-btn-primary':      {hover:true,  focus:false, disabled:true,  progress:false},
+    'scene-btn-secondary':    {hover:true,  focus:false, disabled:true,  progress:false},
+    'scene-btn-back':         {hover:true,  focus:false, disabled:false, progress:false},
+    'scene-shortcut-closed':  {hover:true,  focus:false, disabled:false, progress:false},
+    'scene-shortcut-open':    {hover:true,  focus:false, disabled:false, progress:false},
+    'scene-panel-input':      {hover:false, focus:true,  disabled:false, progress:false},
+    'scene-searchbar':        {hover:false, focus:true,  disabled:false, progress:false},
+    'scene-progress':         {hover:false, focus:false, disabled:false, progress:true },
+    'scene-result-table':     {hover:true,  focus:false, disabled:false, progress:false},
+    'scene-table-viewer':     {hover:true,  focus:false, disabled:false, progress:false},
+    'scene-kv-table':         {hover:false, focus:false, disabled:false, progress:false},
+    'scene-entity-select':    {hover:false, focus:true,  disabled:false, progress:false},
+    'scene-project-form':     {hover:false, focus:true,  disabled:false, progress:false},
+    'scene-alert-ok':         {hover:false, focus:false, disabled:false, progress:false},
+    'scene-alert-err':        {hover:false, focus:false, disabled:false, progress:false},
+    'scene-pills':            {hover:true,  focus:false, disabled:false, progress:false},
+    'scene-page-index':       {hover:false, focus:false, disabled:false, progress:false, page:true},
+    'scene-page-details':     {hover:false, focus:false, disabled:false, progress:false, page:true},
+    'scene-page-create':      {hover:false, focus:false, disabled:false, progress:false, page:true},
+  };
+
+  function setCtl(labelEl, on, checkbox){
+    labelEl.style.display = on ? '' : 'none';
+    if(!on && checkbox){ checkbox.checked = false; }
+  }
+
+  function applyStates(){
+    stage.classList.toggle('grid', grid.checked);
+    stage.classList.toggle('sim-hover', hover.checked);
+    stage.classList.toggle('sim-focus', focus.checked);
+    stage.classList.toggle('sim-disabled', disabled.checked);
+  }
+
+  function applyToolbarCaps(sceneId){
+    const c = CAPS[sceneId] || {hover:true,focus:true,disabled:true,progress:false};
+    setCtl(lblHover,    !!c.hover,    hover);
+    setCtl(lblFocus,    !!c.focus,    focus);
+    setCtl(lblDisabled, !!c.disabled, disabled);
+    setCtl(lblProgress, !!c.progress, progressRange);
+    // Progress zurücksetzen, wenn verborgen
+    if(!c.progress && progressRange){ progressRange.value = 35; if(idxFill) idxFill.style.width='35%'; if(progressText) progressText.textContent='35 %'; }
+    applyStates();
+
+    // Für Full-Page-Szenen Preview-Controls zeigen
+    document.querySelectorAll('.previewOnly').forEach(n => n.style.display = c.page ? '' : 'none');
+  }
+
+  function isPageId(id){ return /^scene-page-/.test(id); }
+
   function activate(id){
+    // 1) Szene aktiv schalten
     scenes.forEach(s => s.classList.remove('active'));
     const el = document.getElementById(id);
     if (el){ el.classList.add('active'); }
-    // reset state toggles to visible effects
-    applyStates();
-    // auto focus first input for focus screenshots
-    const firstInput = el && el.querySelector('input,select,button,a#back');
-    if (firstInput && document.getElementById('stateFocus').checked){
-      firstInput.focus();
-    } else if (firstInput) {
-      firstInput.blur();
-    }
-    // update selected button state
+
+    // 2) Toolbar-Kapazitäten je Szene anwenden
+    applyToolbarCaps(id);
+
+    // 3) States + aktives Menü setzen
     [...menu.querySelectorAll('.item')].forEach(b=>b.classList.remove('active'));
     const btn = [...menu.querySelectorAll('.item')].find(b => map[b.dataset.target] === id);
     if (btn) btn.classList.add('active');
+
+    // 4) Full-Page Modus toggeln (für iframe-Szenen)
+    const pageMode = isPageId(id);
+    stageWrap.classList.toggle('fullpage', pageMode);
+    stage.classList.toggle('fullpage', pageMode);
+
+    // 5) Page-Defaults einmalig setzen
+    if (pageMode && !el.dataset.inited){
+      applyPageDefaults(id);
+      el.dataset.inited = '1';
+    }
+
+    // 6) Seite in iframe laden + Preview fitten
+    if (pageMode){
+      const frame = el.querySelector('.page-frame');
+      if (frame && !frame.dataset.loaded){
+        frame.src = frame.dataset.url || '/index.html';
+        frame.addEventListener('load', ()=>{ frame.dataset.loaded='1'; fitPagePreview(el); }, {once:true});
+      } else if (frame){
+        fitPagePreview(el);
+      }
+    }
   }
 
   // init menu handlers
   menu.addEventListener('click', (e)=>{
     const b = e.target.closest('button.item');
     if(!b) return;
-    const target = b.dataset.target;
-    activate(map[target]);
+    activate(map[b.dataset.target]);
   });
 
   // filter menu
@@ -502,19 +639,6 @@
     filter.value=''; filter.dispatchEvent(new Event('input')); filter.focus();
   });
 
-  // Toolbar toggles
-  const grid = document.getElementById('toggleGrid');
-  const hover = document.getElementById('stateHover');
-  const focus = document.getElementById('stateFocus');
-  const disabled = document.getElementById('stateDisabled');
-  const widthRange = document.getElementById('widthRange');
-
-  function applyStates(){
-    stage.classList.toggle('grid', grid.checked);
-    stage.classList.toggle('sim-hover', hover.checked);
-    stage.classList.toggle('sim-focus', focus.checked);
-    stage.classList.toggle('sim-disabled', disabled.checked);
-  }
   grid.addEventListener('change', applyStates);
   hover.addEventListener('change', applyStates);
   focus.addEventListener('change', applyStates);
@@ -522,9 +646,11 @@
 
   widthRange.addEventListener('input', ()=>{
     stage.style.setProperty('--stage-w', widthRange.value + 'px');
+    updateLivePreview();
   });
   heightRange.addEventListener('input', ()=>{
     stage.style.setProperty('--stage-h', heightRange.value + 'px');
+    updateLivePreview();
   });
 
   if (progressRange){
@@ -549,10 +675,17 @@
   const customSize = document.getElementById('customSize');
   const shotW = document.getElementById('shotW');
   const shotH = document.getElementById('shotH');
+  const shotExitBtn = document.getElementById('shotExitBtn');
+  const previewZoom = document.getElementById('previewZoom');
+
+  shotExitBtn.addEventListener('click', ()=>{ document.body.classList.remove('shot'); document.getElementById('shotBanner').style.display='none'; });
 
   shotPreset.addEventListener('change', ()=>{
     customSize.style.display = (shotPreset.value === 'custom') ? '' : 'none';
+    updateLivePreview();
   });
+  [shotW, shotH].forEach(el=> el && el.addEventListener('input', updateLivePreview));
+  if (previewZoom) previewZoom.addEventListener('input', updateLivePreview);
 
   function getTargetSize(){
     const v = shotPreset.value;
@@ -584,7 +717,6 @@
 
   async function html2canvasSafe(el, opts){
     if (typeof html2canvas !== 'function') throw new Error('html2canvas nicht geladen');
-    // Warte einen Tick, damit Layout-Änderungen greifen
     await new Promise(r=>setTimeout(r, 40));
     return await html2canvas(el, opts);
   }
@@ -595,17 +727,14 @@
       const active = stage.querySelector('.scene.active') || scenes[0];
       if(!active) throw new Error('Keine aktive Szene.');
 
-      // Sichtbare Stage im WYSIWYG-Verfahren aufnehmen (zuverlässig in Safari)
       const wasShot = document.body.classList.contains('shot');
       document.body.classList.add('shot'); // UI ausblenden
 
-      // Stage temporär auf Zielgröße setzen
       const prevW = stage.style.getPropertyValue('--stage-w');
       const prevH = stage.style.getPropertyValue('--stage-h');
       stage.style.setProperty('--stage-w', w + 'px');
       stage.style.setProperty('--stage-h', h + 'px');
 
-      // kurz warten bis Layout stabil ist
       await new Promise(r=>setTimeout(r, 50));
 
       const scale = Math.min(3, (window.devicePixelRatio || 1));
@@ -617,18 +746,15 @@
         allowTaint:true,
       });
 
-      // Zustand zurücksetzen
       if (prevW) stage.style.setProperty('--stage-w', prevW); else stage.style.removeProperty('--stage-w');
       if (prevH) stage.style.setProperty('--stage-h', prevH); else stage.style.removeProperty('--stage-h');
       if (!wasShot) document.body.classList.remove('shot');
 
-      // Dateiname
       const ts = new Date();
       const pad=(n)=>String(n).padStart(2,'0');
       const stamp = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`;
       const name = `lifex_${activeSceneKey()}_${w}x${h}${currentStatesTag()}_${stamp}.png`;
 
-      // Ausgabe
       canvas.toBlob(async (blob)=>{
         if(!blob) return alert('Konnte PNG nicht erzeugen.');
         if (copy && navigator.clipboard && window.ClipboardItem){
@@ -658,41 +784,168 @@
     a.remove(); URL.revokeObjectURL(url);
   }
 
-  // Mini-Toast
   function toast(msg){
     const t = document.createElement('div');
     t.textContent = msg;
-    t.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:.45rem .7rem;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:9999;font-size:.9rem';
+    t.style.cssText = 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:.45rem .7rem;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.25);z-index:99999;font-size:.9rem';
     document.body.appendChild(t);
-    setTimeout(()=>{ t.style.transition='opacity .3s'; t.style.opacity='0'; setTimeout(()=>t.remove(), 320); }, 1000);
+    setTimeout(()=>{ t.style.transition="opacity .3s"; t.style.opacity="0"; setTimeout(()=>t.remove(), 320); }, 1000);
   }
 
-  shotBtn.addEventListener('click', ()=>takeShot());
-  shotCopy.addEventListener('click', ()=>takeShot({copy:true}));
+  shotBtn.addEventListener('click', ()=> (isActivePage() ? takePageShot() : takeShot()));
+  shotCopy.addEventListener('click', ()=> (isActivePage() ? takePageShot({copy:true}) : takeShot({copy:true})));
   shotModeBtn.addEventListener('click', ()=>{
     document.body.classList.toggle('shot');
     const b = document.getElementById('shotBanner');
     if (b) b.style.display = document.body.classList.contains('shot') ? '' : 'none';
   });
 
-  // Tastaturkürzel: "S" speichert Screenshot
   document.addEventListener('keydown', (e)=>{
     const tag = (e.target?.tagName||'').toLowerCase();
     const typing = ['input','textarea','select'].includes(tag);
     const key = (e.key||'').toLowerCase();
-    if (!typing && !e.ctrlKey && !e.metaKey && key==='s'){
-      e.preventDefault();
-      takeShot();
-    }
-    if (key==='escape' && document.body.classList.contains('shot')){
-      document.body.classList.remove('shot');
-      const b = document.getElementById('shotBanner');
-      if (b) b.style.display = 'none';
-    }
+    if (!typing && !e.ctrlKey && !e.metaKey && key==='s'){ e.preventDefault(); takeShot(); }
+    if (!typing && !e.ctrlKey && !e.metaKey && key==='f'){ e.preventDefault(); shotModeBtn.click(); }
   });
 
-  // default selection
+  // default
   activate('scene-btn-primary');
+
+  // === Page-spezifische Defaults ===
+  const pageDefaults = {
+    'scene-page-index':   { preset: '1280x720', zoom: 90 },
+    'scene-page-details': { preset: '1280x720', zoom: 100 },
+    'scene-page-create':  { preset: '1280x720', zoom: 95 }
+  };
+  function applyPageDefaults(id){
+    const d = pageDefaults[id];
+    if (!d) return;
+    if (shotPreset) shotPreset.value = d.preset;
+    if (previewZoom) previewZoom.value = d.zoom;
+    updateLivePreview();
+  }
+
+  /* ===== QuickOpen: öffnet Details direkt ===== */
+  const qoType = document.getElementById('qoType');
+  const qoId = document.getElementById('qoId');
+  const qoOpenBtn = document.getElementById('qoOpenBtn');
+  function quickOpenDetails(){
+    const type = qoType.value;
+    const id = qoId.value.trim();
+    if(!id) { qoId.focus(); return; }
+    const sceneId = 'scene-page-details';
+    activate(sceneId);
+    const scene = document.getElementById(sceneId);
+    const frame = scene.querySelector('.page-frame');
+    const url = (frame.dataset.url||'/details.html') + `?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+    frame.dataset.loaded='';
+    frame.src = url;
+    frame.addEventListener('load', ()=>{ frame.dataset.loaded='1'; fitPagePreview(scene); }, {once:true});
+    stage.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  qoOpenBtn.addEventListener('click', quickOpenDetails);
+  qoId.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); quickOpenDetails(); } });
+
+  // ===== Helpers for Page Scenes =====
+  function isActivePage(){
+    const active = document.querySelector('#stage .scene.active');
+    return !!(active && /^scene-page-/.test(active.id));
+  }
+
+  function measureDocHeight(doc){
+    const b = doc.body; const e = doc.documentElement;
+    return Math.max(b.scrollHeight, e.scrollHeight, b.offsetHeight, e.offsetHeight, b.clientHeight, e.clientHeight);
+  }
+
+  async function ensureHtml2CanvasIn(win){
+    if (win.html2canvas) return;
+    await new Promise((resolve, reject)=>{
+      const s = win.document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      s.onload = resolve; s.onerror = reject;
+      win.document.head.appendChild(s);
+    });
+  }
+
+  function fitPagePreview(scene){
+    const outer = scene.querySelector('.frame-outer');
+    const scaleWrap = scene.querySelector('.frame-scale');
+    const frame = scene.querySelector('.page-frame');
+    if (!outer || !scaleWrap || !frame) return;
+
+    const { w, h } = getTargetSize();
+    frame.style.width = w + 'px';
+
+    let targetH = h || 820;
+    try {
+      const doc = frame.contentDocument;
+      const fullH = measureDocHeight(doc);
+      frame.style.height = fullH + 'px';
+      targetH = (shotPreset.value === 'stage')
+              ? +document.getElementById('heightRange').value
+              : (shotPreset.value === 'custom' ? (+shotH.value || fullH) : fullH);
+    } catch (e) {
+      frame.style.height = targetH + 'px';
+    }
+
+    scaleWrap.style.width = w + 'px';
+    scaleWrap.style.height = targetH + 'px';
+
+    const avail = (outer.clientWidth || stage.clientWidth) - 24;
+    const zoom = previewZoom ? Math.max(50, Math.min(110, +previewZoom.value)) / 100 : 1;
+    const scale = Math.min(1, avail / w) * zoom;
+    scaleWrap.style.transform = `scale(${scale})`;
+
+    outer.style.height = Math.ceil(scaleWrap.clientHeight * scale) + 'px';
+  }
+
+  function updateLivePreview(){
+    const active = document.querySelector('#stage .scene.active');
+    if (active && /^scene-page-/.test(active.id)) fitPagePreview(active);
+  }
+  window.addEventListener('resize', updateLivePreview);
+
+  async function takePageShot({copy=false}={}){
+    try{
+      const active = document.querySelector('#stage .scene.active');
+      if (!active || !/^scene-page-/.test(active.id)) return takeShot({copy});
+      const frame = active.querySelector('.page-frame');
+      const win = frame.contentWindow; const doc = frame.contentDocument;
+      await ensureHtml2CanvasIn(win);
+
+      const { w, h } = getTargetSize();
+      let totalH = h || 820;
+      try{
+        const autoH = measureDocHeight(doc);
+        totalH = autoH; frame.style.height = autoH + 'px';
+      }catch(_){}
+
+      frame.style.width = w + 'px';
+      await new Promise(r=>setTimeout(r, 50));
+
+      const scale = Math.min(3, (window.devicePixelRatio||1));
+      const canvas = await win.html2canvas(doc.body, {
+        backgroundColor:'#fff', scale, width:w, height:totalH,
+        windowWidth:w, windowHeight:totalH, scrollX:0, scrollY:0, useCORS:true
+      });
+
+      const ts = new Date();
+      const pad=(n)=>String(n).padStart(2,'0');
+      const stamp = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`;
+      const name = `lifex_${active.id.replace(/^scene-/,'')}_${w}x${totalH}${grid.checked?'_grid':''}${currentStatesTag()}_${stamp}.png`;
+
+      canvas.toBlob(async (blob)=>{
+        if(!blob) return alert('Konnte PNG nicht erzeugen.');
+        if (copy && navigator.clipboard && window.ClipboardItem){
+          try{ await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]); toast('Screenshot kopiert'); }
+          catch(err){ console.warn(err); downloadBlob(blob,name); toast('Konnte nicht kopieren – PNG gespeichert'); }
+        } else { downloadBlob(blob, name); toast('PNG gespeichert'); }
+      }, 'image/png');
+    }catch(e){ console.error(e); alert('Page-Screenshot fehlgeschlagen: '+ e.message); }
+  }
+
+  document.addEventListener('DOMContentLoaded', updateLivePreview);
 </script>
+
 </body>
 </html>
