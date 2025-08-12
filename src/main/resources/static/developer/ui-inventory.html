@@ -69,10 +69,7 @@
     .stage.fullpage .scene.active{display:block;place-items:initial}
 
     /* Skalierung: aktive Szene-Inhalte werden vergrößert/verkleinert */
-    .stage .scene.active > *{
-      transform: scale(var(--ui-scale));
-      transform-origin: center;
-    }
+    .stage .scene.active > *{ transform: scale(var(--ui-scale)); transform-origin: center; }
 
     /* Sidebar nav */
     .search{display:flex;gap:.5rem;margin-bottom:.75rem}
@@ -121,7 +118,7 @@
     .btn-primary:disabled,.sim-disabled .btn-primary{opacity:.6;cursor:not-allowed}
     .btn-secondary{background:#f6f7fb;color:#0f172a;border:1px solid var(--border)}
     .btn-secondary:hover,.sim-hover .btn-secondary{background:#eef1f8}
-    .btn-link{background:transparent;color:var(--brand);border:0;padding:0;font-weight:bold}
+    .btn-link{background:transparent;color:#brand;border:0;padding:0;font-weight:bold}
     .btn-link:hover,.sim-hover .btn-link{color:var(--primary-hover);text-decoration:underline}
 
     a#back{display:inline-block;color:#fff;background:var(--brand);text-decoration:none;font-weight:bold;padding:.6rem 1rem;border-radius:8px}
@@ -274,6 +271,7 @@
         <!-- Fixpunkt-Skalierung -->
         <div id="scaleCtl" style="display:flex;align-items:center;gap:.35rem"><span>Skalierung</span>
           <div class="scale-group" id="scaleGroup" role="tablist" aria-label="Skalierung">
+            <button data-scale="0.6">60%</button>
             <button data-scale="0.8">80%</button>
             <button data-scale="1" class="active">100%</button>
             <button data-scale="1.25">125%</button>
@@ -283,6 +281,8 @@
             <button data-scale="2.25">225%</button>
             <button data-scale="2.5">250%</button>
             <button data-scale="3">300%</button>
+            <button data-scale="4">400%</button>
+            <button data-scale="5">500%</button>
           </div>
         </div>
         <span class="sep"></span>
@@ -654,8 +654,8 @@
     const page = !!(active && /^scene-page-/.test(active?.id||''));
     const targets = (!active || page) ? [] : getEditableTargets(active);
     const has = targets.length > 0;
-    if (lblTarget) lblTarget.style.display = has ? '' : 'none';
-    if (lblText) lblText.style.display = has ? '' : 'none';
+    if (document.getElementById('lblTarget')) document.getElementById('lblTarget').style.display = has ? '' : 'none';
+    if (document.getElementById('lblText')) document.getElementById('lblText').style.display = has ? '' : 'none';
     if (!has) { if (targetSelect) targetSelect.innerHTML=''; if (textInput) textInput.value=''; return; }
     targetSelect._targets = targets;
     targetSelect.innerHTML = '';
