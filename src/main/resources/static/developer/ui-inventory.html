@@ -553,8 +553,6 @@
   const lblFocus = document.getElementById('lblFocus');
   const lblDisabled = document.getElementById('lblDisabled');
   const lblProgress = document.getElementById('lblProgress');
-  const lblWidth = document.getElementById('lblWidth');
-  const lblHeight = document.getElementById('lblHeight');
 
   // Neue Controls
   const scaleCtl = document.getElementById('scaleCtl');
@@ -628,10 +626,10 @@
     if(!c.progress && progressRange){ progressRange.value = 35; if(idxFill) idxFill.style.width='35%'; if(progressText) progressText.textContent='35 %'; }
     applyStates();
 
-    // Für Full-Page-Szenen Preview-Controls zeigen
+    // Preview-Controls nur für Full-Page (werden im HTML via .previewOnly markiert)
     document.querySelectorAll('.previewOnly').forEach(n => n.style.display = c.page ? '' : 'none');
 
-    // Skalierung nur für Komponenten (nicht für Full-Page)
+    // Skalierung nur für Komponenten (nicht Full-Page)
     if (scaleCtl){
       if (c.page){
         scaleCtl.style.display = 'none';
@@ -662,7 +660,8 @@
     targets.forEach((el, i)=>{
       const label = (el.textContent||el.value||'').trim() || el.id || el.className || el.tagName;
       const opt = document.createElement('option');
-      opt.value = String(i); opt.textContent = `${i+1}: ${label}`;
+      opt.value = String(i);
+      opt.textContent = `${i+1}: ${label}`;
       targetSelect.appendChild(opt);
     });
     targetSelect.value = '0';
@@ -809,14 +808,142 @@
     const id = active.id || 'scene';
     return id.replace(/^scene-/, '');
   }
+  function activeSceneEl(){
+    return stage.querySelector('.scene.active') || scenes[0];
+  }
 
-  function currentStatesTag(){
-    const tags = [];
-    if (grid.checked) tags.push('grid');
-    if (hover.checked) tags.push('hover');
-    if (focus.checked) tags.push('focus');
-    if (disabled.checked) tags.push('disabled');
-    return tags.length ? ('_' + tags.join('-')) : '';
+  // ======= Filename helpers (NEU) =======
+  function deburr(str){
+    return (str||'')
+            .normalize('NFKD')
+            .replace(/[\u0300-\u036f]/g,''); // diacritics
+  }
+  function slug(str, maxLen=80){
+    let s = deburr(String(str))
+            .toLowerCase()
+            .replace(/&/g,'-and-')
+            .replace(/[^a-z0-9]+/g,'-')
+            .replace(/^-+|-+$/g,'')
+            .replace(/-{2,}/g,'-');
+    if (s.length > maxLen) s = s.slice(0, maxLen).replace(/-+$/,'');
+    return s || 'na';
+  }
+  function tsStamp(d=new Date()){
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+  function getStatesList(){
+    const states = [];
+    if (hover.checked) states.push('hover');
+    if (focus.checked) states.push('focus');
+    if (disabled.checked) states.push('disabled');
+    if (grid.checked) states.push('grid');
+    return states;
+  }
+  function firstText(el){
+    return (el?.textContent || el?.value || '').trim();
+  }
+  function getPrimaryLabelForScene(scene){
+    // Bevorzugt: ausgewähltes editierbares Target
+    const idx = +(targetSelect?.value||0);
+    const targets = targetSelect?._targets || getEditableTargets(scene);
+    const t = targets?.[idx] || targets?.[0];
+    const label = firstText(t);
+    if (label) return label;
+
+    // Szenen-spezifisch
+    if (scene.id === 'scene-searchbar'){
+      const q = document.getElementById('search-input')?.value || '';
+      return q ? `query ${q}` : 'searchbar';
+    }
+    if (scene.id === 'scene-progress'){
+      return 'progress';
+    }
+    return scene.id.replace(/^scene-/,'');
+  }
+
+  function collectShotMetaComponent(scene, size){
+    const meta = {
+      scope: 'component',
+      sceneKey: scene.id.replace(/^scene-/,''),
+      states: getStatesList(),
+      w: size.w, h: size.h,
+      scale: lastScale,
+      preset: shotPreset?.value || 'custom'
+    };
+
+    // Label/Target
+    meta.label = getPrimaryLabelForScene(scene);
+
+    // Progress
+    if (scene.id === 'scene-progress'){
+      const v = parseInt(progressRange?.value || '0', 10);
+      meta.progress = isNaN(v) ? undefined : v;
+    }
+
+    // Specials
+    if (scene.id === 'scene-searchbar'){
+      meta.query = document.getElementById('search-input')?.value || '';
+      meta.button = firstText(document.getElementById('search-btn'));
+    }
+    if (scene.id === 'scene-entity-select'){
+      const sel = scene.querySelector('select');
+      meta.selection = sel ? sel.value || sel.selectedOptions?.[0]?.textContent : '';
+    }
+    return meta;
+  }
+
+  function collectShotMetaPage(scene, size){
+    const frame = scene.querySelector('.page-frame');
+    const meta = {
+      scope: 'page',
+      sceneKey: scene.id.replace(/^scene-/,''),
+      states: getStatesList(),
+      w: size.w, h: size.h,
+      scale: 1,
+      preset: shotPreset?.value || 'custom'
+    };
+    try{
+      const url = new URL(frame.src, window.location.href);
+      meta.urlPath = url.pathname.replace(/^\//,'').replace(/\//g,'-');
+      // Enge Auswahl an Query-Parametern (sonst werden Namen zu lang)
+      const interesting = [];
+      for (const [k,v] of url.searchParams.entries()){
+        if (['type','id','q','tab','view'].includes(k)) interesting.push(`${k}-${v}`);
+      }
+      if (interesting.length) meta.urlParams = interesting.join('-');
+      meta.title = frame.contentDocument?.title || '';
+    }catch(_){}
+    return meta;
+  }
+
+  function buildShotFilename(meta){
+    const segs = ['lifex', meta.scope];
+
+    segs.push(slug(meta.sceneKey, 40));
+
+    if (meta.title) segs.push(`title-${slug(meta.title, 60)}`);
+    if (meta.label) segs.push(`label-${slug(meta.label, 60)}`);
+    if (meta.button) segs.push(`btn-${slug(meta.button, 40)}`);
+    if (meta.selection) segs.push(`sel-${slug(meta.selection, 40)}`);
+    if (meta.query) segs.push(`q-${slug(meta.query, 80)}`);
+    if (typeof meta.progress === 'number') segs.push(`progress-${Math.max(0,Math.min(100,Math.round(meta.progress)))}pct`);
+    if (meta.urlPath) segs.push(`url-${slug(meta.urlPath, 80)}`);
+    if (meta.urlParams) segs.push(slug(meta.urlParams, 80));
+
+    const states = (meta.states||[]).length ? `states-${meta.states.join('-')}` : '';
+    if (states) segs.push(states);
+
+    segs.push(`size-${meta.w}x${meta.h}`);
+    if (meta.scale && Math.round(meta.scale*100) !== 100){
+      segs.push(`scale-${Math.round(meta.scale*100)}pct`);
+    }
+
+    const nameCore = segs.join('__');
+    const name = `${nameCore}__ts-${tsStamp()}.png`;
+
+    // Hard-Limit für Dateinamen (Windows/FAT etc. ~255 Zeichen). Wir kappen von hinten.
+    return name.length <= 240 ? name : (name.slice(0, 235).replace(/-+$/,'') + '.png');
   }
 
   async function html2canvasSafe(el, opts){
@@ -828,8 +955,8 @@
   async function takeShot({copy=false}={}){
     try{
       const { w, h } = getTargetSize();
-      const active = stage.querySelector('.scene.active') || scenes[0];
-      if(!active) throw new Error('Keine aktive Szene.');
+      const scene = activeSceneEl();
+      if(!scene) throw new Error('Keine aktive Szene.');
 
       const wasShot = document.body.classList.contains('shot');
       document.body.classList.add('shot'); // UI ausblenden
@@ -854,10 +981,9 @@
       if (prevH) stage.style.setProperty('--stage-h', prevH); else stage.style.removeProperty('--stage-h');
       if (!wasShot) document.body.classList.remove('shot');
 
-      const ts = new Date();
-      const pad=(n)=>String(n).padStart(2,'0');
-      const stamp = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`;
-      const name = `lifex_${activeSceneKey()}_${w}x${h}${currentStatesTag()}_${stamp}.png`;
+      // ==== Semantische Metadaten + Dateiname (NEU) ====
+      const meta = collectShotMetaComponent(scene, {w, h});
+      const filename = buildShotFilename(meta);
 
       canvas.toBlob(async (blob)=>{
         if(!blob) return alert('Konnte PNG nicht erzeugen.');
@@ -867,11 +993,11 @@
             toast('Screenshot kopiert');
           }catch(err){
             console.warn(err);
-            downloadBlob(blob, name);
+            downloadBlob(blob, filename);
             toast('Konnte nicht kopieren – PNG gespeichert');
           }
         } else {
-          downloadBlob(blob, name);
+          downloadBlob(blob, filename);
           toast('PNG gespeichert');
         }
       }, 'image/png');
@@ -896,27 +1022,7 @@
     setTimeout(()=>{ t.style.transition="opacity .3s"; t.style.opacity="0"; setTimeout(()=>t.remove(), 320); }, 1000);
   }
 
-  shotBtn.addEventListener('click', ()=> (isActivePage() ? takePageShot() : takeShot()));
-  shotCopy.addEventListener('click', ()=> (isActivePage() ? takePageShot({copy:true}) : takeShot({copy:true})));
-  shotModeBtn.addEventListener('click', ()=>{
-    document.body.classList.toggle('shot');
-    const b = document.getElementById('shotBanner');
-    if (b) b.style.display = document.body.classList.contains('shot') ? '' : 'none';
-  });
-
-  document.addEventListener('keydown', (e)=>{
-    const tag = (e.target?.tagName||'').toLowerCase();
-    const typing = ['input','textarea','select'].includes(tag);
-    const key = (e.key||'').toLowerCase();
-    if (!typing && !e.ctrlKey && !e.metaKey && key==='s'){ e.preventDefault(); takeShot(); }
-    if (!typing && !e.ctrlKey && !e.metaKey && key==='f'){ e.preventDefault(); shotModeBtn.click(); }
-  });
-
-  // default
-  activate('scene-btn-primary');
-  setScale(1);
-
-  // === Page-spezifische Defaults ===
+  // ===== Full-Page: Vorschau + Screenshot =====
   const pageDefaults = {
     'scene-page-index':   { preset: '1280x720', zoom: 90 },
     'scene-page-details': { preset: '1280x720', zoom: 100 },
@@ -930,29 +1036,23 @@
     updateLivePreview();
   }
 
-  /* ===== QuickOpen: öffnet Details direkt ===== */
-  const qoType = document.getElementById('qoType');
-  const qoId = document.getElementById('qoId');
-  const qoOpenBtn = document.getElementById('qoOpenBtn');
-  function quickOpenDetails(){
-    const type = qoType.value;
-    const id = qoId.value.trim();
-    if(!id) { qoId.focus(); return; }
-    const sceneId = 'scene-page-details';
-    activate(sceneId);
-    const scene = document.getElementById(sceneId);
-    const frame = scene.querySelector('.page-frame');
-    const base = (frame.dataset.url||'/details.html');
-    const url = `${base}?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
-    frame.dataset.loaded='';
-    frame.src = url;
-    frame.addEventListener('load', ()=>{ frame.dataset.loaded='1'; fitPagePreview(scene); }, {once:true});
-    stage.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  qoOpenBtn.addEventListener('click', quickOpenDetails);
-  qoId.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); quickOpenDetails(); } });
+  const shotBannerEl = document.getElementById('shotBanner');
 
-  // ===== Helpers for Page Scenes =====
+  shotBtn.addEventListener('click', ()=> (isActivePage() ? takePageShot() : takeShot()));
+  shotCopy.addEventListener('click', ()=> (isActivePage() ? takePageShot({copy:true}) : takeShot({copy:true})));
+  shotModeBtn.addEventListener('click', ()=>{
+    document.body.classList.toggle('shot');
+    if (shotBannerEl) shotBannerEl.style.display = document.body.classList.contains('shot') ? '' : 'none';
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    const tag = (e.target?.tagName||'').toLowerCase();
+    const typing = ['input','textarea','select'].includes(tag);
+    const key = (e.key||'').toLowerCase();
+    if (!typing && !e.ctrlKey && !e.metaKey && key==='s'){ e.preventDefault(); takeShot(); }
+    if (!typing && !e.ctrlKey && !e.metaKey && key==='f'){ e.preventDefault(); shotModeBtn.click(); }
+  });
+
   function isActivePage(){
     const active = document.querySelector('#stage .scene.active');
     return !!(active && /^scene-page-/.test(active.id));
@@ -1035,23 +1135,49 @@
         windowWidth:w, windowHeight:totalH, scrollX:0, scrollY:0, useCORS:true
       });
 
-      const ts = new Date();
-      const pad=(n)=>String(n).padStart(2,'0');
-      const stamp = `${ts.getFullYear()}${pad(ts.getMonth()+1)}${pad(ts.getDate())}-${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`;
-      const name = `lifex_${active.id.replace(/^scene-/,'')}_${w}x${totalH}${grid.checked?'_grid':''}${currentStatesTag()}_${stamp}.png`;
+      // ==== Metadaten + Dateiname (NEU) ====
+      const meta = collectShotMetaPage(active, {w, h: totalH});
+      const filename = buildShotFilename(meta);
 
       canvas.toBlob(async (blob)=>{
         if(!blob) return alert('Konnte PNG nicht erzeugen.');
         if (copy && navigator.clipboard && window.ClipboardItem){
           try{ await navigator.clipboard.write([ new ClipboardItem({ 'image/png': blob }) ]); toast('Screenshot kopiert'); }
-          catch(err){ console.warn(err); downloadBlob(blob,name); toast('Konnte nicht kopieren – PNG gespeichert'); }
-        } else { downloadBlob(blob, name); toast('PNG gespeichert'); }
+          catch(err){ console.warn(err); downloadBlob(blob,filename); toast('Konnte nicht kopieren – PNG gespeichert'); }
+        } else { downloadBlob(blob, filename); toast('PNG gespeichert'); }
       }, 'image/png');
     }catch(e){ console.error(e); alert('Page-Screenshot fehlgeschlagen: '+ e.message); }
   }
 
   document.addEventListener('DOMContentLoaded', updateLivePreview);
+
+  // === QuickOpen: öffnet Details direkt ===
+  const qoType = document.getElementById('qoType');
+  const qoId = document.getElementById('qoId');
+  const qoOpenBtn = document.getElementById('qoOpenBtn');
+  function quickOpenDetails(){
+    const type = qoType.value;
+    const id = qoId.value.trim();
+    if(!id) { qoId.focus(); return; }
+    const sceneId = 'scene-page-details';
+    activate(sceneId);
+    const scene = document.getElementById(sceneId);
+    const frame = scene.querySelector('.page-frame');
+    const base = (frame.dataset.url||'/details.html');
+    const url = `${base}?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+    frame.dataset.loaded='';
+    frame.src = url;
+    frame.addEventListener('load', ()=>{ frame.dataset.loaded='1'; fitPagePreview(scene); }, {once:true});
+    stage.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  qoOpenBtn.addEventListener('click', quickOpenDetails);
+  qoId.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); quickOpenDetails(); } });
+
+  // default Szene + Skalierung
+  activate('scene-btn-primary');
+  setScale(1);
 </script>
+
 
 </body>
 </html>
