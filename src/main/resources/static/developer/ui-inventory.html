@@ -25,6 +25,8 @@
       --stage-w:900px;
       --stage-h:560px;
       --max-page-w:2560px;
+      /* Komponentenskalierung */
+      --ui-scale: 1; /* 1 = 100 % */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
@@ -66,6 +68,12 @@
     .stage .scene.active{display:grid;place-items:center}
     .stage.fullpage .scene.active{display:block;place-items:initial}
 
+    /* Skalierung: aktive Szene-Inhalte werden vergrößert/verkleinert */
+    .stage .scene.active > *{
+      transform: scale(var(--ui-scale));
+      transform-origin: center;
+    }
+
     /* Sidebar nav */
     .search{display:flex;gap:.5rem;margin-bottom:.75rem}
     .search input{flex:1 1 auto;padding:.5rem .6rem;border:1px solid var(--border);border-radius:6px}
@@ -85,18 +93,11 @@
     .quickopen button{padding:.45rem .8rem;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer}
     .quickopen small{display:block;margin-top:.4rem;color:#666}
 
-    /* Toolbar (FIXED, kollidiert nicht mit Sidebar) */
-    .toolbar{
-      position:fixed; /* vorher: absolute → konnte Sidebar überdecken */
-      top:68px;       /* unter dem Header */
-      left:calc(320px + 24px); /* rechts neben der Sidebar */
-      right:16px;
-      background:#fff;border:1px solid var(--border);border-radius:10px;
-      box-shadow:var(--card-shadow);padding:.4rem .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;z-index:9999;
-      pointer-events:none; /* Wrapper lässt Klicks durch, Interaktives wird unten wieder aktiviert */
-    }
+    /* Toolbar (fixiert) */
+    .toolbar{position:fixed;top:68px;left:calc(320px + 24px);right:16px;background:#fff;border:1px solid var(--border);border-radius:10px;
+      box-shadow:var(--card-shadow);padding:.4rem .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;z-index:9999;pointer-events:none}
     .toolbar > *{pointer-events:auto}
-    body.collapsed .toolbar{left:16px} /* wenn Sidebar eingeklappt ist */
+    body.collapsed .toolbar{left:16px}
     @media (max-width:1100px){ .toolbar{left:16px} }
 
     .toolbar label{display:flex;align-items:center;gap:.3rem;font-size:.9rem;color:#333}
@@ -108,9 +109,13 @@
     .toolbar input[type="number"]{width:90px;padding:.2rem .35rem;border:1px solid var(--border);border-radius:6px}
     .previewOnly{display:none}
 
+    /* Fixpunkt-Skala */
+    .scale-group{display:flex;gap:.25rem}
+    .scale-group button{border:1px solid var(--border);background:#fff;border-radius:6px;padding:.25rem .45rem;cursor:pointer;font-weight:600}
+    .scale-group button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
     /* Components */
-    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:var(--btn-radius);padding:.5rem 1rem;border:1px solid transparent;
-      line-height:1.2;cursor:pointer;font-weight:600}
+    .btn{display:inline-flex;align-items:center;gap:.5rem;border-radius:var(--btn-radius);padding:.5rem 1rem;border:1px solid transparent;line-height:1.2;cursor:pointer;font-weight:600}
     .btn-primary{background:var(--primary);color:#fff}
     .btn-primary:hover,.sim-hover .btn-primary{background:var(--primary-hover)}
     .btn-primary:disabled,.sim-disabled .btn-primary{opacity:.6;cursor:not-allowed}
@@ -119,8 +124,7 @@
     .btn-link{background:transparent;color:var(--brand);border:0;padding:0;font-weight:bold}
     .btn-link:hover,.sim-hover .btn-link{color:var(--primary-hover);text-decoration:underline}
 
-    a#back{display:inline-block;color:#fff;background:var(--brand);
-      text-decoration:none;font-weight:bold;padding:.6rem 1rem;border-radius:8px}
+    a#back{display:inline-block;color:#fff;background:var(--brand);text-decoration:none;font-weight:bold;padding:.6rem 1rem;border-radius:8px}
     a#back:hover,.sim-hover a#back{background:var(--primary-hover)}
 
     .input{padding:.6rem .7rem;border:1px solid var(--border);border-radius:8px;width:100%}
@@ -128,8 +132,7 @@
     .select{padding:.6rem .7rem;border:1px solid var(--border);border-radius:8px;min-width:260px;background:#fff}
     .field{display:flex;flex-direction:column;gap:.25rem;margin-bottom:.9rem}
     .field label{font-weight:bold}
-    .pill{display:inline-flex;align-items:center;gap:.4rem;background:var(--panel);border:1px solid var(--panel-border);
-      padding:.25rem .6rem;border-radius:999px;font-size:.9rem}
+    .pill{display:inline-flex;align-items:center;gap:.4rem;background:var(--panel);border:1px solid var(--panel-border);padding:.25rem .6rem;border-radius:999px;font-size:.9rem}
     .card{background:#fff;padding:1.4rem;border-radius:var(--radius);max-width:730px;margin:auto;box-shadow:var(--card-shadow)}
     .page-card{background:#fff;padding:0;border-radius:var(--radius);box-shadow:var(--card-shadow);max-width:none;width:100%;margin:0}
     .panel{background:var(--panel);border:1px solid var(--panel-border);border-radius:8px;padding:.9rem}
@@ -261,6 +264,27 @@
         <label id="lblHeight">Höhe
           <input type="range" id="heightRange" min="420" max="900" step="10" value="560">
         </label>
+        <!-- Ziel-Element + Textbearbeitung -->
+        <label id="lblTarget" style="display:none">Knopf
+          <select id="targetSelect"></select>
+        </label>
+        <label id="lblText" style="display:none">Text
+          <input type="text" id="textInput" placeholder="Beschriftung …">
+        </label>
+        <!-- Fixpunkt-Skalierung -->
+        <div id="scaleCtl" style="display:flex;align-items:center;gap:.35rem"><span>Skalierung</span>
+          <div class="scale-group" id="scaleGroup" role="tablist" aria-label="Skalierung">
+            <button data-scale="0.8">80%</button>
+            <button data-scale="1" class="active">100%</button>
+            <button data-scale="1.25">125%</button>
+            <button data-scale="1.5">150%</button>
+            <button data-scale="1.75">175%</button>
+            <button data-scale="2">200%</button>
+            <button data-scale="2.25">225%</button>
+            <button data-scale="2.5">250%</button>
+            <button data-scale="3">300%</button>
+          </div>
+        </div>
         <span class="sep"></span>
         <label id="lblProgress">Progress
           <input type="range" id="progressRange" min="0" max="100" step="1" value="35">
@@ -532,6 +556,14 @@
   const lblWidth = document.getElementById('lblWidth');
   const lblHeight = document.getElementById('lblHeight');
 
+  // Neue Controls
+  const scaleCtl = document.getElementById('scaleCtl');
+  const scaleGroup = document.getElementById('scaleGroup');
+  const lblTarget = document.getElementById('lblTarget');
+  const lblText = document.getElementById('lblText');
+  const targetSelect = document.getElementById('targetSelect');
+  const textInput = document.getElementById('textInput');
+
   /* ===== Capability-Matrix pro Szene ===== */
   const CAPS = {
     'scene-btn-primary':      {hover:true,  focus:false, disabled:true,  progress:false},
@@ -567,21 +599,90 @@
     stage.classList.toggle('sim-disabled', disabled.checked);
   }
 
+  // Fixpunkt-Skalierung
+  let lastScale = 1;
+  function setScale(f){
+    lastScale = f || 1;
+    stage.style.setProperty('--ui-scale', String(lastScale));
+    if (scaleGroup){
+      [...scaleGroup.querySelectorAll('button')].forEach(b=>{
+        const s = parseFloat(b.dataset.scale);
+        b.classList.toggle('active', Math.abs(s - lastScale) < 0.001);
+      });
+    }
+  }
+  if (scaleGroup){
+    scaleGroup.addEventListener('click', (e)=>{
+      const b = e.target.closest('button'); if(!b) return;
+      const val = parseFloat(b.dataset.scale) || 1;
+      setScale(val);
+    });
+  }
+
   function applyToolbarCaps(sceneId){
     const c = CAPS[sceneId] || {hover:true,focus:true,disabled:true,progress:false};
     setCtl(lblHover,    !!c.hover,    hover);
     setCtl(lblFocus,    !!c.focus,    focus);
     setCtl(lblDisabled, !!c.disabled, disabled);
     setCtl(lblProgress, !!c.progress, progressRange);
-    // Progress zurücksetzen, wenn verborgen
     if(!c.progress && progressRange){ progressRange.value = 35; if(idxFill) idxFill.style.width='35%'; if(progressText) progressText.textContent='35 %'; }
     applyStates();
 
     // Für Full-Page-Szenen Preview-Controls zeigen
     document.querySelectorAll('.previewOnly').forEach(n => n.style.display = c.page ? '' : 'none');
+
+    // Skalierung nur für Komponenten (nicht für Full-Page)
+    if (scaleCtl){
+      if (c.page){
+        scaleCtl.style.display = 'none';
+        setScale(1);
+      } else {
+        scaleCtl.style.display = '';
+      }
+    }
   }
 
   function isPageId(id){ return /^scene-page-/.test(id); }
+
+  // === Editable Button Text ===
+  function getEditableTargets(scene){
+    if (!scene) return [];
+    return Array.from(scene.querySelectorAll('button, .btn, a#back, a.btn, input[type="button"], input[type="submit"]'));
+  }
+  function refreshEditableUI(){
+    const active = document.querySelector('#stage .scene.active');
+    const page = !!(active && /^scene-page-/.test(active?.id||''));
+    const targets = (!active || page) ? [] : getEditableTargets(active);
+    const has = targets.length > 0;
+    if (lblTarget) lblTarget.style.display = has ? '' : 'none';
+    if (lblText) lblText.style.display = has ? '' : 'none';
+    if (!has) { if (targetSelect) targetSelect.innerHTML=''; if (textInput) textInput.value=''; return; }
+    targetSelect._targets = targets;
+    targetSelect.innerHTML = '';
+    targets.forEach((el, i)=>{
+      const label = (el.textContent||el.value||'').trim() || el.id || el.className || el.tagName;
+      const opt = document.createElement('option');
+      opt.value = String(i); opt.textContent = `${i+1}: ${label}`;
+      targetSelect.appendChild(opt);
+    });
+    targetSelect.value = '0';
+    const first = targets[0];
+    textInput.value = (first.textContent||first.value||'').trim();
+  }
+  if (targetSelect){
+    targetSelect.addEventListener('change', ()=>{
+      const i = +targetSelect.value || 0;
+      const t = targetSelect._targets?.[i]; if(!t) return;
+      textInput.value = (t.textContent||t.value||'').trim();
+    });
+  }
+  if (textInput){
+    textInput.addEventListener('input', ()=>{
+      const i = +targetSelect.value || 0;
+      const t = targetSelect._targets?.[i]; if(!t) return;
+      if (t.tagName === 'INPUT') t.value = textInput.value; else t.textContent = textInput.value;
+    });
+  }
 
   function activate(id){
     // 1) Szene aktiv schalten
@@ -591,6 +692,9 @@
 
     // 2) Toolbar-Kapazitäten je Szene anwenden
     applyToolbarCaps(id);
+
+    // 2b) Editierbare Ziele aktualisieren
+    refreshEditableUI();
 
     // 3) States + aktives Menü setzen
     [...menu.querySelectorAll('.item')].forEach(b=>b.classList.remove('active'));
@@ -810,6 +914,7 @@
 
   // default
   activate('scene-btn-primary');
+  setScale(1);
 
   // === Page-spezifische Defaults ===
   const pageDefaults = {
@@ -837,7 +942,8 @@
     activate(sceneId);
     const scene = document.getElementById(sceneId);
     const frame = scene.querySelector('.page-frame');
-    const url = (frame.dataset.url||'/details.html') + `?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+    const base = (frame.dataset.url||'/details.html');
+    const url = `${base}?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
     frame.dataset.loaded='';
     frame.src = url;
     frame.addEventListener('load', ()=>{ frame.dataset.loaded='1'; fitPagePreview(scene); }, {once:true});
@@ -918,7 +1024,7 @@
       try{
         const autoH = measureDocHeight(doc);
         totalH = autoH; frame.style.height = autoH + 'px';
-      }catch(_){}
+      }catch(_){ }
 
       frame.style.width = w + 'px';
       await new Promise(r=>setTimeout(r, 50));
