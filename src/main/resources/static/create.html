@@ -18,18 +18,22 @@
 </head>
 <body>
 
+<a href="#main" class="skip-link">Zum Inhalt springen</a>
+
 <header>
-  <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo">
-  <a href="/index.html">Dashboard</a>
-  <a href="/create.html">Daten anlegen</a>
+  <img src="/img/LifeXDatawarehouseLogo.png" alt="">
+  <nav aria-label="Hauptnavigation">
+    <a href="/index.html">Dashboard</a>
+    <a href="/create.html">Daten anlegen</a>
+  </nav>
 </header>
 
-<div class="container">
+<main id="main" class="container" aria-live="polite">
   <h1>Datensatz anlegen</h1>
 
   <!-- Schritt 1 -->
   <fieldset id="step1">
-    <label>Welche Entität möchtest du anlegen?</label>
+    <label for="entity">Welche Entität möchtest du anlegen?</label>
     <select id="entity">
       <option>Account</option><option>Project</option><option>Site</option>
       <option>Server</option><option>WorkingPosition</option><option>Radio</option>
@@ -41,8 +45,8 @@
   <!-- Schritt 2 -->
   <form id="dynamicForm" class="hidden" onsubmit="submitForm(event)"></form>
 
-  <div id="result"></div>
-</div>
+  <div id="result" role="status" aria-live="polite" aria-atomic="true"></div>
+</main>
 
 <script>
   /* ---------- Navigation ---------- */
@@ -56,10 +60,10 @@
   }
 
   /* ---------- Hilfsfunktionen für Felder ---------- */
-  const add=(id,lbl,req=true)=>`<label>${lbl}<input id="${id}" ${req?'required':''}></label>`;
+  const add=(id,lbl,req=true)=>`<label for="${id}">${lbl}<input id="${id}" ${req?'required':''}></label>`;
   const addSel=(id,lbl,opts,req=true)=>{
     const empty = req ? '' : `<option value=""></option>`;
-    return `<label>${lbl}<select id="${id}" ${req?'required':''}>${empty}
+    return `<label for="${id}">${lbl}<select id="${id}" ${req?'required':''}>${empty}
       ${opts.map(o=>`<option value="${o}">${o}</option>`).join('')}
     </select></label>`;
   };
@@ -71,7 +75,7 @@
     switch(t){
       case 'Account':
         h+= add('name','Name')
-                + add('contact','Kontaktperson')               /* ContactName (Pflicht) */
+                + add('contact','Kontaktperson')
                 + add('email','E-Mail')
                 + add('phone','Telefon')
                 + add('vat','USt-ID')
@@ -84,14 +88,14 @@
                 + addSel('variant','Deployment-Variant',['MediumBundle','CustomS','CustomM','CustomL','CustomXL'])
                 + add('bundle','Bundle-Type',false)
                 + add('accId','Account-ID')
-                + add('addrId','Address-ID');                  /* AddressID (Pflicht) */
+                + add('addrId','Address-ID');
         break;
 
       case 'Site':
         h+= add('pId','Project-ID')
                 + add('name','Site-Name')
                 + add('addr','Address-ID')
-                + addBool('ha','HighAvailability')             /* Boolean als Select */
+                + addBool('ha','HighAvailability')
                 + add('red','Redundant-Servers')
                 + add('zone','FireZone')
                 + add('tenant','TenantCount');
@@ -104,7 +108,7 @@
                 + add('serial','Serien-Nr.')
                 + add('os','Betriebssystem')
                 + add('patch','Patch-Level')
-                + addSel('vplat','Virtual-Platform',['BareMetal','HyperV','vSphere']); /* Enum */
+                + addSel('vplat','Virtual-Platform',['BareMetal','HyperV','vSphere']);
         break;
 
       case 'WorkingPosition':
@@ -114,16 +118,16 @@
                 + add('serial','Serien-Nr.')
                 + add('os','OS')
                 + add('patch','Patch-Level')
-                + addBool('local','LocallyInstalled');         /* Boolean als Select */
+                + addBool('local','LocallyInstalled');
         break;
 
       case 'Radio':
         h+= add('siteId','Site-ID')
                 + add('brand','Marke')
                 + add('serial','Serien-Nr.')
-                + addSel('mode','Mode',['Analog','Digital'])   /* Enum */
-                + addSel('standard','Digital-Standard',['Airbus','Motorola','ESN','P25','Polycom','Teltronics'],false) /* optional Enum */
-                + add('client','Assigned-ClientID',false);     /* optional numerisch */
+                + addSel('mode','Mode',['Analog','Digital'])
+                + addSel('standard','Digital-Standard',['Airbus','Motorola','ESN','P25','Polycom','Teltronics'],false)
+                + add('client','Assigned-ClientID',false);
         break;
 
       case 'AudioDevice':
@@ -131,12 +135,12 @@
                 + add('brand','Marke')
                 + add('serial','Serien-Nr.')
                 + add('fw','Firmware')
-                + addSel('dir','Direction',['IN','OUT','INOUT']); /* Enum */
+                + addSel('dir','Direction',['IN','OUT','INOUT']);
         break;
 
       case 'PhoneIntegration':
         h+= add('client','Client-ID')
-                + addSel('type','PhoneType',['Emergency','NonEmergency','Both']) /* Enum */
+                + addSel('type','PhoneType',['Emergency','NonEmergency','Both'])
                 + add('brand','Marke')
                 + add('serial','Serien-Nr.')
                 + add('fw','Firmware');
@@ -144,7 +148,6 @@
     }
     f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
 
-    // Abhängigkeit: Digital-Standard nur bei Mode=Digital
     if(t==='Radio') wireRadioLogic();
   }
 
@@ -164,7 +167,7 @@
   /* ---------- Submit ---------- */
   const v=id=>document.getElementById(id)?.value?.trim();
   async function submitForm(e){
-    e.preventDefault(); const t=e.target.dataset.type; result.textContent='';
+    e.preventDefault(); const t=e.target.dataset.type; result.textContent=''; result.setAttribute('aria-busy','true');
     let url='',p={};
     switch(t){
       case 'Account':
@@ -213,7 +216,7 @@
           serverSerialNr: v('serial'),
           serverOS: v('os'),
           patchLevel: v('patch'),
-          virtualPlatform: v('vplat')      /* Select (Enum) */
+          virtualPlatform: v('vplat')
         };
         break;
 
@@ -236,8 +239,8 @@
           siteID: +v('siteId'),
           radioBrand: v('brand'),
           radioSerialNr: v('serial'),
-          mode: v('mode'),                              /* Select (Enum) */
-          digitalStandard: v('standard') || null,       /* optional Enum */
+          mode: v('mode'),
+          digitalStandard: v('standard') || null,
           assignedClientID: v('client') ? +v('client') : null
         };
         break;
@@ -249,7 +252,7 @@
           audioDeviceBrand: v('brand'),
           deviceSerialNr: v('serial'),
           audioDeviceFirmware: v('fw'),
-          direction: v('dir')                           /* Select (Enum) */
+          direction: v('dir')
         };
         break;
 
@@ -257,7 +260,7 @@
         url='/phones';
         p={
           clientID: +v('client'),
-          phoneType: v('type'),                         /* Select (Enum) */
+          phoneType: v('type'),
           phoneBrand: v('brand'),
           phoneSerialNr: v('serial'),
           phoneFirmware: v('fw')
@@ -266,9 +269,13 @@
     }
     try{
       const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-      if(r.ok){result.innerHTML=`<p class="success">${t} angelegt.</p>`;e.target.reset();}
-      else   {result.innerHTML=`<p class="error">${await r.text()}</p>`;}
-    }catch{result.innerHTML=`<p class="error">Netzwerkfehler.</p>`;}
+      if(r.ok){result.innerHTML=`<p class="success">✔ ${t} angelegt.</p>`;e.target.reset();}
+      else   {result.innerHTML=`<p class="error" role="alert">${await r.text()}</p>`;}
+    }catch{
+      result.innerHTML=`<p class="error" role="alert">Netzwerkfehler.</p>`;
+    }finally{
+      result.removeAttribute('aria-busy');
+    }
   }
 </script>
 </body>

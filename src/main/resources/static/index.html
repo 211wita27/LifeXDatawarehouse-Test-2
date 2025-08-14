@@ -6,10 +6,15 @@
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+<a href="#main" class="skip-link">Zum Inhalt springen</a>
+
 <header>
-    <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo">
-    <a href="/index.html">Dashboard</a>
-    <a href="/create.html">Daten anlegen</a>
+    <!-- Logo als dekorative Grafik -->
+    <img src="/img/LifeXDatawarehouseLogo.png" alt="">
+    <nav aria-label="Hauptnavigation">
+        <a href="/index.html">Dashboard</a>
+        <a href="/create.html">Daten anlegen</a>
+    </nav>
 </header>
 
 <div class="layout">
@@ -91,20 +96,26 @@
     </aside>
 
     <!-- ─────────── Content ─────────── -->
-    <main class="content">
+    <main id="main" class="content">
         <!-- Fortschritt-Balken -->
-        <div id="idx-box">
-            <div id="idx-bar"><span></span></div>
+        <div id="idx-box" aria-live="polite">
+            <div id="idx-bar">
+                <span role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></span>
+            </div>
             <div id="idx-text"></div>
         </div>
 
         <div id="search-bar">
+            <label for="search-input" class="visually-hidden">Globale Suche</label>
             <!-- datalist bleibt für Autocomplete, Icon wird via CSS versteckt -->
             <input id="search-input" placeholder="Global-Suche (Lucene oder normal)" list="sug" autocomplete="off">
             <datalist id="sug"></datalist>
             <button id="search-btn">Suchen</button>
         </div>
-        <div id="resultArea"><p>Nutze die Suchleiste oder die Bedienelemente links.</p></div>
+
+        <div id="resultArea" role="status" aria-live="polite" aria-atomic="true">
+            <p>Nutze die Suchleiste oder die Bedienelemente links.</p>
+        </div>
     </main>
 
     <!-- ─────────── Hilfe ─────────── -->

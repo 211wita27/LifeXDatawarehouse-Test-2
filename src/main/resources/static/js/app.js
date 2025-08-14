@@ -25,9 +25,9 @@ const debounce = (fn, ms=250) => { let t; return (...a)=>{clearTimeout(t); t=set
 const stGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
 const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','true') : el.removeAttribute('aria-busy'); }
 
 /* ---------- Lucene-Heuristik & QoL-Query-Builder ---------- */
-/** Erkennen: sieht nach „echter“ Lucene-Syntax aus? (dann nicht anfassen) */
 function looksLikeLucene(q){
     if (!q) return false;
     const s = q.trim();
@@ -37,13 +37,11 @@ function looksLikeLucene(q){
 function buildUserQuery(raw){
     const s = (raw || '').trim();
     if (!s) return s;
-    if (looksLikeLucene(s)) return s;                // Nutzer weiß, was er tut
-    // jeden Token mit * suffixen, wenn noch keiner vorhanden ist
+    if (looksLikeLucene(s)) return s;
     return s.split(/\s+/).map(tok => /[*?]$/.test(tok) ? tok : (tok + '*')).join(' ');
 }
 
 /* ===================== Ergebnis-Vorschau (Anreicherung) ===================== */
-/** Mappt API-Types → Tabellennamen für /row/{table}/{id} */
 function tableForType(t){
     const s=(t||'').toLowerCase();
     switch(s){
@@ -58,7 +56,6 @@ function tableForType(t){
         default:        return t;
     }
 }
-/** Case-insensitive Zugriff auf Row-Property */
 function val(row, ...keys){
     for(const k of keys){
         if (row[k] !== undefined) return row[k];
@@ -67,12 +64,10 @@ function val(row, ...keys){
     }
     return undefined;
 }
-/** Baut eine kurze menschenlesbare Infozeile je Typ */
 function formatPreview(type, row){
     const t=(type||'').toLowerCase();
     const parts=[];
     if (t==='account'){
-        // ContactName existiert in DB, zur Not AccountName
         const contact = val(row,'ContactName') || val(row,'AccountName');
         if (contact) parts.push(contact);
         const country = val(row,'Country'); if (country) parts.push(country);
@@ -104,7 +99,6 @@ function formatPreview(type, row){
     }
     return parts.join(' · ');
 }
-/** Holt für jede Trefferzeile die Row und füllt die „Info“-Spalte */
 async function enrichRows(hits){
     const jobs = hits.map(async (h, i) => {
         try{
@@ -132,8 +126,8 @@ function wireEvents() {
         } else if (e.key === 'Tab') {
             const completed = completeFromSuggestions();
             if (completed) {
-                e.preventDefault();               // im Feld bleiben
-                runSearch(searchInput.value);     // direkt suchen nach Autocomplete
+                e.preventDefault();
+                runSearch(searchInput.value);
             }
         }
     });
@@ -162,7 +156,7 @@ function wireEvents() {
     setInterval(pollProgress, 900);
     pollProgress();
 
-    // Shortcuts initialisieren
+    // Shortcuts initialisieren inkl. ARIA
     setupShortcuts();
 }
 document.addEventListener('DOMContentLoaded', wireEvents);
@@ -172,7 +166,6 @@ function completeFromSuggestions(){
     if (!sugList) return false;
     const cur = (searchInput.value || '').trim().toLowerCase();
     if (!cur) return false;
-    // erster Vorschlag, der mit cur anfängt
     let best = null;
     [...sugList.options].some(opt => {
         const v = (opt.value || '').toLowerCase();
@@ -189,7 +182,7 @@ async function startReindex(btn) {
     if (btn) btn.disabled = true;
     try {
         await fetch(API.reindex, { method: 'POST' });
-        await pollProgress(); // Fortschritt direkt anzeigen
+        await pollProgress();
     } catch (e) {
         console.error('Reindex-Start fehlgeschlagen', e);
     } finally {
@@ -202,10 +195,10 @@ async function startReindex(btn) {
 function setupShortcuts() {
     document.querySelectorAll('.shortcut').forEach(sc => {
         const id        = sc.dataset.id;
-        const headBtn   = sc.querySelector('.head');   // blauer Button
+        const headBtn   = sc.querySelector('.head');
         const labelEl   = sc.querySelector('.label');
         const renameBtn = sc.querySelector('.rename');
-        const chevBtn   = sc.querySelector('.chev');   // Pfeil
+        const chevBtn   = sc.querySelector('.chev');
         const inputEl   = sc.querySelector('.panel input');
         const defVal    = (sc.dataset.default || '').trim();
 
@@ -215,10 +208,22 @@ function setupShortcuts() {
         labelEl.textContent = stGet(stLabelKey, labelEl.textContent);
         inputEl.value       = stGet(stQueryKey, defVal);
         inputEl.placeholder = 'Lucene-Query';
+        inputEl.setAttribute('aria-label','Lucene-Query');
+
+        // ARIA-Beziehungen & Zustände
+        const hid = `sc-head-${id}`;
+        const pid = `sc-panel-${id}`;
+        headBtn.id = hid;
+        headBtn.setAttribute('aria-controls', pid);
+        headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
+        const panel = sc.querySelector('.panel');
+        panel.id = pid;
+        panel.setAttribute('role','region');
+        panel.setAttribute('aria-labelledby', hid);
 
         // Klick auf den blauen Button → Query ausführen
         headBtn.addEventListener('click', (ev) => {
-            if (ev.target === renameBtn || ev.target === chevBtn) return; // Stift/Pfeil ignorieren
+            if (ev.target === renameBtn || ev.target === chevBtn) return;
             const q = (inputEl.value || '').trim() || defVal;
             if (q) {
                 stSet(stQueryKey, q);
@@ -230,6 +235,7 @@ function setupShortcuts() {
         chevBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             sc.classList.toggle('open');
+            headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
             if (sc.classList.contains('open')) {
                 inputEl.focus();
                 inputEl.select();
@@ -257,6 +263,7 @@ function setupShortcuts() {
                 }
             } else if (e.key === 'Escape') {
                 sc.classList.remove('open');
+                headBtn.setAttribute('aria-expanded', false);
             }
         });
 
@@ -266,7 +273,7 @@ function setupShortcuts() {
 
 /* ===================== Suche ===================== */
 function runSearch(raw){
-    const prepared = buildUserQuery(raw);      // QoL: token*
+    const prepared = buildUserQuery(raw);
     runLucene(prepared);
 }
 
@@ -274,6 +281,7 @@ async function runLucene(q) {
     const query = (q ?? '').trim();
     if (!query) return;
     try {
+        setBusy(resultArea, true);
         const res  = await fetch(`${API.search}?q=${encodeURIComponent(query)}`);
         const hits = await res.json();
         if (!Array.isArray(hits) || !hits.length) {
@@ -297,17 +305,19 @@ async function runLucene(q) {
         </table>
       </div>`;
 
-        // Info-Spalte nachladen (kompakte Vorschau je Treffer)
         enrichRows(hits);
 
     } catch (e) {
-        resultArea.innerHTML = `<p id="error">Fehler: ${e}</p>`;
+        resultArea.innerHTML = `<p id="error" role="alert">Fehler: ${e}</p>`;
+    } finally {
+        setBusy(resultArea, false);
     }
 }
 
 /* Tabellen-Viewer (100-Zeilen-Preview) */
 async function showTable(name) {
     try {
+        setBusy(resultArea, true);
         const res  = await fetch(`${API.table}/${encodeURIComponent(name)}`);
         const rows = await res.json();
         if (!Array.isArray(rows) || !rows.length) { resultArea.textContent = '(leer)'; return; }
@@ -324,7 +334,9 @@ async function showTable(name) {
          </table>
        </div>`;
     } catch (e) {
-        resultArea.innerHTML = `<p id="error">Fehler: ${e}</p>`;
+        resultArea.innerHTML = `<p id="error" role="alert">Fehler: ${e}</p>`;
+    } finally {
+        setBusy(resultArea, false);
     }
 }
 
@@ -349,10 +361,14 @@ async function pollProgress() {
         if (running || (done < total)) {
             idxBox.classList.add('active');
             idxBar.style.width = pct.toFixed(1) + '%';
+            idxBar.setAttribute('aria-valuenow', pct.toFixed(0));
+            idxBox.setAttribute('aria-busy','true');
             idxText.textContent = `Index: ${pct.toFixed(0)}% (${done}/${total})`;
         } else {
             idxBox.classList.remove('active');
             idxBar.style.width = '0%';
+            idxBar.setAttribute('aria-valuenow', '0');
+            idxBox.removeAttribute('aria-busy');
             idxText.textContent = '';
         }
     } catch {

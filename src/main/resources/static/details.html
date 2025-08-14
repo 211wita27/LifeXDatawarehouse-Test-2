@@ -18,22 +18,26 @@
 </head>
 <body>
 
+<a href="#main" class="skip-link">Zum Inhalt springen</a>
+
 <header>
-    <img src="/img/LifeXDatawarehouseLogo.png" alt="Logo">
-    <a href="/index.html">Dashboard</a>
-    <a href="/create.html">Daten anlegen</a>
+    <img src="/img/LifeXDatawarehouseLogo.png" alt="">
+    <nav aria-label="Hauptnavigation">
+        <a href="/index.html">Dashboard</a>
+        <a href="/create.html">Daten anlegen</a>
+    </nav>
 </header>
 
-<div style="max-width:1000px;margin:2rem auto">
+<main id="main" style="max-width:1000px;margin:2rem auto">
     <a id="back" href="index.html">← zurück</a>
-    <div id="view" class="card">lade …</div>
+    <div id="view" class="card" role="region" aria-live="polite" aria-busy="true">lade …</div>
 
     <!-- NEU: Eltern-Beziehungen -->
     <div id="parents"></div>
 
     <!-- Kinder-Listen -->
     <div id="children"></div>
-</div>
+</main>
 
 <script>
     /* -------------------- Helpers -------------------- */
@@ -351,29 +355,33 @@
         const id = +p.get('id');
         const box = document.getElementById('view');
 
-        if(!rawType || !id){ box.textContent = 'Parameter fehlen.'; return; }
+        if(!rawType || !id){ box.textContent = 'Parameter fehlen.'; box.removeAttribute('aria-busy'); return; }
 
-        // Row laden (mit Sonderfall-Map für Client)
         const table = tableForType(rawType);
         try{
             const res = await fetch(`/row/${table}/${id}`);
-            if(!res.ok){ box.textContent = 'Eintrag nicht gefunden.'; return; }
+            if(!res.ok){ box.textContent = 'Eintrag nicht gefunden.'; box.removeAttribute('aria-busy'); return; }
             const row = await res.json();
 
             const kvRows = Object.entries(row)
-                .map(([k,v])=>`<tr><td class="key">${k}</td><td>${v}</td></tr>`).join('');
+                .map(([k,v])=>`<tr><th scope="row" class="key">${k}</th><td>${v}</td></tr>`).join('');
             const title = `${(rawType||table).charAt(0).toUpperCase() + (rawType||table).slice(1)} #${id}`;
 
-            box.innerHTML = `<h1>${title}</h1><table id="kv">${kvRows}</table>`;
+            box.innerHTML = `<h1>${title}</h1>
+<table id="kv">
+  <caption class="visually-hidden">Felder von ${title}</caption>
+  ${kvRows}
+</table>`;
 
-            // Normierter Typ-Name für Verzweigungen
             const typeKey = (table==='WorkingPosition') ? 'Client' : table;
 
-            await loadParents(typeKey, id, row);   // <- NEU: hochspringen
-            await loadChildren(typeKey, id);       // bestehend: runter springen
+            await loadParents(typeKey, id, row);
+            await loadChildren(typeKey, id);
 
         }catch(e){
             box.textContent = 'Fehler: ' + e;
+        } finally {
+            box.removeAttribute('aria-busy');
         }
     })();
 </script>

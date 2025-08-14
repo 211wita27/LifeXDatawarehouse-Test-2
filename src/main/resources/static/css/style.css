@@ -1,3 +1,12 @@
+/* ===============  A11y-Helfer  =============== */
+.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.skip-link{position:absolute;left:-999px;top:auto;background:#003a70;color:#fff;padding:.4rem .6rem;border-radius:6px;text-decoration:none;z-index:1000}
+.skip-link:focus{left:1rem;top:1rem}
+:focus-visible{outline:3px solid #0067c2;outline-offset:2px}
+@media (prefers-reduced-motion: reduce){
+    #idx-bar > span{transition:none}
+}
+
 /* ===============  Grund-Layout  =============== */
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica}
@@ -5,7 +14,7 @@ body{margin:0;font-family:Arial,Helvetica}
 /* Header & Logo ---------------------------------------------------- */
 header{background:#003a70;display:flex;align-items:center;gap:1rem;padding:.3rem 1rem}
 header img{height:120px;background:#fff;padding:6px;border-radius:6px}
-header a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.15rem}
+header nav a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.15rem}
 
 /* Haupt-Layout ----------------------------------------------------- */
 .layout{max-width:1600px;margin:2rem auto;display:flex;gap:1rem}
@@ -77,5 +86,5 @@ th,td{border:1px solid #ccc;padding:.45rem;text-align:left}
 #back:hover{background:#0054a6}
 .card{background:#fff;padding:1.4rem;border-radius:8px;max-width:730px;margin:auto;box-shadow:0 2px 6px rgba(0,0,0,.1)}
 #kv{border-collapse:collapse;width:100%}
-#kv td{border:1px solid #ddd;padding:.45rem}
-#kv td.key{font-weight:bold;width:180px;background:#f3f7ff}
+#kv th, #kv td{border:1px solid #ddd;padding:.45rem}
+#kv th.key{font-weight:bold;width:180px;background:#f3f7ff;text-align:left}
