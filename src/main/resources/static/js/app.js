@@ -153,7 +153,7 @@ function wireEvents() {
     if (idxBtnSide) idxBtnSide.onclick = () => startReindex(idxBtnSide);
 
     // Fortschritt regelmäßig prüfen
-    setInterval(pollProgress, 900);
+    setInterval(pollProgress, 50);
     pollProgress();
 
     // Shortcuts initialisieren inkl. ARIA
