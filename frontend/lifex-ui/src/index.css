@@ -1,0 +1,17 @@
+:root{
+    --lifex-header:#003a70;
+    --lifex-primary:#0067c2;
+    --lifex-primary-hover:#0054a6;
+    --lifex-info-bg:#e9f1ff;
+    --lifex-info-bd:#cfe0ff;
+}
+.navbar-lifex{ background: var(--lifex-header); }
+.btn-primary{ background: var(--lifex-primary); border-color: var(--lifex-primary); }
+.btn-primary:hover{ background: var(--lifex-primary-hover); border-color: var(--lifex-primary-hover); }
+a,button:focus-visible, .form-control:focus{
+    outline: 3px solid var(--lifex-primary); outline-offset: 2px;
+}
+.visually-hidden-focusable:not(:focus):not(:focus-within){
+    position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); border:0;
+}
+.card-chip{ background: var(--lifex-info-bg); border:1px solid var(--lifex-info-bd); border-radius:999px; padding:.15rem .6rem; }

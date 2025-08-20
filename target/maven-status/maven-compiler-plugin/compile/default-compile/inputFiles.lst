@@ -1,10 +1,26 @@
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/LifeXDatawrehouseAppApplication.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/application/AccountService.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/domain/Account.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/domain/AccountFactory.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/domain/AccountRepository.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/infrastructure/camel/AccountIndexingRoute.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/infrastructure/camel/IndexSingleAccountRoute.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/infrastructure/lucene/LuceneIndexService.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/infrastructure/persistence/JdbcAccountRepository.java
-/home/sysadminpc/IdeaProjects/LifeXDatawarehouse/src/main/java/at/htlle/freq/web/AccountController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/LifeXDatawrehouseAppApplication.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/application/AccountService.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/domain/Account.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/domain/AccountFactory.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/domain/AccountRepository.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/domain/SearchHit.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/camel/AccountIndexingRoute.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/camel/FullIndexRoute.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/camel/IndexSingleAccountRoute.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/lucene/IndexProgress.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/lucene/LuceneIndexService.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/persistence/JdbcAccountRepository.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/search/SmartQueryBuilder.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/infrastructure/search/SuggestService.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/AccountController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/AudioController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/ClientController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/GenericTableController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/IndexAdminController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/IndexProgressController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/PhoneController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/ProjectController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/RadioController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/SearchController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/ServerController.java
+/Users/marioziegerhofer/Library/CloudStorage/OneDrive-HTLLeoben/Desktop/Schule/Klasse 4/POS/LifeXDatawarehouse-Test-2/src/main/java/at/htlle/freq/web/SiteController.java
