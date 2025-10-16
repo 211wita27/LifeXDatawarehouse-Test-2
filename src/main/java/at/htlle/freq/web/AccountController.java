@@ -7,11 +7,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
-/**
- * REST-Endpunkte rund um Accounts (CRUD).
- * Hinweis: Die globale Suche liegt zentral unter /search (SearchController).
- */
 @RestController
 @RequestMapping("/accounts")
 public class AccountController {
@@ -28,13 +25,14 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Account> findById(@PathVariable int id) {
+    public ResponseEntity<Account> findById(@PathVariable UUID id) {
         Optional<Account> acc = accountService.getAccountById(id);
         return acc.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public Account create(@RequestBody Account account) {
+        // Hinweis: Account enthält ContactName → AccountService.createAccount(Account) setzt alles korrekt.
         return accountService.createAccount(account);
     }
 }

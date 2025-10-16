@@ -20,11 +20,13 @@ public class IndexSingleAccountRoute extends RouteBuilder {
                 .routeId("IndexSingleAccount")
                 .process(ex -> {
                     Account a = ex.getIn().getBody(Account.class);
+                    String idStr = a.getAccountID() != null ? a.getAccountID().toString() : null;
+
                     lucene.indexAccount(
-                            a.getAccountID(),
+                            idStr,
                             a.getAccountName(),
                             a.getCountry(),
-                            a.getContactEmail()   // <— 4. Parameter ergänzt
+                            a.getContactEmail()
                     );
                 })
                 .log("✅ Einzelner Account indexiert: ${body.accountName}");

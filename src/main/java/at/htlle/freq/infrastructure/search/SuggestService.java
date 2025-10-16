@@ -5,11 +5,13 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,8 +26,8 @@ public class SuggestService {
     // Felder, aus denen Vorschläge kommen sollen
     private static final List<String> FIELDS = List.of(
             "txt", "brand", "country", "variant", "fireZone", "os", "vplat", "sap", "email",
-            // NEU: Rollup-Felder (damit „lenovo“ etc. auch von Site/Account vorgeschlagen wird)
-            "serverBrand","serverOS","serverVplat"
+            // Rollup-Felder
+            "serverBrand", "serverOS", "serverVplat"
     );
 
     /** Liefert bis zu {@code max} Vorschläge für das Präfix {@code prefix}. */
@@ -33,11 +35,12 @@ public class SuggestService {
         if (prefix == null) return List.of();
         String pfx = prefix.toLowerCase();
         if (pfx.length() < 2) return List.of();
+        if (max <= 0) return List.of();
 
         Set<String> out = new LinkedHashSet<>();
 
-        try (var dir = FSDirectory.open(LuceneIndexService.INDEX_PATH);
-             var rd  = DirectoryReader.open(dir)) {
+        try (Directory dir = FSDirectory.open(Paths.get(LuceneIndexService.INDEX_PATH));
+             DirectoryReader rd = DirectoryReader.open(dir)) {
 
             outer:
             for (String field : FIELDS) {
@@ -49,14 +52,18 @@ public class SuggestService {
                     BytesRef br;
                     while ((br = te.next()) != null) {
                         String term = br.utf8ToString();
-                        if (term.startsWith(pfx)) {
+                        // Case-insensitive Vergleich, Originalwert zurückgeben
+                        if (term.toLowerCase().startsWith(pfx)) {
                             out.add(term);
                             if (out.size() >= max) break outer;
                         }
                     }
                 }
             }
-        } catch (IOException ignored) { }
+        } catch (IOException ignored) {
+            // Optional: Logging hinzufügen, wenn gewünscht
+            // log.warn("SuggestService: Konnte Index nicht lesen", ignored);
+        }
 
         return out.stream().limit(max).collect(Collectors.toList());
     }

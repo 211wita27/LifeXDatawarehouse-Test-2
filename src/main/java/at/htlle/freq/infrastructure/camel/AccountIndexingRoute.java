@@ -6,43 +6,46 @@ import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.apache.camel.builder.RouteBuilder;
 import org.springframework.stereotype.Component;
 
-/**
- * Indexiert alle Accounts alle 60 s inkrementell neu.
- * Log-Ausgabe: Start + Zusammenfassung, kein Spam pro Account.
- */
-@Component
+@Component("AccountIndexingRoute")
 public class AccountIndexingRoute extends RouteBuilder {
 
-    private final AccountRepository  accountRepository;
+    private final AccountRepository repo;
     private final LuceneIndexService lucene;
 
-    public AccountIndexingRoute(AccountRepository accountRepository,
-                                LuceneIndexService lucene) {
-        this.accountRepository = accountRepository;
-        this.lucene           = lucene;
+    public AccountIndexingRoute(AccountRepository repo, LuceneIndexService lucene) {
+        this.repo = repo;
+        this.lucene = lucene;
     }
 
     @Override
     public void configure() {
-
-        from("timer://indexAccounts?period=60000")              // alle 60 s
-                .routeId("LuceneAccountSync")
-                .log("🔁 Lucene Account-Sync gestartet …")
-                .bean(accountRepository, "findAll")                 // List<Account>
-                .process(ex -> ex.setProperty("cnt", 0))            // Zähler zurücksetzen
+        // Periodisches Reindexing aller Accounts
+        from("timer://idxAccounts?period=60000")
+                .routeId("LuceneAccountsReindex")
+                .bean(repo, "findAll")
                 .split(body())
                 .process(ex -> {
                     Account a = ex.getIn().getBody(Account.class);
                     lucene.indexAccount(
-                            a.getAccountID(),
+                            a.getAccountID() != null ? a.getAccountID().toString() : null,
                             a.getAccountName(),
                             a.getCountry(),
                             a.getContactEmail()
                     );
-                    Integer c = ex.getProperty("cnt", Integer.class);
-                    ex.setProperty("cnt", (c == null ? 1 : c + 1));
                 })
-                .end()
-                .log("✅ Lucene Account-Sync fertig: ${exchangeProperty.cnt} Accounts aktualisiert");
+                .end();
+
+        // Indexing eines einzelnen Accounts
+        from("direct:index-single-account")
+                .routeId("LuceneIndexSingleAccount")
+                .process(ex -> {
+                    Account a = ex.getIn().getBody(Account.class);
+                    lucene.indexAccount(
+                            a.getAccountID() != null ? a.getAccountID().toString() : null,
+                            a.getAccountName(),
+                            a.getCountry(),
+                            a.getContactEmail()
+                    );
+                });
     }
 }

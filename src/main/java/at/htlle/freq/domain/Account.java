@@ -1,74 +1,46 @@
 package at.htlle.freq.domain;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.UUID;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Account {
-    private int AccountID;
-    private String AccountName;
-    private String ContactEmail;
-    private String ContactPhone;
-    private String VATNumber;
-    private String Country;
+    private UUID accountID;
+    private String accountName;
+    private String contactName;
+    private String contactEmail;
+    private String contactPhone;
+    private String vatNumber;
+    private String country;
 
-    public int getAccountID() {
-        return AccountID;
+    public Account() {}
+    public Account(UUID accountID, String accountName, String contactName, String contactEmail,
+                   String contactPhone, String vatNumber, String country) {
+        this.accountID = accountID;
+        this.accountName = accountName;
+        this.contactName = contactName;
+        this.contactEmail = contactEmail;
+        this.contactPhone = contactPhone;
+        this.vatNumber = vatNumber;
+        this.country = country;
     }
 
-    public String getAccountName() {
-        return AccountName;
-    }
+    public UUID getAccountID() { return accountID; }
+    public void setAccountID(UUID accountID) { this.accountID = accountID; }
 
-    public String getContactEmail() {
-        return ContactEmail;
-    }
+    public String getAccountName() { return accountName; }
+    public void setAccountName(String accountName) { this.accountName = accountName; }
 
-    public String getContactPhone() {
-        return ContactPhone;
-    }
+    public String getContactName() { return contactName; }
+    public void setContactName(String contactName) { this.contactName = contactName; }
 
-    public String getVATNumber() {
-        return VATNumber;
-    }
+    public String getContactEmail() { return contactEmail; }
+    public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
 
-    public String getCountry() {
-        return Country;
-    }
+    public String getContactPhone() { return contactPhone; }
+    public void setContactPhone(String contactPhone) { this.contactPhone = contactPhone; }
 
+    public String getVatNumber() { return vatNumber; }
+    public void setVatNumber(String vatNumber) { this.vatNumber = vatNumber; }
 
-    public void setAccountName(String accountName) {
-        AccountName = accountName;
-    }
-
-    public void setContactEmail(String contactEmail) {
-        ContactEmail = contactEmail;
-    }
-
-    public void setContactPhone(String contactPhone) {
-        ContactPhone = contactPhone;
-    }
-
-    public void setVATNumber(String VATNumber) {
-        this.VATNumber = VATNumber;
-    }
-
-    public void setCountry(String country) {
-        Country = country;
-    }
-
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
 }
-//CREATE TABLE Account (
-//                         AccountID     INT          AUTO_INCREMENT PRIMARY KEY,
-//                         AccountName   VARCHAR(150) NOT NULL,
-//                         ContactName   VARCHAR(100) NOT NULL,
-//                         ContactEmail  VARCHAR(100) NOT NULL,
-//                         ContactPhone  VARCHAR(30)  NOT NULL,
-//                         VATNumber     VARCHAR(30)  NOT NULL,
-//                         Country       VARCHAR(50)  NOT NULL
-//);

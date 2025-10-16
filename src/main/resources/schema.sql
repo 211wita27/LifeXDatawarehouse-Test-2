@@ -1,167 +1,294 @@
--- -----------------------------
--- DDL für H2 mit INT‑IDs und Inline‑FKs
--- -----------------------------
+-- =========================================================
+-- H2 DDL for LifeX Inventory / Projects DB (fixed)
+-- =========================================================
 
-CREATE TABLE Account (
-                         AccountID     INT          AUTO_INCREMENT PRIMARY KEY,
-                         AccountName   VARCHAR(150) NOT NULL,
-                         ContactName   VARCHAR(100) NOT NULL,
-                         ContactEmail  VARCHAR(100) NOT NULL,
-                         ContactPhone  VARCHAR(30)  NOT NULL,
-                         VATNumber     VARCHAR(30)  NOT NULL,
-                         Country       VARCHAR(50)  NOT NULL
+-- ---------- Safety: drop in correct dependency order ----------
+DROP TABLE IF EXISTS ServiceContract;
+DROP TABLE IF EXISTS UpgradePlan;
+DROP TABLE IF EXISTS InstalledSoftware;
+DROP TABLE IF EXISTS PhoneIntegration;
+DROP TABLE IF EXISTS AudioDevice;
+DROP TABLE IF EXISTS Radio;
+DROP TABLE IF EXISTS Clients;
+DROP TABLE IF EXISTS Server;
+DROP TABLE IF EXISTS Site;
+DROP TABLE IF EXISTS Project;
+DROP TABLE IF EXISTS Software;
+DROP TABLE IF EXISTS DeploymentVariant;
+DROP TABLE IF EXISTS Account;
+DROP TABLE IF EXISTS Address;
+DROP TABLE IF EXISTS City;
+DROP TABLE IF EXISTS Country;
+
+-- =========================================================
+-- 11.1 Country
+-- =========================================================
+CREATE TABLE Country (
+                         CountryCode   VARCHAR(2)   PRIMARY KEY,         -- ISO-3166-1 alpha-2
+                         CountryName   VARCHAR(100) NOT NULL
 );
 
+-- =========================================================
+-- 10.1 City
+-- =========================================================
 CREATE TABLE City (
-                      CityID        INT          AUTO_INCREMENT PRIMARY KEY,
+                      CityID        VARCHAR(50)  PRIMARY KEY,         -- natural key
                       CityName      VARCHAR(100) NOT NULL,
-                      PostalCode    VARCHAR(20)  NOT NULL,
-                      Country       VARCHAR(50)  NOT NULL
+                      CountryCode   VARCHAR(2)   NOT NULL,
+                      CONSTRAINT fk_city_country
+                          FOREIGN KEY (CountryCode) REFERENCES Country(CountryCode)
 );
 
+-- =========================================================
+-- 9.1 Address
+-- =========================================================
 CREATE TABLE Address (
-                         AddressID     INT          AUTO_INCREMENT PRIMARY KEY,
+                         AddressID     UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
                          Street        VARCHAR(150) NOT NULL,
-                         AddressLine2  VARCHAR(150),
-                         CityID        INT          NOT NULL,
-                         CONSTRAINT FK_Address_City FOREIGN KEY (CityID)
-                             REFERENCES City(CityID)
+                         CityID        VARCHAR(50)  NOT NULL,
+                         CONSTRAINT fk_address_city
+                             FOREIGN KEY (CityID) REFERENCES City(CityID)
 );
 
-CREATE TABLE LifeXSoftware (
-                               LifeXID       INT          AUTO_INCREMENT PRIMARY KEY,
-                               LifeXName     VARCHAR(100) NOT NULL,
-                               Release       VARCHAR(20)  NOT NULL,
-                               Revision      VARCHAR(20)  NOT NULL,
-                               SupportPhase  VARCHAR(20)  NOT NULL,
-                               CHECK (SupportPhase IN ('Preview','Production','EoL'))
+-- =========================================================
+-- 8.1 Account
+-- =========================================================
+CREATE TABLE Account (
+                         AccountID     UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                         AccountName   VARCHAR(150) NOT NULL,
+                         ContactName   VARCHAR(100),
+                         ContactEmail  VARCHAR(100),
+                         ContactPhone  VARCHAR(30),
+                         VATNumber     VARCHAR(30),
+                         Country       VARCHAR(50)
 );
 
-CREATE TABLE AdditionalSoftware (
-                                    AdditionalSoftwareID INT          AUTO_INCREMENT PRIMARY KEY,
-                                    SoftwareName        VARCHAR(100) NOT NULL,
-                                    Release             VARCHAR(20)  NOT NULL,
-                                    Revision            VARCHAR(20)  NOT NULL,
-                                    LicenseModel        VARCHAR(50)  NOT NULL
+-- =========================================================
+-- 7.1 Deployment Variant
+-- =========================================================
+CREATE TABLE DeploymentVariant (
+                                   VariantID     UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                                   VariantCode   VARCHAR(150) NOT NULL,
+                                   VariantName   VARCHAR(100) NOT NULL,
+                                   Description   VARCHAR(100),
+                                   IsActive      BOOLEAN NOT NULL,
+                                   CONSTRAINT uq_deploy_variant_code UNIQUE (VariantCode),
+                                   CONSTRAINT uq_deploy_variant_name UNIQUE (VariantName)
 );
 
+-- =========================================================
+-- 6.1 Project
+-- =========================================================
 CREATE TABLE Project (
-                         ProjectID           INT          AUTO_INCREMENT PRIMARY KEY,
-                         ProjectSAPID        VARCHAR(50)  NOT NULL UNIQUE,
+                         ProjectID           UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                         ProjectSAPID        VARCHAR(50),
                          ProjectName         VARCHAR(100) NOT NULL,
-                         DeploymentVariant   VARCHAR(20)  NOT NULL,
+                         DeploymentVariantID UUID NOT NULL,
                          BundleType          VARCHAR(50),
-                         CreateDateTime      DATETIME     NOT NULL,
-                         StillActive         BOOLEAN      NOT NULL,
-                         AccountID           INT          NOT NULL,
-                         AddressID           INT          NOT NULL,
-                         CHECK (DeploymentVariant IN ('MediumBundle','CustomS','CustomM','CustomL','CustomXL')),
-                         CONSTRAINT FK_Project_Account FOREIGN KEY (AccountID)
+                         CreateDateTime      DATE,
+                         StillActive         BOOLEAN NOT NULL,
+                         AccountID           UUID NOT NULL,
+                         AddressID           UUID NOT NULL,
+                         CONSTRAINT uq_project_sap UNIQUE (ProjectSAPID),
+                         CONSTRAINT fk_project_variant FOREIGN KEY (DeploymentVariantID)
+                             REFERENCES DeploymentVariant(VariantID),
+                         CONSTRAINT fk_project_account FOREIGN KEY (AccountID)
                              REFERENCES Account(AccountID),
-                         CONSTRAINT FK_Project_Address FOREIGN KEY (AddressID)
+                         CONSTRAINT fk_project_address FOREIGN KEY (AddressID)
                              REFERENCES Address(AddressID)
 );
 
-CREATE TABLE InstalledSoftware (
-                                   InstalledSoftwareID INT          AUTO_INCREMENT PRIMARY KEY,
-                                   ProjectID           INT          NOT NULL,
-                                   LifeXID             INT          NOT NULL,
-                                   CONSTRAINT FK_InstalledSoftware_Project FOREIGN KEY (ProjectID)
-                                       REFERENCES Project(ProjectID),
-                                   CONSTRAINT FK_InstalledSoftware_LifeXSoftware FOREIGN KEY (LifeXID)
-                                       REFERENCES LifeXSoftware(LifeXID)
-);
-
-CREATE TABLE InstalledSoftware_AdditionalSoftware (
-                                                      InstalledSoftwareID INT NOT NULL,
-                                                      AdditionalSoftwareID INT NOT NULL,
-                                                      PRIMARY KEY (InstalledSoftwareID, AdditionalSoftwareID),
-                                                      CONSTRAINT FK_ISAS_InstalledSoftware FOREIGN KEY (InstalledSoftwareID)
-                                                          REFERENCES InstalledSoftware(InstalledSoftwareID),
-                                                      CONSTRAINT FK_ISAS_AdditionalSoftware FOREIGN KEY (AdditionalSoftwareID)
-                                                          REFERENCES AdditionalSoftware(AdditionalSoftwareID)
-);
-
+-- =========================================================
+-- 12.1 Site
+-- =========================================================
 CREATE TABLE Site (
-                      SiteID          INT          AUTO_INCREMENT PRIMARY KEY,
-                      SiteName        VARCHAR(100) NOT NULL,
-                      ProjectID       INT          NOT NULL,
-                      AddressID       INT          NOT NULL,
-                      HighAvailability BOOLEAN     NOT NULL,
-                      RedundantServers INT         NOT NULL,
-                      FireZone        VARCHAR(50)  NOT NULL,
-                      TenantCount     INT          NOT NULL,
-                      CONSTRAINT FK_Site_Project FOREIGN KEY (ProjectID)
+                      SiteID       UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                      SiteName     VARCHAR(100) NOT NULL,
+                      ProjectID    UUID NOT NULL,
+                      AddressID    UUID NOT NULL,
+                      FireZone     VARCHAR(50),
+                      TenantCount  INT,
+                      CONSTRAINT fk_site_project FOREIGN KEY (ProjectID)
                           REFERENCES Project(ProjectID),
-                      CONSTRAINT FK_Site_Address FOREIGN KEY (AddressID)
+                      CONSTRAINT fk_site_address FOREIGN KEY (AddressID)
                           REFERENCES Address(AddressID)
 );
 
+-- =========================================================
+-- 18.1 Software
+-- =========================================================
+CREATE TABLE Software (
+                          SoftwareID       UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                          Name             VARCHAR(100) NOT NULL,
+                          Release          VARCHAR(20)  NOT NULL,
+                          Revision         VARCHAR(20)  NOT NULL,
+                          SupportPhase     VARCHAR(10)  NOT NULL,
+                          LicenseModel     VARCHAR(50),
+                          EndOfSalesDate   DATE,
+                          SupportStartDate DATE,
+                          SupportEndDate   DATE,
+                          CONSTRAINT ck_software_supportphase
+                              CHECK (SupportPhase IN ('Preview','Production','EoL'))
+);
+
+-- =========================================================
+-- 13.1 Server
+-- =========================================================
 CREATE TABLE Server (
-                        ServerID        INT          AUTO_INCREMENT PRIMARY KEY,
-                        SiteID          INT          NOT NULL,
-                        ServerName      VARCHAR(100) NOT NULL,
-                        ServerBrand     VARCHAR(50)  NOT NULL,
-                        ServerSerialNr  VARCHAR(100) NOT NULL,
-                        ServerOS        VARCHAR(100) NOT NULL,
-                        PatchLevel      VARCHAR(50)  NOT NULL,
-                        VirtualPlatform VARCHAR(20)  NOT NULL,
-                        VirtualVersion  VARCHAR(50),
-                        NISCubeVersion  VARCHAR(30),
-                        CHECK (VirtualPlatform IN ('BareMetal','HyperV','vSphere')),
-                        CONSTRAINT FK_Server_Site FOREIGN KEY (SiteID)
-                            REFERENCES Site(SiteID)
+                        ServerID         UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                        SiteID           UUID NOT NULL,
+                        ServerName       VARCHAR(100) NOT NULL,
+                        ServerBrand      VARCHAR(50),
+                        ServerSerialNr   VARCHAR(100),
+                        ServerOS         VARCHAR(100),
+                        PatchLevel       VARCHAR(50),
+                        VirtualPlatform  VARCHAR(20),
+                        VirtualVersion   VARCHAR(50),
+                        HighAvailability BOOLEAN NOT NULL,
+                        CONSTRAINT fk_server_site FOREIGN KEY (SiteID)
+                            REFERENCES Site(SiteID),
+                        CONSTRAINT ck_server_virtualplatform
+                            CHECK (VirtualPlatform IN ('BareMetal','HyperV','vSphere') OR VirtualPlatform IS NULL)
 );
 
-CREATE TABLE WorkingPosition (
-                                 ClientID        INT          AUTO_INCREMENT PRIMARY KEY,
-                                 SiteID          INT          NOT NULL,
-                                 ClientName      VARCHAR(100) NOT NULL,
-                                 ClientBrand     VARCHAR(50)  NOT NULL,
-                                 ClientSerialNr  VARCHAR(100) NOT NULL,
-                                 ClientOS        VARCHAR(100) NOT NULL,
-                                 PatchLevel      VARCHAR(50)  NOT NULL,
-                                 LocallyInstalled BOOLEAN     NOT NULL,
-                                 CONSTRAINT FK_WorkingPosition_Site FOREIGN KEY (SiteID)
-                                     REFERENCES Site(SiteID)
+-- =========================================================
+-- 14.1 Clients
+-- =========================================================
+CREATE TABLE Clients (
+                         ClientID       UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                         SiteID         UUID NOT NULL,
+                         ClientName     VARCHAR(100) NOT NULL,
+                         ClientBrand    VARCHAR(50),
+                         ClientSerialNr VARCHAR(100),
+                         ClientOS       VARCHAR(100),
+                         PatchLevel     VARCHAR(50),
+                         InstallType    VARCHAR(20) NOT NULL,
+                         CONSTRAINT fk_clients_site FOREIGN KEY (SiteID)
+                             REFERENCES Site(SiteID),
+                         CONSTRAINT ck_clients_installtype
+                             CHECK (InstallType IN ('LOCAL','BROWSER'))
 );
 
+-- =========================================================
+-- 15.1 Radio
+-- =========================================================
 CREATE TABLE Radio (
-                       RadioID             INT          AUTO_INCREMENT PRIMARY KEY,
-                       SiteID              INT          NOT NULL,
-                       AssignedClientID    INT,
-                       RadioBrand          VARCHAR(50)  NOT NULL,
-                       RadioSerialNr       VARCHAR(100) NOT NULL,
-                       Mode                VARCHAR(10)  NOT NULL,
-                       DigitalStandard     VARCHAR(20),
-                       CHECK (Mode IN ('Analog','Digital')),
-                       CHECK (DigitalStandard IS NULL OR DigitalStandard IN ('Airbus','Motorola','ESN','P25','Polycom','Teltronics')),
-                       CONSTRAINT FK_Radio_Site FOREIGN KEY (SiteID)
+                       RadioID          UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                       SiteID           UUID NOT NULL,
+                       AssignedClientID UUID,
+                       RadioBrand       VARCHAR(50),
+                       RadioSerialNr    VARCHAR(100),
+                       Mode             VARCHAR(10) NOT NULL,
+                       DigitalStandard  VARCHAR(20),
+                       CONSTRAINT fk_radio_site FOREIGN KEY (SiteID)
                            REFERENCES Site(SiteID),
-                       CONSTRAINT FK_Radio_WorkingPosition FOREIGN KEY (AssignedClientID)
-                           REFERENCES WorkingPosition(ClientID)
+                       CONSTRAINT fk_radio_client FOREIGN KEY (AssignedClientID)
+                           REFERENCES Clients(ClientID),
+                       CONSTRAINT ck_radio_mode
+                           CHECK (Mode IN ('Analog','Digital')),
+                       CONSTRAINT ck_radio_digitalstandard
+                           CHECK (DigitalStandard IS NULL OR DigitalStandard IN ('Airbus','Motorola','ESN','P25','Polycom','Teltronics'))
 );
 
+-- =========================================================
+-- 16.1 AudioDevice
+-- =========================================================
 CREATE TABLE AudioDevice (
-                             AudioDeviceID       INT          AUTO_INCREMENT PRIMARY KEY,
-                             ClientID            INT          NOT NULL,
-                             AudioDeviceBrand    VARCHAR(50)  NOT NULL,
-                             DeviceSerialNr      VARCHAR(100) NOT NULL,
-                             AudioDeviceFirmware VARCHAR(50)  NOT NULL,
-                             Direction           VARCHAR(6)   NOT NULL,
-                             CHECK (Direction IN ('IN','OUT','INOUT')),
-                             CONSTRAINT FK_AudioDevice_WorkingPosition FOREIGN KEY (ClientID)
-                                 REFERENCES WorkingPosition(ClientID)
+                             AudioDeviceID       UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                             ClientID            UUID NOT NULL,
+                             AudioDeviceBrand    VARCHAR(50),
+                             DeviceSerialNr      VARCHAR(100),
+                             AudioDeviceFirmware VARCHAR(50),
+                             DeviceType          VARCHAR(10) NOT NULL,
+                             CONSTRAINT fk_audiodevice_client FOREIGN KEY (ClientID)
+                                 REFERENCES Clients(ClientID),
+                             CONSTRAINT ck_audiodevice_devicetype
+                                 CHECK (DeviceType IN ('HEADSET','SPEAKER','MIC'))
 );
 
+-- =========================================================
+-- 17.1 PhoneIntegration
+-- =========================================================
 CREATE TABLE PhoneIntegration (
-                                  PhoneIntegrationID  INT          AUTO_INCREMENT PRIMARY KEY,
-                                  ClientID            INT          NOT NULL,
-                                  PhoneType           VARCHAR(15)  NOT NULL,
-                                  PhoneBrand          VARCHAR(50)  NOT NULL,
-                                  PhoneSerialNr       VARCHAR(100) NOT NULL,
-                                  PhoneFirmware       VARCHAR(50)  NOT NULL,
-                                  CHECK (PhoneType IN ('Emergency','NonEmergency','Both')),
-                                  CONSTRAINT FK_PhoneIntegration_WorkingPosition FOREIGN KEY (ClientID)
-                                      REFERENCES WorkingPosition(ClientID)
+                                  PhoneIntegrationID  UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                                  ClientID            UUID NOT NULL,
+                                  PhoneType           VARCHAR(20) NOT NULL,
+                                  PhoneBrand          VARCHAR(50),
+                                  PhoneSerialNr       VARCHAR(100),
+                                  PhoneFirmware       VARCHAR(50),
+                                  CONSTRAINT fk_phone_client FOREIGN KEY (ClientID)
+                                      REFERENCES Clients(ClientID),
+                                  CONSTRAINT ck_phone_type
+                                      CHECK (PhoneType IN ('Emergency','NonEmergency','Both'))
 );
+
+-- =========================================================
+-- 19.1 InstalledSoftware
+-- =========================================================
+CREATE TABLE InstalledSoftware (
+                                   InstalledSoftwareID UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                                   SiteID              UUID NOT NULL,
+                                   SoftwareID          UUID NOT NULL,
+                                   CONSTRAINT fk_instsw_site FOREIGN KEY (SiteID)
+                                       REFERENCES Site(SiteID),
+                                   CONSTRAINT fk_instsw_software FOREIGN KEY (SoftwareID)
+                                       REFERENCES Software(SoftwareID)
+);
+
+-- =========================================================
+-- 20.1 UpgradePlan
+-- =========================================================
+CREATE TABLE UpgradePlan (
+                             UpgradePlanID      UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                             SiteID             UUID NOT NULL,
+                             SoftwareID         UUID NOT NULL,
+                             PlannedWindowStart DATE NOT NULL,
+                             PlannedWindowEnd   DATE NOT NULL,
+                             Status             VARCHAR(12) NOT NULL,
+                             CreatedAt          DATE NOT NULL,
+                             CreatedBy          VARCHAR(20) NOT NULL,
+                             CONSTRAINT fk_upgrade_site FOREIGN KEY (SiteID)
+                                 REFERENCES Site(SiteID),
+                             CONSTRAINT fk_upgrade_software FOREIGN KEY (SoftwareID)
+                                 REFERENCES Software(SoftwareID),
+                             CONSTRAINT ck_upgrade_status
+                                 CHECK (Status IN ('Planned','Approved','InProgress','Done','Canceled'))
+);
+
+-- =========================================================
+-- 21.1 ServiceContract
+-- =========================================================
+CREATE TABLE ServiceContract (
+                                 ContractID     UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                                 AccountID      UUID NOT NULL,
+                                 ProjectID      UUID NOT NULL,
+                                 SiteID         UUID NOT NULL,
+                                 ContractNumber VARCHAR(50) NOT NULL,
+                                 Status         VARCHAR(12) NOT NULL,
+                                 StartDate      DATE NOT NULL,
+                                 EndDate        DATE NOT NULL,
+                                 CONSTRAINT fk_contract_account FOREIGN KEY (AccountID)
+                                     REFERENCES Account(AccountID),
+                                 CONSTRAINT fk_contract_project FOREIGN KEY (ProjectID)
+                                     REFERENCES Project(ProjectID),
+                                 CONSTRAINT fk_contract_site FOREIGN KEY (SiteID)
+                                     REFERENCES Site(SiteID),
+                                 CONSTRAINT ck_contract_status
+                                     CHECK (Status IN ('Planned','Approved','InProgress','Done','Canceled'))
+);
+
+-- =========================================================
+-- Helpful indexes
+-- =========================================================
+CREATE INDEX ix_project_account      ON Project(AccountID);
+CREATE INDEX ix_site_project         ON Site(ProjectID);
+CREATE INDEX ix_clients_site         ON Clients(SiteID);
+CREATE INDEX ix_server_site          ON Server(SiteID);
+CREATE INDEX ix_radio_site           ON Radio(SiteID);
+CREATE INDEX ix_audiodevice_client   ON AudioDevice(ClientID);
+CREATE INDEX ix_phone_client         ON PhoneIntegration(ClientID);
+CREATE INDEX ix_installed_site       ON InstalledSoftware(SiteID);
+CREATE INDEX ix_installed_software   ON InstalledSoftware(SoftwareID);
+CREATE INDEX ix_upgrade_site         ON UpgradePlan(SiteID);
+CREATE INDEX ix_upgrade_software     ON UpgradePlan(SoftwareID);
+CREATE INDEX ix_service_contracts    ON ServiceContract(AccountID, ProjectID, SiteID);

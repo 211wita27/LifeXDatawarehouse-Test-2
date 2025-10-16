@@ -1,6 +1,6 @@
 package at.htlle.freq.web;
 
-import at.htlle.freq.domain.SearchHit;
+import at.htlle.freq.infrastructure.search.SearchHit;
 import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import at.htlle.freq.infrastructure.search.SmartQueryBuilder;
 import at.htlle.freq.infrastructure.search.SuggestService;
