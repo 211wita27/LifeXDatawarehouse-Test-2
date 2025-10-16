@@ -48,7 +48,7 @@
             case 'project': return 'Project';
             case 'site': return 'Site';
             case 'server': return 'Server';
-            case 'client': return 'WorkingPosition'; // Sonderfall
+            case 'client': return 'Clients'; // geändert von WorkingPosition
             case 'radio': return 'Radio';
             case 'audio': return 'AudioDevice';
             case 'phone': return 'PhoneIntegration';
@@ -72,7 +72,7 @@
             case 'site':    return `${val(row,'SiteName') ?? 'Site'}`;
             case 'server':  return `${val(row,'ServerName') ?? 'Server'}`;
             case 'client':
-            case 'workingposition': return `${val(row,'ClientName') ?? 'Client'}`;
+            case 'clients': return `${val(row,'ClientName') ?? 'Client'}`;
             case 'radio':   return `${val(row,'RadioBrand') ?? 'Radio'}`;
             case 'audio':   return `${val(row,'AudioDeviceBrand') ?? 'AudioDevice'}`;
             case 'phone':   return `${val(row,'PhoneBrand') ?? 'Phone'}`;
@@ -115,7 +115,7 @@
         const rowAccount = async (accountId) => await fetchJson(`/row/Account/${accountId}`);
         const rowProject = async (projectId) => await fetchJson(`/row/Project/${projectId}`);
         const rowSite    = async (siteId)    => await fetchJson(`/row/Site/${siteId}`);
-        const rowClient  = async (clientId)  => await fetchJson(`/row/WorkingPosition/${clientId}`);
+        const rowClient  = async (clientId)  => await fetchJson(`/row/Clients/${clientId}`); // geändert
 
         const sections = [];
 
@@ -352,7 +352,7 @@
     (async () => {
         const p = new URLSearchParams(location.search);
         const rawType = p.get('type');
-        const id = +p.get('id');
+        const id = p.get('id');
         const box = document.getElementById('view');
 
         if(!rawType || !id){ box.textContent = 'Parameter fehlen.'; box.removeAttribute('aria-busy'); return; }
@@ -373,7 +373,7 @@
   ${kvRows}
 </table>`;
 
-            const typeKey = (table==='WorkingPosition') ? 'Client' : table;
+            const typeKey = (table==='Clients') ? 'Client' : table; // geändert
 
             await loadParents(typeKey, id, row);
             await loadChildren(typeKey, id);
