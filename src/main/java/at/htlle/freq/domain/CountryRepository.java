@@ -5,6 +5,6 @@ import java.util.Optional;
 
 public interface CountryRepository {
     Optional<Country> findById(String code);
-    void save(Country country);
+    Country save(Country country);
     List<Country> findAll();
 }

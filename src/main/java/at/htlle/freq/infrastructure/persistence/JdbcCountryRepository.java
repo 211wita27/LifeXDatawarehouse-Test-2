@@ -29,7 +29,7 @@ public class JdbcCountryRepository implements CountryRepository {
     }
 
     @Override
-    public void save(Country c) {
+    public Country save(Country c) {
         String existsSql = "SELECT COUNT(*) FROM Country WHERE CountryCode = :code";
         Integer cnt = jdbc.queryForObject(existsSql, new MapSqlParameterSource("code", c.getCountryCode()), Integer.class);
         boolean exists = cnt != null && cnt > 0;
@@ -45,6 +45,7 @@ public class JdbcCountryRepository implements CountryRepository {
                     .addValue("code", c.getCountryCode())
                     .addValue("name", c.getCountryName()));
         }
+        return c;
     }
 
     @Override

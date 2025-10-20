@@ -1,6 +1,5 @@
 package at.htlle.freq.application;
 
-
 import at.htlle.freq.domain.Clients;
 import at.htlle.freq.domain.ClientsRepository;
 import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
@@ -11,10 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
+/**
+ * Service-Schicht für Clients (WorkingPositions)
+ * Kümmert sich um DB-Operationen, Validation und Lucene-Indexierung.
+ */
 @Service
 public class ClientsService {
 
@@ -28,10 +29,26 @@ public class ClientsService {
         this.lucene = lucene;
     }
 
+    // ----------------------------
+    // READ
+    // ----------------------------
+
     public List<Clients> findBySite(UUID siteId) {
         Objects.requireNonNull(siteId, "siteId must not be null");
         return repo.findBySite(siteId);
     }
+
+    public List<Clients> findAll() {
+        return repo.findAll();
+    }
+
+    public Optional<Clients> findById(UUID id) {
+        return repo.findById(id);
+    }
+
+    // ----------------------------
+    // CREATE
+    // ----------------------------
 
     @Transactional
     public Clients create(Clients in) {
@@ -50,7 +67,10 @@ public class ClientsService {
         return in;
     }
 
-    // optionales Update – falls später gebraucht
+    // ----------------------------
+    // UPDATE
+    // ----------------------------
+
     @Transactional
     public Clients update(UUID id, Clients patch) {
         Objects.requireNonNull(id, "id must not be null");
@@ -72,6 +92,38 @@ public class ClientsService {
         log.info("Client aktualisiert: id={} name='{}'", id, existing.getClientName());
         return existing;
     }
+
+    // ----------------------------
+    // DELETE
+    //WÄRE EIGENTLICH WICHTIG, ABER UNSER LUCENE UNTERSTÜTZ DAS NOCH NICHT
+    //DA ES NOCH NICHT IM CONTROLLER INTEGRIERT IST
+    // ----------------------------
+/**
+    @Transactional
+    public boolean delete(UUID id) {
+        Objects.requireNonNull(id, "id must not be null");
+
+        var existing = repo.findById(id);
+        if (existing.isEmpty()) {
+            return false;
+        }
+
+        repo.deleteById(id);
+        log.info("Client gelöscht: id={}", id);
+
+        // optional: Lucene-Eintrag löschen, falls dein LuceneService das unterstützt
+        try {
+            lucene.deleteClient(id.toString());
+        } catch (Exception e) {
+            log.warn("Lucene-Löschung für Client {} fehlgeschlagen", id, e);
+        }
+
+        return true;
+    }
+ */
+    // ----------------------------
+    // Lucene Indexing Helpers
+    // ----------------------------
 
     private void registerAfterCommitIndexing(Clients c) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
@@ -99,6 +151,10 @@ public class ClientsService {
             log.error("Lucene-Indexing für Client {} fehlgeschlagen", c.getClientID(), e);
         }
     }
+
+    // ----------------------------
+    // Utility
+    // ----------------------------
 
     private static boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 

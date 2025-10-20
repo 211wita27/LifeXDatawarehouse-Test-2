@@ -62,7 +62,7 @@ public class JdbcProjectRepository implements ProjectRepository {
     }
 
     @Override
-    public void save(Project p) {
+    public Project save(Project p) {
         boolean isNew = p.getProjectID() == null;
         if (isNew) {
             String sql = """
@@ -107,5 +107,6 @@ public class JdbcProjectRepository implements ProjectRepository {
                     .addValue("address", p.getAddressID());
             jdbc.update(sql, params);
         }
+        return p;
     }
 }

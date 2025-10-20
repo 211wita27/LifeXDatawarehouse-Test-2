@@ -6,6 +6,6 @@ import java.util.Optional;
 public interface CityRepository {
     Optional<City> findById(String id);
     List<City> findByCountry(String countryCode);
-    void save(City city);
+    City save(City city);
     List<City> findAll();
 }

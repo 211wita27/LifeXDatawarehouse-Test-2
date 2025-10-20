@@ -5,6 +5,6 @@ import java.util.*;
 public interface PhoneIntegrationRepository {
     Optional<PhoneIntegration> findById(UUID id);
     List<PhoneIntegration> findByClient(UUID clientId);
-    void save(PhoneIntegration phone);
+    PhoneIntegration save(PhoneIntegration phone);
     List<PhoneIntegration> findAll();
 }

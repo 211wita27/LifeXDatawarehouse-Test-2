@@ -53,7 +53,7 @@ public class JdbcRadioRepository implements RadioRepository {
     }
 
     @Override
-    public void save(Radio r) {
+    public Radio save(Radio r) {
         boolean isNew = r.getRadioID() == null;
         if (isNew) {
             String sql = """
@@ -85,5 +85,6 @@ public class JdbcRadioRepository implements RadioRepository {
                     .addValue("mode", r.getMode())
                     .addValue("ds", r.getDigitalStandard()));
         }
+        return r;
     }
 }

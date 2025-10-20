@@ -36,7 +36,7 @@ public class JdbcCityRepository implements CityRepository {
     }
 
     @Override
-    public void save(City c) {
+    public City save(City c) {
         // Upsert über EXISTS
         String existsSql = "SELECT COUNT(*) FROM City WHERE CityID = :id";
         boolean exists = Boolean.TRUE.equals(
@@ -62,6 +62,7 @@ public class JdbcCityRepository implements CityRepository {
                     .addValue("name", c.getCityName())
                     .addValue("cc", c.getCountryCode()));
         }
+        return c;
     }
 
     @Override

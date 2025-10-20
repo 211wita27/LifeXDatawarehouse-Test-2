@@ -63,7 +63,7 @@ public class JdbcDeploymentVariantRepository implements DeploymentVariantReposit
     }
 
     @Override
-    public void save(DeploymentVariant dv) {
+    public DeploymentVariant save(DeploymentVariant dv) {
         boolean isNew = dv.getVariantID() == null;
         if (isNew) {
             String sql = """
@@ -95,5 +95,6 @@ public class JdbcDeploymentVariantRepository implements DeploymentVariantReposit
                     .addValue("active",dv.isActive());
             jdbc.update(sql, params);
         }
+        return dv;
     }
 }

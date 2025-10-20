@@ -52,7 +52,7 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
     }
 
     @Override
-    public void save(AudioDevice d) {
+    public AudioDevice save(AudioDevice d) {
         boolean isNew = d.getAudioDeviceID() == null;
         if (isNew) {
             String sql = """
@@ -82,5 +82,6 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
                     .addValue("fw", d.getAudioDeviceFirmware())
                     .addValue("type", d.getDeviceType()));
         }
+        return d;
     }
 }

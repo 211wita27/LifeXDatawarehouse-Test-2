@@ -8,14 +8,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
 
-/** Vollständiger CRUD-Controller für Telefon-Integrationen eines Clients. */
+/** Vollständiger CRUD-Controller für AudioDevices (Audio-Peripherie) */
 @RestController
-@RequestMapping("/phones")
-public class PhoneController {
+@RequestMapping("/audio")
+public class AudioDeviceController {
 
     private final NamedParameterJdbcTemplate jdbc;
 
-    public PhoneController(NamedParameterJdbcTemplate jdbc) {
+    public AudioDeviceController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
@@ -26,31 +26,31 @@ public class PhoneController {
     public List<Map<String, Object>> findByClient(@RequestParam(required = false) String clientId) {
         if (clientId != null) {
             return jdbc.queryForList("""
-                SELECT PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, 
-                       PhoneSerialNr, PhoneFirmware
-                FROM PhoneIntegration
+                SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, 
+                       AudioDeviceFirmware, DeviceType
+                FROM AudioDevice
                 WHERE ClientID = :cid
                 """, new MapSqlParameterSource("cid", clientId));
         }
 
         return jdbc.queryForList("""
-            SELECT PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, 
-                   PhoneSerialNr, PhoneFirmware
-            FROM PhoneIntegration
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, 
+                   AudioDeviceFirmware, DeviceType
+            FROM AudioDevice
             """, new HashMap<>());
     }
 
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, 
-                   PhoneSerialNr, PhoneFirmware
-            FROM PhoneIntegration
-            WHERE PhoneIntegrationID = :id
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, 
+                   AudioDeviceFirmware, DeviceType
+            FROM AudioDevice
+            WHERE AudioDeviceID = :id
             """, new MapSqlParameterSource("id", id));
 
         if (rows.isEmpty())
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PhoneIntegration not found");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AudioDevice not found");
         return rows.get(0);
     }
 
@@ -64,9 +64,9 @@ public class PhoneController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
 
         String sql = """
-            INSERT INTO PhoneIntegration 
-            (ClientID, PhoneType, PhoneBrand, PhoneSerialNr, PhoneFirmware)
-            VALUES (:clientID, :phoneType, :phoneBrand, :phoneSerialNr, :phoneFirmware)
+            INSERT INTO AudioDevice 
+            (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType)
+            VALUES (:clientID, :audioDeviceBrand, :deviceSerialNr, :audioDeviceFirmware, :deviceType)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(body));
@@ -85,14 +85,14 @@ public class PhoneController {
             setClauses.add(key + " = :" + key);
         }
 
-        String sql = "UPDATE PhoneIntegration SET " + String.join(", ", setClauses) +
-                " WHERE PhoneIntegrationID = :id";
+        String sql = "UPDATE AudioDevice SET " + String.join(", ", setClauses) +
+                " WHERE AudioDeviceID = :id";
 
         var params = new MapSqlParameterSource(body).addValue("id", id);
         int updated = jdbc.update(sql, params);
 
         if (updated == 0)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no phone integration updated");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no audio device updated");
     }
 
     // ----------------------------
@@ -101,10 +101,10 @@ public class PhoneController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        int count = jdbc.update("DELETE FROM PhoneIntegration WHERE PhoneIntegrationID = :id",
+        int count = jdbc.update("DELETE FROM AudioDevice WHERE AudioDeviceID = :id",
                 new MapSqlParameterSource("id", id));
 
         if (count == 0)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no phone integration deleted");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no audio device deleted");
     }
 }

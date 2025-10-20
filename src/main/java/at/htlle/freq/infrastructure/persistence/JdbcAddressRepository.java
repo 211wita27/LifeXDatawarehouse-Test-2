@@ -35,14 +35,14 @@ public class JdbcAddressRepository implements AddressRepository {
     }
 
     @Override
-    public void save(Address a) {
+    public Address save(Address a) {
         boolean isNew = a.getAddressID() == null;
         if (isNew) {
             String sql = """
-                INSERT INTO Address (Street, CityID)
-                VALUES (:street, :city)
-                RETURNING AddressID
-                """;
+            INSERT INTO Address (Street, CityID)
+            VALUES (:street, :city)
+            RETURNING AddressID
+            """;
             UUID id = jdbc.queryForObject(sql,
                     new MapSqlParameterSource()
                             .addValue("street", a.getStreet())
@@ -51,13 +51,15 @@ public class JdbcAddressRepository implements AddressRepository {
             a.setAddressID(id);
         } else {
             String sql = """
-                UPDATE Address SET Street = :street, CityID = :city
-                WHERE AddressID = :id
-                """;
+            UPDATE Address SET Street = :street, CityID = :city
+            WHERE AddressID = :id
+            """;
             jdbc.update(sql, new MapSqlParameterSource()
                     .addValue("id", a.getAddressID())
                     .addValue("street", a.getStreet())
                     .addValue("city", a.getCityID()));
         }
+        return a;
     }
+
 }

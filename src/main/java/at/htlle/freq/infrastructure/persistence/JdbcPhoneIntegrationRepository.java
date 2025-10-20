@@ -52,7 +52,7 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
     }
 
     @Override
-    public void save(PhoneIntegration p) {
+    public PhoneIntegration save(PhoneIntegration p) {
         boolean isNew = p.getPhoneIntegrationID() == null;
         if (isNew) {
             String sql = """
@@ -82,5 +82,6 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
                     .addValue("sn", p.getPhoneSerialNr())
                     .addValue("fw", p.getPhoneFirmware()));
         }
+        return p;
     }
 }

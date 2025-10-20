@@ -32,8 +32,13 @@ public class JdbcClientsRepository implements ClientsRepository {
             SELECT ClientID, SiteID, ClientName, ClientBrand, ClientSerialNr, ClientOS, PatchLevel, InstallType
             FROM Clients WHERE ClientID = :id
             """;
-        try { return Optional.ofNullable(jdbc.queryForObject(sql, new MapSqlParameterSource("id", id), mapper)); }
-        catch (Exception e) { return Optional.empty(); }
+        try {
+            return Optional.ofNullable(
+                    jdbc.queryForObject(sql, new MapSqlParameterSource("id", id), mapper)
+            );
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -54,30 +59,42 @@ public class JdbcClientsRepository implements ClientsRepository {
     }
 
     @Override
-    public void save(Clients c) {
-        boolean isNew = c.getClientID() == null;
+    public Clients save(Clients c) {
+        boolean isNew = (c.getClientID() == null);
+
         if (isNew) {
+            // UUID selbst erzeugen, da H2 RETURNING nicht kennt
+            UUID newId = UUID.randomUUID();
+            c.setClientID(newId);
+
             String sql = """
-                INSERT INTO Clients (SiteID, ClientName, ClientBrand, ClientSerialNr, ClientOS, PatchLevel, InstallType)
-                VALUES (:site, :name, :brand, :sn, :os, :pl, :it)
-                RETURNING ClientID
+                INSERT INTO Clients (ClientID, SiteID, ClientName, ClientBrand,
+                                     ClientSerialNr, ClientOS, PatchLevel, InstallType)
+                VALUES (:id, :site, :name, :brand, :sn, :os, :pl, :it)
                 """;
-            UUID id = jdbc.queryForObject(sql, new MapSqlParameterSource()
+
+            jdbc.update(sql, new MapSqlParameterSource()
+                    .addValue("id", newId)
                     .addValue("site", c.getSiteID())
                     .addValue("name", c.getClientName())
                     .addValue("brand", c.getClientBrand())
                     .addValue("sn", c.getClientSerialNr())
                     .addValue("os", c.getClientOS())
                     .addValue("pl", c.getPatchLevel())
-                    .addValue("it", c.getInstallType()), UUID.class);
-            c.setClientID(id);
+                    .addValue("it", c.getInstallType()));
         } else {
             String sql = """
                 UPDATE Clients SET
-                    SiteID = :site, ClientName = :name, ClientBrand = :brand, ClientSerialNr = :sn,
-                    ClientOS = :os, PatchLevel = :pl, InstallType = :it
+                    SiteID = :site,
+                    ClientName = :name,
+                    ClientBrand = :brand,
+                    ClientSerialNr = :sn,
+                    ClientOS = :os,
+                    PatchLevel = :pl,
+                    InstallType = :it
                 WHERE ClientID = :id
                 """;
+
             jdbc.update(sql, new MapSqlParameterSource()
                     .addValue("id", c.getClientID())
                     .addValue("site", c.getSiteID())
@@ -88,5 +105,7 @@ public class JdbcClientsRepository implements ClientsRepository {
                     .addValue("pl", c.getPatchLevel())
                     .addValue("it", c.getInstallType()));
         }
+
+        return c;
     }
 }

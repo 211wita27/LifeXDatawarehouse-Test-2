@@ -59,7 +59,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
     }
 
     @Override
-    public void save(Software s) {
+    public Software save(Software s) {
         boolean isNew = s.getSoftwareID() == null;
         if (isNew) {
             String sql = """
@@ -97,5 +97,6 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
                     .addValue("ss",   s.getSupportStartDate())
                     .addValue("se",   s.getSupportEndDate()));
         }
+        return s;
     }
 }

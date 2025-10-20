@@ -57,7 +57,7 @@ public class JdbcUpgradePlanRepository implements UpgradePlanRepository {
     }
 
     @Override
-    public void save(UpgradePlan u) {
+    public UpgradePlan save(UpgradePlan u) {
         boolean isNew = u.getUpgradePlanID() == null;
         if (isNew) {
             String sql = """
@@ -92,5 +92,6 @@ public class JdbcUpgradePlanRepository implements UpgradePlanRepository {
                     .addValue("ca", u.getCreatedAt())
                     .addValue("cb", u.getCreatedBy()));
         }
+        return u;
     }
 }

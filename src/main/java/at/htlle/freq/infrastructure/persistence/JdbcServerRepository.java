@@ -60,7 +60,7 @@ public class JdbcServerRepository implements ServerRepository {
     }
 
     @Override
-    public void save(Server s) {
+    public Server save(Server s) {
         boolean isNew = s.getServerID() == null;
         if (isNew) {
             String sql = """
@@ -100,5 +100,6 @@ public class JdbcServerRepository implements ServerRepository {
                     .addValue("vv", s.getVirtualVersion())
                     .addValue("ha", s.isHighAvailability()));
         }
+        return s;
     }
 }

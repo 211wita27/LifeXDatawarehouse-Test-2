@@ -54,7 +54,7 @@ public class JdbcServiceContractRepository implements ServiceContractRepository 
     }
 
     @Override
-    public void save(ServiceContract s) {
+    public ServiceContract save(ServiceContract s) {
         boolean isNew = s.getContractID() == null;
         if (isNew) {
             String sql = """
@@ -88,5 +88,6 @@ public class JdbcServiceContractRepository implements ServiceContractRepository 
                     .addValue("sd",  s.getStartDate())
                     .addValue("ed",  s.getEndDate()));
         }
+        return s;
     }
 }

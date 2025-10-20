@@ -58,7 +58,7 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
     }
 
     @Override
-    public void save(InstalledSoftware isw) {
+    public InstalledSoftware save(InstalledSoftware isw) {
         boolean isNew = isw.getInstalledSoftwareID() == null;
         if (isNew) {
             String sql = """
@@ -80,5 +80,6 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
                     .addValue("site", isw.getSiteID())
                     .addValue("sw", isw.getSoftwareID()));
         }
+        return isw;
     }
 }

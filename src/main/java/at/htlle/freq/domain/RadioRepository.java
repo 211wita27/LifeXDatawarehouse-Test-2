@@ -5,6 +5,6 @@ import java.util.*;
 public interface RadioRepository {
     Optional<Radio> findById(UUID id);
     List<Radio> findBySite(UUID siteId);
-    void save(Radio radio);
+    Radio save(Radio radio);
     List<Radio> findAll();
 }

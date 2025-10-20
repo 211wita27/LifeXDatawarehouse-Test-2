@@ -5,6 +5,6 @@ import java.util.*;
 public interface ProjectRepository {
     Optional<Project> findById(UUID id);
     Optional<Project> findBySapId(String sapId);
-    void save(Project project);
+    Project save(Project project);
     List<Project> findAll();
 }

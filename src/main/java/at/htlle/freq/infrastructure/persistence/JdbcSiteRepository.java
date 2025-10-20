@@ -50,7 +50,7 @@ public class JdbcSiteRepository implements SiteRepository {
     }
 
     @Override
-    public void save(Site s) {
+    public Site save(Site s) {
         boolean isNew = s.getSiteID() == null;
         if (isNew) {
             String sql = """
@@ -79,5 +79,6 @@ public class JdbcSiteRepository implements SiteRepository {
                     .addValue("fz", s.getFireZone())
                     .addValue("tenants", s.getTenantCount()));
         }
+        return s;
     }
 }
