@@ -96,8 +96,8 @@ mvn spring-boot:run
 - `GET  /accounts` – alle Accounts
 - `GET  /accounts/{id}` – einzelner Account
 - `POST /accounts` – neuen Account anlegen (JSON-Body)
-- `GET  /search?q=…` – globale Suche (Lucene oder normal)  
-  → Liefert `type`, `id`, `text`, das Frontend lädt Details aus `/row/{table}/{id}` nach
+- `GET  /search?q=…` – globale Suche (Lucene oder normal)
+  → Liefert Trefferobjekte mit `id`, `type`, `text` (Primärbezeichnung) und optional `snippet` (zusätzliche Inhalte); das Frontend lädt Detaildaten aus `/row/{table}/{id}` nach
 - `GET  /table/{name}` – 100-Zeilen-Dump einer Tabelle
 - `GET  /row/{name}/{id}` – Einzel-Zeile (Detail-View)
 

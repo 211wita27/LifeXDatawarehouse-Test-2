@@ -83,12 +83,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
                 for (ScoreDoc sd : topDocs.scoreDocs) {
                     Document doc = searcher.doc(sd.doc);
-                    results.add(new SearchHit(
-                            doc.get("id"),
-                            doc.get("type"),
-                            doc.get("content"),
-                            doc.get("content")
-                    ));
+                    results.add(mapToHit(doc));
                 }
             }
         } catch (Exception e) {
@@ -124,7 +119,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             for (String f : fields) {
                 content.append(safe(f)).append(" ");
             }
-            doc.add(new TextField("content", content.toString().trim(), Field.Store.YES));
+            String aggregated = content.toString().trim();
+            doc.add(new TextField("content", aggregated, Field.Store.YES));
+            doc.add(new StoredField("display", determineDisplay(type, id, fields)));
 
             writer.updateDocument(new Term("id", id), doc);
             writer.commit();
@@ -136,6 +133,73 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     private String safe(String s) {
         return s == null ? "" : s;
+    }
+
+    private SearchHit mapToHit(Document doc) {
+        String id = doc.get("id");
+        String type = doc.get("type");
+        String display = doc.get("display");
+        String content = doc.get("content");
+
+        String text = firstNonBlank(display, content, id, type);
+        String snippet = buildSnippet(content, text);
+
+        return new SearchHit(id, type, text, snippet);
+    }
+
+    private String determineDisplay(String type, String id, String... fields) {
+        String display = firstNonBlank(fields);
+        if (display.isEmpty()) {
+            display = (safe(type) + " " + safe(id)).trim();
+        }
+        if (display.isEmpty()) {
+            display = safe(id);
+        }
+        return display;
+    }
+
+    private String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null) {
+                String trimmed = value.trim();
+                if (!trimmed.isEmpty()) {
+                    return trimmed;
+                }
+            }
+        }
+        return "";
+    }
+
+    private String buildSnippet(String content, String text) {
+        String normalized = normalizeWhitespace(content);
+        if (normalized.isEmpty()) {
+            return null;
+        }
+
+        String normalizedText = normalizeWhitespace(text);
+        if (!normalizedText.isEmpty() && normalized.toLowerCase().startsWith(normalizedText.toLowerCase())) {
+            normalized = normalized.substring(normalizedText.length()).trim();
+        }
+
+        if (normalized.isEmpty()) {
+            return null;
+        }
+
+        final int limit = 160;
+        if (normalized.length() > limit) {
+            normalized = normalized.substring(0, limit - 1).trim() + "…";
+        }
+        return normalized;
+    }
+
+    private String normalizeWhitespace(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("\\s+", " ").trim();
     }
 
     // =================== Indexing Methods ===================
