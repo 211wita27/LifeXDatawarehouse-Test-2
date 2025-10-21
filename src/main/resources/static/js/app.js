@@ -289,18 +289,22 @@ async function runLucene(q) {
             return;
         }
 
-        const rows = hits.map((h, i) => `
+        const rows = hits.map((h, i) => {
+            const snippet = (h.snippet ?? '').trim();
+            const snippetHtml = snippet ? `<div class="hit-snippet"><small>${escapeHtml(snippet)}</small></div>` : '';
+            return `
       <tr onclick="toDetails('${h.type}',${h.id})" style="cursor:pointer">
         <td>${escapeHtml(h.type)}</td>
-        <td>${h.id}</td>
-        <td>${escapeHtml(h.text ?? '')}</td>
+        <td>${escapeHtml(String(h.id ?? ''))}</td>
+        <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
         <td id="info-${i}"></td>
-      </tr>`).join('');
+      </tr>`;
+        }).join('');
 
         resultArea.innerHTML = `
       <div class="table-scroll">
         <table>
-          <tr><th>Typ</th><th>ID</th><th>Text</th><th>Info</th></tr>
+          <tr><th>Typ</th><th>ID</th><th>Text / Snippet</th><th>Info</th></tr>
           ${rows}
         </table>
       </div>`;
