@@ -14,7 +14,7 @@ public interface LuceneIndexService {
     List<SearchHit> search(Query query);
 
     // ========= Verwaltung =========
-    void reindexAll();
+    void resetIndex();
 
     // ========= Index-APIs =========
     void indexAccount(String accountId, String accountName, String country, String contactEmail);

@@ -99,7 +99,7 @@ public class AccountService {
     public void deleteAccount(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.deleteById(id);
-        // Optional: Den Eintrag aus Lucene entfernen (hier simpel: reindexAll oder spezielles delete)
+        // Optional: Den Eintrag aus Lucene entfernen (hier über einen gezielten Delete oder Reindex)
         // Wenn du in Lucene auch löschen willst, füge in deinem LuceneIndexService eine delete(id, type) Methode hinzu
         log.info("Account gelöscht: id={}", id);
     }
