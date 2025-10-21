@@ -42,7 +42,7 @@ Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben*
 │  static/ (HTML + JS + CSS)   │ ────────────►      │   · account docs        │
 └────────────┬─────────────────┘                    │   · project docs        │
              │  REST (JSON)                         └────────────┬────────────┘
-┌────────────▼─────────────────┐  Spring Boot 3 (Java 22)        │ search()
+┌────────────▼─────────────────┐  Spring Boot 3 (Java 17)        │ search()
 │          Web Layer           │                                 │
 │  AccountController …         │ ◄───────────────────────────────┘
 └────────────┬─────────────────┘        JDBC
@@ -62,7 +62,7 @@ Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben*
 
 ## 🧰 Tech-Stack
 
-- Java 22 (22.0.1)
+- Java 17 (17.x LTS)
 - Spring Boot 3.4.6
 - H2 Database 2.3.x
 - Apache Lucene 8.11.4
@@ -96,8 +96,8 @@ mvn spring-boot:run
 - `GET  /accounts` – alle Accounts
 - `GET  /accounts/{id}` – einzelner Account
 - `POST /accounts` – neuen Account anlegen (JSON-Body)
-- `GET  /search?q=…` – globale Suche (Lucene oder normal)  
-  → Liefert `type`, `id`, `text`, das Frontend lädt Details aus `/row/{table}/{id}` nach
+- `GET  /search?q=…` – globale Suche (Lucene oder normal)
+  → Liefert Trefferobjekte mit `id`, `type`, `text` (Primärbezeichnung) und optional `snippet` (zusätzliche Inhalte); das Frontend lädt Detaildaten aus `/row/{table}/{id}` nach
 - `GET  /table/{name}` – 100-Zeilen-Dump einer Tabelle
 - `GET  /row/{name}/{id}` – Einzel-Zeile (Detail-View)
 

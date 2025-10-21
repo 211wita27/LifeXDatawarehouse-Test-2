@@ -57,11 +57,10 @@ class DomainPojoTest {
                 }
 
                 Object result = getter.invoke(instance);
-                String message = type.getSimpleName() + "#" + getter.getName();
                 if (paramType.isPrimitive()) {
-                    assertEquals(value, result, message);
+                    assertEquals(value, result, () -> type.getSimpleName() + "#" + getter.getName());
                 } else {
-                    assertSame(value, result, message);
+                    assertSame(value, result, () -> type.getSimpleName() + "#" + getter.getName());
                 }
             }
         }
