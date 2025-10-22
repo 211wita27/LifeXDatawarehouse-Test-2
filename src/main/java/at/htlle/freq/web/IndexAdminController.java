@@ -1,6 +1,6 @@
 package at.htlle.freq.web;
 
-import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
+import at.htlle.freq.application.ReindexService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -9,14 +9,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/index")
 public class IndexAdminController {
 
-    private final LuceneIndexService lucene;
+    private final ReindexService reindexService;
 
-    public IndexAdminController(LuceneIndexService lucene) {
-        this.lucene = lucene;
+    public IndexAdminController(ReindexService reindexService) {
+        this.reindexService = reindexService;
     }
 
     @PostMapping("/reindex")
     public void reindex() {
-        new Thread(lucene::reindexAll, "manual-reindex").start();
+        reindexService.triggerReindex();
     }
 }

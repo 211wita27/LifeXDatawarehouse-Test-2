@@ -95,7 +95,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     // =================== Reindex ===================
 
     @Override
-    public void reindexAll() {
+    public void resetIndex() {
         try {
             ensureWriter();
             writer.deleteAll();
