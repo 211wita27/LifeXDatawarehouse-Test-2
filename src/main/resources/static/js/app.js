@@ -306,8 +306,10 @@ async function runLucene(q) {
             const snippetHtml = snippet ? `<div class="hit-snippet"><small>${escapeHtml(snippet)}</small></div>` : '';
             const fullId = String(h.id ?? '');
             const displayId = shortUuid(h.id);
+            const typeArg = JSON.stringify(h.type ?? '');
+            const idArg = JSON.stringify(h.id ?? '');
             return `
-      <tr onclick="toDetails('${h.type}',${h.id})" style="cursor:pointer">
+      <tr onclick="toDetails(${typeArg},${idArg})" style="cursor:pointer">
         <td>${escapeHtml(h.type)}</td>
         <td title="${escapeHtml(fullId)}">${escapeHtml(displayId)}</td>
         <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
