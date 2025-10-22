@@ -309,7 +309,7 @@ async function runLucene(q) {
             const typeArg = JSON.stringify(h.type ?? '');
             const idArg = JSON.stringify(h.id ?? '');
             return `
-      <tr onclick="toDetails(${typeArg},${idArg})" style="cursor:pointer">
+      <tr onclick='toDetails(${typeArg},${idArg})' style="cursor:pointer">
         <td>${escapeHtml(h.type)}</td>
         <td title="${escapeHtml(fullId)}">${escapeHtml(displayId)}</td>
         <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
