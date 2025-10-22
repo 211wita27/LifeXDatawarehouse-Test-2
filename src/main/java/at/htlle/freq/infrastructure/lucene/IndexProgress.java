@@ -73,6 +73,11 @@ public final class IndexProgress {
         this.active = false;
     }
 
+    /** Gibt an, ob aktuell ein Lauf aktiv ist. */
+    public boolean isActive() {
+        return active;
+    }
+
     /** Liefert eine Momentaufnahme für die UI/REST. */
     public Status status() {
         // Done-Snapshot in gleicher Reihenfolge wie totals
