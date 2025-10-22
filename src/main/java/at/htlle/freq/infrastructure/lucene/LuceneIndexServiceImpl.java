@@ -1,7 +1,6 @@
 package at.htlle.freq.infrastructure.lucene;
 
 import at.htlle.freq.infrastructure.search.SearchHit;
-import jakarta.annotation.PreDestroy;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -13,49 +12,38 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     private static final Logger log = LoggerFactory.getLogger(LuceneIndexServiceImpl.class);
-    private static final String INDEX_PATH = "target/lifex-index";
+    private static final Path INDEX_DIR = Paths.get(LuceneIndexService.INDEX_PATH);
 
     private final StandardAnalyzer analyzer = new StandardAnalyzer();
-    private IndexWriter writer;
-    private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    // =================== Setup ===================
-
-    private void ensureWriter() {
-        try {
-            if (initialized.compareAndSet(false, true)) {
-                Path path = Paths.get(INDEX_PATH);
-                FSDirectory dir = FSDirectory.open(path);
-                IndexWriterConfig config = new IndexWriterConfig(analyzer);
-                config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-                this.writer = new IndexWriter(dir, config);
-                log.info("Lucene writer initialized at {}", path.toAbsolutePath());
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Error initializing Lucene writer", e);
-        }
+    private IndexWriter openWriter() throws IOException {
+        Files.createDirectories(INDEX_DIR);
+        FSDirectory dir = FSDirectory.open(INDEX_DIR);
+        IndexWriterConfig config = new IndexWriterConfig(analyzer);
+        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+        return new IndexWriter(dir, config);
     }
 
-    @PreDestroy
-    public void close() {
-        try {
-            if (writer != null) {
-                writer.close();
-                log.info("Lucene writer closed.");
-            }
-        } catch (IOException e) {
-            log.warn("Error closing Lucene writer", e);
+    private DirectoryReader openReader() throws IOException {
+        if (!Files.isDirectory(INDEX_DIR)) {
+            return null;
         }
+        FSDirectory dir = FSDirectory.open(INDEX_DIR);
+        if (!DirectoryReader.indexExists(dir)) {
+            dir.close();
+            return null;
+        }
+        return DirectoryReader.open(dir);
     }
 
     // =================== Search ===================
@@ -75,19 +63,29 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     @Override
     public List<SearchHit> search(Query query) {
         List<SearchHit> results = new ArrayList<>();
+        DirectoryReader reader = null;
         try {
-            ensureWriter();
-            try (DirectoryReader reader = DirectoryReader.open(writer)) {
-                IndexSearcher searcher = new IndexSearcher(reader);
-                TopDocs topDocs = searcher.search(query, 50);
+            reader = openReader();
+            if (reader == null) {
+                return results;
+            }
+            IndexSearcher searcher = new IndexSearcher(reader);
+            TopDocs topDocs = searcher.search(query, 50);
 
-                for (ScoreDoc sd : topDocs.scoreDocs) {
-                    Document doc = searcher.doc(sd.doc);
-                    results.add(mapToHit(doc));
-                }
+            for (ScoreDoc sd : topDocs.scoreDocs) {
+                Document doc = searcher.doc(sd.doc);
+                results.add(mapToHit(doc));
             }
         } catch (Exception e) {
             log.error("Fehler bei der Suche", e);
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException closeEx) {
+                    log.warn("Konnte Lucene-Reader nicht schließen", closeEx);
+                }
+            }
         }
         return results;
     }
@@ -96,11 +94,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     public void reindexAll() {
-        try {
-            ensureWriter();
+        try (IndexWriter writer = openWriter()) {
             writer.deleteAll();
             writer.commit();
-            log.info("Lucene-Index geleert (bereit für Reindex).");
+            log.info("Lucene-Index geleert (bereit für Reindex) am {}", INDEX_DIR.toAbsolutePath());
         } catch (Exception e) {
             log.error("Fehler beim Reindexieren", e);
         }
@@ -109,8 +106,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     // =================== Helper ===================
 
     private void indexDocument(String id, String type, String... fields) {
-        try {
-            ensureWriter();
+        try (IndexWriter writer = openWriter()) {
             Document doc = new Document();
             doc.add(new StringField("id", safe(id), Field.Store.YES));
             doc.add(new StringField("type", safe(type), Field.Store.YES));
