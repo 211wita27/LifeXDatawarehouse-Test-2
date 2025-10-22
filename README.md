@@ -127,7 +127,14 @@ Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
   - Einheitliches Layout für alle Entitätstypen
   - Kompaktansicht und Vollansicht umschaltbar
 
-**Alle Assets:**  
+- **`reports.html` – Reports-Übersicht (Mockup)**
+  - Filterleiste mit Report-Typ, Zeitraum, Projekt/Site und Variante
+  - KPI-Kacheln plus Tab-Navigation für Difference-, Maintenance-, Configuration- und Inventory-Ansichten
+  - Platzhalter für Charts sowie Tabellen mit Export-Buttons (CSV/PDF) je Tab
+  - Seitenleiste mit Report-Typen, Quick-Links und Hinweisbox für nächste Schritte
+  - Header-Navigation ergänzt um einen Link auf „Reports“ (Mockup, noch ohne Backend-Anbindung)
+
+**Alle Assets:**
 Liegen unter `src/main/resources/static/` – kein Frontend-Build nötig.
 
 ---
