@@ -127,8 +127,8 @@ class AddressServiceTest {
     }
 
     @Test
-    void deleteAddressAllowsLoggingOnly() {
+    void deleteAddressDelegatesToRepository() {
         service.deleteAddress(UUID1);
-        verifyNoInteractions(repo);
+        verify(repo).deleteById(UUID1);
     }
 }

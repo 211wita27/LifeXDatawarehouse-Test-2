@@ -115,9 +115,10 @@ class CityServiceTest {
     }
 
     @Test
-    void deleteCityLoadsOptional() {
+    void deleteCityDelegatesToRepository() {
         when(repo.findById("CITY-1")).thenReturn(Optional.of(city()));
         service.deleteCity("CITY-1");
-        verify(repo, times(2)).findById("CITY-1");
+        verify(repo).findById("CITY-1");
+        verify(repo).deleteById("CITY-1");
     }
 }
