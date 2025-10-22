@@ -24,59 +24,60 @@
         <section>
             <h2>Shortcuts</h2>
 
-            <!-- 0  Alle Accounts -->
+            <!-- 0  Accounts – Gesamtbestand -->
             <div class="shortcut" data-id="sc0" data-default="type:account">
                 <button class="head">
                     <span class="rename">✏️</span>
-                    <span class="label">Alle Accounts</span>
+                    <span class="label">Accounts – Gesamtbestand</span>
                     <span class="chev">▶</span>
                 </button>
                 <div class="panel"><input></div>
             </div>
 
-            <!-- 1  Große Projekte -->
+            <!-- 1  Projekte – aktiv -->
             <div class="shortcut" data-id="sc1"
-                 data-default='type:project AND (CustomL OR CustomXL)'>
+                 data-default='type:project AND true'>
                 <button class="head">
                     <span class="rename">✏️</span>
-                    <span class="label">Große Projekte</span>
+                    <span class="label">Projekte – aktiv</span>
                     <span class="chev">▶</span>
                 </button>
                 <div class="panel"><input></div>
             </div>
 
-            <!-- 2  Accounts 🇩🇪 -->
+            <!-- 2  Serviceverträge – In Progress -->
             <div class="shortcut" data-id="sc2"
-                 data-default='type:account AND country:germany'>
+                 data-default='type:serviceContract AND InProgress'>
                 <button class="head">
                     <span class="rename">✏️</span>
-                    <span class="label">Accounts 🇩🇪</span>
+                    <span class="label">Serviceverträge – In Progress</span>
                     <span class="chev">▶</span>
                 </button>
                 <div class="panel"><input></div>
             </div>
 
-            <!-- 3  Showcase: Sites mit Lenovo-Servern -->
+            <!-- 3  Sites – FireZone Bravo -->
             <div class="shortcut" data-id="sc3"
-                 data-default='type:site AND serverBrand:lenovo'>
+                 data-default='type:site AND Bravo'>
                 <button class="head">
                     <span class="rename">✏️</span>
-                    <span class="label">Sites – Lenovo-Server</span>
+                    <span class="label">Sites – FireZone Bravo</span>
                     <span class="chev">▶</span>
                 </button>
                 <div class="panel">
-                    <input placeholder="Lucene-Query (z. B. type:site AND serverBrand:lenovo)">
+                    <input placeholder="Lucene-Query (z. B. type:site AND Bravo)">
                 </div>
             </div>
 
-            <!-- 4  frei 1 (umbenannt) -->
-            <div class="shortcut" data-id="sc4" data-default="">
+            <!-- 4  Server – Lenovo -->
+            <div class="shortcut" data-id="sc4"
+                 data-default='type:server AND Lenovo'>
                 <button class="head">
                     <span class="rename">✏️</span>
-                    <span class="label">(frei 1)</span>
+                    <span class="label">Server – Lenovo</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input placeholder="Lucene-Query"></div>
+                <div class="panel"><input placeholder="Lucene-Query (z. B. type:server AND Lenovo)"></div>
             </div>
         </section>
 
@@ -127,7 +128,7 @@
             <li><code>"green valley"</code> Phrase</li>
             <li><code>+foo -bar</code> Muss / Nicht</li>
             <li><code>date:[2025-01-01 TO 2025-12-31]</code></li>
-            <li>Projektsuche: <code>type:project AND CustomL</code></li>
+            <li>Projektsuche: <code>type:project AND true</code></li>
         </ul>
 
         <hr>
