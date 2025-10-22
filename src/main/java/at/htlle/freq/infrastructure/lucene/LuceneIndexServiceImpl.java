@@ -22,6 +22,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class LuceneIndexServiceImpl implements LuceneIndexService {
@@ -64,6 +65,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     private final UpgradePlanRepository upgradePlanRepository;
 
     private final StandardAnalyzer analyzer = new StandardAnalyzer();
+    private final ReentrantLock writerLock = new ReentrantLock();
 
     public LuceneIndexServiceImpl() {
         this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -104,12 +106,19 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         this.upgradePlanRepository = upgradePlanRepository;
     }
 
-    private IndexWriter openWriter() throws IOException {
-        Files.createDirectories(INDEX_DIR);
-        FSDirectory dir = FSDirectory.open(INDEX_DIR);
-        IndexWriterConfig config = new IndexWriterConfig(analyzer);
-        config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-        return new IndexWriter(dir, config);
+    private void withWriter(WriterCallback callback) throws IOException {
+        writerLock.lock();
+        try {
+            Files.createDirectories(INDEX_DIR);
+            IndexWriterConfig config = new IndexWriterConfig(analyzer);
+            config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+            try (FSDirectory dir = FSDirectory.open(INDEX_DIR);
+                 IndexWriter writer = new IndexWriter(dir, config)) {
+                callback.execute(writer);
+            }
+        } finally {
+            writerLock.unlock();
+        }
     }
 
     private DirectoryReader openReader() throws IOException {
@@ -391,10 +400,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     // =================== Helper ===================
 
     private void clearIndex() throws IOException {
-        try (IndexWriter writer = openWriter()) {
+        withWriter(writer -> {
             writer.deleteAll();
             writer.commit();
-        }
+        });
         log.info("Lucene-Index geleert (bereit für Reindex) am {}", INDEX_DIR.toAbsolutePath());
     }
 
@@ -447,8 +456,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             doc.add(new TextField("content", aggregated, Field.Store.YES));
             doc.add(new StoredField("display", determineDisplay(type, id, fields)));
 
-            writer.updateDocument(new Term("id", id), doc);
-            writer.commit();
+                writer.updateDocument(new Term("id", id), doc);
+                writer.commit();
+            });
             IndexProgress progress = IndexProgress.get();
             if (progress.isActive()) {
                 progress.inc(progressKey(type));
@@ -457,6 +467,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         } catch (Exception e) {
             log.error("Fehler beim Indexieren von {}", type, e);
         }
+    }
+
+    @FunctionalInterface
+    private interface WriterCallback {
+        void execute(IndexWriter writer) throws IOException;
     }
 
     private String safe(String s) {
