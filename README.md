@@ -159,14 +159,25 @@ Liegen unter `src/main/resources/static/` – kein Frontend-Build nötig.
 
 ```text
 tech*                       # Wildcard  
-"green valley"              # Phrase  
-+foo -bar                   # Muss / Nicht  
-country:germany             # Feldsuche  
-(type:project AND CustomL) OR CustomXL
+"green valley"              # Phrase
++foo -bar                   # Muss / Nicht
+country:germany             # Feldsuche
+type:project AND true       # Aktive Projekte
+type:serviceContract AND InProgress  # Laufende Serviceverträge
+type:site AND Bravo         # Sites in FireZone Bravo
+type:server AND Lenovo      # Lenovo-Serverbestand
 ```
 
-**Frontend-Feature:**  
+**Frontend-Feature:**
 Wenn keine Lucene-Syntax erkannt wird, fügt das Frontend automatisch ein `*` an den Suchbegriff an (Präfixsuche).
+
+**Voreingestellte Dashboard-Shortcuts:**
+
+- Accounts – Gesamtbestand → `type:account`
+- Projekte – aktiv → `type:project AND true`
+- Serviceverträge – In Progress → `type:serviceContract AND InProgress`
+- Sites – FireZone Bravo → `type:site AND Bravo`
+- Server – Lenovo → `type:server AND Lenovo`
 
 **Indexierte Felder (Beispiele):**
 
