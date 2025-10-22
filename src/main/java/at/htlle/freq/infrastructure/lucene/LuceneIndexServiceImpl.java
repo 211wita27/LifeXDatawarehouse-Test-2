@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -433,19 +434,27 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     private void indexDocument(String id, String type, String... fields) {
-        try {
-            withWriter(writer -> {
-                Document doc = new Document();
-                doc.add(new StringField("id", safe(id), Field.Store.YES));
-                doc.add(new StringField("type", safe(type), Field.Store.YES));
+        try (IndexWriter writer = openWriter()) {
+            Document doc = new Document();
+            String typeValue = safe(type);
+            String typeKey = typeValue.toLowerCase(Locale.ROOT);
 
-                StringBuilder content = new StringBuilder();
-                for (String f : fields) {
-                    content.append(safe(f)).append(" ");
-                }
-                String aggregated = content.toString().trim();
-                doc.add(new TextField("content", aggregated, Field.Store.YES));
-                doc.add(new StoredField("display", determineDisplay(type, id, fields)));
+            doc.add(new StringField("id", safe(id), Field.Store.YES));
+            doc.add(new StringField("type", typeKey, Field.Store.YES));
+            if (!typeValue.isEmpty()) {
+                doc.add(new StoredField("typeDisplay", typeValue));
+            }
+
+            StringBuilder content = new StringBuilder();
+            if (!typeKey.isEmpty()) {
+                content.append(typeKey).append(' ');
+            }
+            for (String f : fields) {
+                content.append(safe(f)).append(" ");
+            }
+            String aggregated = content.toString().trim();
+            doc.add(new TextField("content", aggregated, Field.Store.YES));
+            doc.add(new StoredField("display", determineDisplay(type, id, fields)));
 
                 writer.updateDocument(new Term("id", id), doc);
                 writer.commit();
@@ -486,10 +495,12 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     private SearchHit mapToHit(Document doc) {
         String id = doc.get("id");
-        String type = doc.get("type");
+        String typeKey = doc.get("type");
+        String typeDisplay = doc.get("typeDisplay");
         String display = doc.get("display");
         String content = doc.get("content");
 
+        String type = firstNonBlank(typeDisplay, typeKey);
         String text = firstNonBlank(display, content, id, type);
         String snippet = buildSnippet(content, text);
 
