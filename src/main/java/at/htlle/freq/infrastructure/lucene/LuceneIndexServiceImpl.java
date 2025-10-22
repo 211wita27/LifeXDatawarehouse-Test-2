@@ -453,6 +453,21 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         return s == null ? "" : s;
     }
 
+    private String normalizeToken(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("[^\\p{Alnum}]+", "").toLowerCase();
+    }
+
+    private String tokenWithPrefix(String prefix, String value) {
+        String normalized = normalizeToken(value);
+        if (normalized.isEmpty()) {
+            return "";
+        }
+        return prefix + normalized;
+    }
+
     private SearchHit mapToHit(Document doc) {
         String id = doc.get("id");
         String type = doc.get("type");
@@ -570,7 +585,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     @Override
     public void indexProject(String projectId, String projectSAPId, String projectName, String deploymentVariantId, String bundleType, boolean stillActive,
                              String accountId, String addressId) {
-        indexDocument(projectId, TYPE_PROJECT, projectSAPId, projectName, deploymentVariantId, bundleType, String.valueOf(stillActive), accountId, addressId);
+        String activeWord  = stillActive ? "active" : "inactive";
+        String activeToken = stillActive ? "statusactive" : "statusinactive";
+        indexDocument(projectId, TYPE_PROJECT, projectSAPId, projectName, deploymentVariantId, bundleType,
+                String.valueOf(stillActive), activeWord, activeToken, accountId, addressId);
     }
 
     @Override
@@ -587,13 +605,15 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     @Override
     public void indexServiceContract(String contractId, String accountId, String projectId, String siteId, String contractNumber, String status,
                                      String startDate, String endDate) {
-        indexDocument(contractId, TYPE_SERVICE_CONTRACT, accountId, projectId, siteId, contractNumber, status, startDate, endDate);
+        String statusToken = tokenWithPrefix("status", status);
+        indexDocument(contractId, TYPE_SERVICE_CONTRACT, accountId, projectId, siteId, contractNumber, status, statusToken, startDate, endDate);
     }
 
     @Override
     public void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount) {
-        indexDocument(siteId, TYPE_SITE, projectId, addressId, siteName, fireZone,
-                tenantCount != null ? tenantCount.toString() : "");
+        String tenants = tenantCount != null ? tenantCount.toString() : "";
+        String zoneToken = tokenWithPrefix("zone", fireZone);
+        indexDocument(siteId, TYPE_SITE, projectId, addressId, siteName, fireZone, zoneToken, tenants);
     }
 
     @Override

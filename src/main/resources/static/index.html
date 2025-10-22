@@ -36,36 +36,43 @@
 
             <!-- 1  Projekte – aktiv -->
             <div class="shortcut" data-id="sc1"
-                 data-default='type:project AND true'>
+                 data-default='type:project AND statusactive'
+                 data-list="projects-active">
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Projekte – aktiv</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input></div>
+                <div class="panel">
+                    <div class="panel-list" data-role="list"></div>
+                </div>
             </div>
 
             <!-- 2  Serviceverträge – In Progress -->
             <div class="shortcut" data-id="sc2"
-                 data-default='type:serviceContract AND InProgress'>
+                 data-default='type:serviceContract AND statusinprogress'
+                 data-list="servicecontracts-progress">
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Serviceverträge – In Progress</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input></div>
+                <div class="panel">
+                    <div class="panel-list" data-role="list"></div>
+                </div>
             </div>
 
             <!-- 3  Sites – FireZone Bravo -->
             <div class="shortcut" data-id="sc3"
-                 data-default='type:site AND Bravo'>
+                 data-default='type:site AND zonebravo'
+                 data-list="sites-bravo">
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Sites – FireZone Bravo</span>
                     <span class="chev">▶</span>
                 </button>
                 <div class="panel">
-                    <input placeholder="Lucene-Query (z. B. type:site AND Bravo)">
+                    <div class="panel-list" data-role="list"></div>
                 </div>
             </div>
 
