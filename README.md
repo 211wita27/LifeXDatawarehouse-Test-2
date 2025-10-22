@@ -17,7 +17,8 @@ Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben*
 ## ✨ Haupt-Features
 
 - **Datenmodell** – relationale H2-In-Memory-DB (Account, Project, Site, Server …)
-- **API** – CRUD-REST-Controller je Entität + generischer Read-Only-Controller
+- **API** – CRUD-REST-Controller je Entität + generischer GenericCrudController (GET/POST/PUT/DELETE)
+- **Reporting & Export** – KPI-Übersichten mit Filtern, KPI-Kacheln sowie CSV/PDF-Export via `/api/reports/*`
 - **Indexing** – Apache Lucene 8 (Full-Reindex alle 60 s + inkrementeller Camel-Sync, manuelles Reindexing über UI)
 - **Suche**
   - Globale Lucene-Query-Syntax im Dashboard und via `/search?q=`
@@ -27,7 +28,7 @@ Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben*
 - **UI**
   - Rein statisches HTML / CSS / JS (kein Build-Tool erforderlich)
   - Shortcut-Buttons direkt editierbar (Name + Query)
-  - Fortschrittsanzeige für laufenden Index-Build
+  - Fortschrittsanzeige für laufenden Index-Build (noch nicht umgesetzt)
   - Generischer Tabellen-Viewer (100 Zeilen Vorschau)
 - **Automation** – Apache Camel 4 Timer-Routes (Sync, Full-Reindex, Einzel-Index)
 - **Dev-Ergonomie** – Spring Boot DevTools, LiveReload, H2-Console, Lombok
@@ -109,6 +110,13 @@ mvn spring-boot:run
   → Liefert Trefferobjekte mit `id`, `type`, `text` (Primärbezeichnung) und optional `snippet` (zusätzliche Inhalte); das Frontend lädt Detaildaten aus `/row/{table}/{id}` nach
 - `GET  /table/{name}` – 100-Zeilen-Dump einer Tabelle
 - `GET  /row/{name}/{id}` – Einzel-Zeile (Detail-View)
+- `POST /row/{name}` – Generischer Insert über den GenericCrudController
+- `PUT  /row/{name}/{id}` – Generisches Update (feldbasierter Merge)
+- `DELETE /row/{name}/{id}` – Generisches Löschen
+- `GET  /api/reports/options` – Filter- und KPI-Optionen für das Reporting
+- `GET  /api/reports/data` – Aggregierte Kennzahlen inkl. Tabellenansicht
+- `GET  /api/reports/export/csv` – Export der aktuellen Auswertung als CSV
+- `GET  /api/reports/export/pdf` – Export der aktuellen Auswertung als PDF
 
 Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
 
@@ -135,6 +143,12 @@ Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
   - Verknüpfte Entitäten werden als klickbare Links angezeigt
   - Einheitliches Layout für alle Entitätstypen
   - Kompaktansicht und Vollansicht umschaltbar
+
+- **`reports.html` – Reporting & KPI-Übersicht**
+  - Dynamische Filter (Zeitraum, Suchbegriff, Varianten)
+  - KPI-Kacheln und Tabellenansicht aus `/api/reports/data`
+  - CSV- und PDF-Export über Buttons (`/api/reports/export/*`)
+  - Sofortige UI-Aktualisierung beim Anpassen der Filter
 
 **Alle Assets:**  
 Liegen unter `src/main/resources/static/` – kein Frontend-Build nötig.
@@ -181,6 +195,7 @@ erDiagram
 - Beispiel-GitHub Actions Workflow (`mvn test` + Docker build)
 - Checkstyle und SpotBugs (TODO)
 - Frontend: Debouncing, Autocomplete-Handling, API-Fallbacks
+- Backend: IndexProgress-Updates für die Fortschrittsanzeige stehen noch aus
 
 ---
 
