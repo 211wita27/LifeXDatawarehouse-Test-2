@@ -172,7 +172,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     private String buildSnippet(String content, String text) {
         String normalized = normalizeWhitespace(content);
         if (normalized.isEmpty()) {
-            return null;
+            return "";
         }
 
         String normalizedText = normalizeWhitespace(text);
@@ -181,7 +181,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         }
 
         if (normalized.isEmpty()) {
-            return null;
+            return "";
         }
 
         final int limit = 160;

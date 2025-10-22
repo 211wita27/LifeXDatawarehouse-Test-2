@@ -88,4 +88,32 @@ class LuceneIndexServiceImplTest {
         assertEquals(1, hits.size());
         assertEquals("", hits.get(0).getSnippet());
     }
+
+    @Test
+    void snippetIsTrimmedAndNormalized() throws Exception {
+        String longValue = ("Austria   with   spaces   ").repeat(20);
+        service.indexAccount("acc-4", "Acme", longValue, null);
+
+        List<SearchHit> hits = service.search(new QueryParser("content", new org.apache.lucene.analysis.standard.StandardAnalyzer())
+                .parse("acme"));
+
+        assertEquals(1, hits.size());
+        String snippet = hits.get(0).getSnippet();
+        assertNotNull(snippet);
+        assertFalse(snippet.contains("  "));
+        assertTrue(snippet.endsWith("…"));
+        assertTrue(snippet.length() <= 160);
+    }
+
+    @Test
+    void textFallsBackToTypeAndIdWhenFieldsAreBlank() throws Exception {
+        service.indexAccount("acc-blank", "", null, null);
+
+        List<SearchHit> hits = service.search(new QueryParser("content", new org.apache.lucene.analysis.standard.StandardAnalyzer())
+                .parse("*:*"));
+
+        assertEquals(1, hits.size());
+        assertEquals("account acc-blank", hits.get(0).getText());
+        assertEquals("", hits.get(0).getSnippet());
+    }
 }

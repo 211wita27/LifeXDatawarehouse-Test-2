@@ -54,4 +54,14 @@ class SuggestServiceTest {
         List<String> suggestions = service.suggest("fo", 1);
         assertEquals(1, suggestions.size());
     }
+
+    @Test
+    void suggestIsCaseInsensitiveAndUnique() {
+        lucene.indexAccount("acc-8", "Alpha", null, null);
+        lucene.indexAccount("acc-9", "alpha", null, null);
+
+        List<String> suggestions = service.suggest("al", 5);
+        assertEquals(1, suggestions.size());
+        assertEquals("alpha", suggestions.get(0));
+    }
 }

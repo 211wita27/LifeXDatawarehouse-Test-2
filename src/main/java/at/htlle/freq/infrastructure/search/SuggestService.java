@@ -25,9 +25,8 @@ public class SuggestService {
 
     // Felder, aus denen Vorschläge kommen sollen
     private static final List<String> FIELDS = List.of(
-            "txt", "brand", "country", "variant", "fireZone", "os", "vplat", "sap", "email",
-            // Rollup-Felder
-            "serverBrand", "serverOS", "serverVplat"
+            // The aggregated search content is stored in the "content" field when indexing
+            "content"
     );
 
     /** Liefert bis zu {@code max} Vorschläge für das Präfix {@code prefix}. */
