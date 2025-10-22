@@ -277,6 +277,18 @@ function runSearch(raw){
     runLucene(prepared);
 }
 
+function shortUuid(value) {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    const uuidPattern = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+    if (!uuidPattern.test(str)) return str;
+    const idx = str.lastIndexOf('-');
+    if (idx === -1 || idx === str.length - 1) return str;
+    const lastSegment = str.slice(idx + 1);
+    const trimmed = lastSegment.replace(/^0+/, '');
+    return trimmed || '0';
+}
+
 async function runLucene(q) {
     const query = (q ?? '').trim();
     if (!query) return;
@@ -292,10 +304,12 @@ async function runLucene(q) {
         const rows = hits.map((h, i) => {
             const snippet = (h.snippet ?? '').trim();
             const snippetHtml = snippet ? `<div class="hit-snippet"><small>${escapeHtml(snippet)}</small></div>` : '';
+            const fullId = String(h.id ?? '');
+            const displayId = shortUuid(h.id);
             return `
       <tr onclick="toDetails('${h.type}',${h.id})" style="cursor:pointer">
         <td>${escapeHtml(h.type)}</td>
-        <td>${escapeHtml(String(h.id ?? ''))}</td>
+        <td title="${escapeHtml(fullId)}">${escapeHtml(displayId)}</td>
         <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
         <td id="info-${i}"></td>
       </tr>`;
