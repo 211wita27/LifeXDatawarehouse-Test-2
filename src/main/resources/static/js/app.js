@@ -479,6 +479,26 @@ function shortUuid(value) {
     return trimmed || '0';
 }
 
+function renderIdChip(value, displayOverride) {
+    const fallback = (value === null || value === undefined) ? '' : String(value);
+    let display = displayOverride;
+    if (display === undefined || display === null || display === '') display = shortUuid(value);
+    const text = display || fallback;
+    if (!text) return '';
+    return `<span class="id-chip">${escapeHtml(text)}</span>`;
+}
+
+function renderIdDisplay(value) {
+    const fallback = (value === null || value === undefined) ? '' : String(value);
+    const display = shortUuid(value);
+    const chip = renderIdChip(value, display);
+    if (chip) {
+        return { inner: chip, title: fallback };
+    }
+    const safeText = escapeHtml(display || fallback);
+    return { inner: safeText, title: fallback };
+}
+
 async function runLucene(q) {
     const query = (q ?? '').trim();
     if (!query) return;
@@ -494,14 +514,13 @@ async function runLucene(q) {
         const rows = hits.map((h, i) => {
             const snippet = (h.snippet ?? '').trim();
             const snippetHtml = snippet ? `<div class="hit-snippet"><small>${escapeHtml(snippet)}</small></div>` : '';
-            const fullId = String(h.id ?? '');
-            const displayId = shortUuid(h.id);
             const typeArg = JSON.stringify(h.type ?? '');
             const idArg = JSON.stringify(h.id ?? '');
+            const idDisplay = renderIdDisplay(h.id);
             return `
       <tr onclick='toDetails(${typeArg},${idArg})' style="cursor:pointer">
         <td>${escapeHtml(h.type)}</td>
-        <td title="${escapeHtml(fullId)}">${escapeHtml(displayId)}</td>
+        <td title="${escapeHtml(idDisplay.title)}">${idDisplay.inner}</td>
         <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
         <td id="info-${i}"></td>
       </tr>`;
@@ -525,6 +544,18 @@ async function runLucene(q) {
 }
 
 /* Tabellen-Viewer (100-Zeilen-Preview) */
+function renderTableCell(columnName, value) {
+    const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
+    const raw = (value === undefined || value === null) ? '' : String(value);
+    const isIdColumn = /(id|guid)$/i.test(key);
+    if (isIdColumn && raw) {
+        const rendered = renderIdDisplay(value);
+        const titleAttr = escapeHtml(rendered.title);
+        return `<td title="${titleAttr}">${rendered.inner}</td>`;
+    }
+    return `<td>${escapeHtml(raw)}</td>`;
+}
+
 async function showTable(name) {
     try {
         setBusy(resultArea, true);
@@ -534,7 +565,7 @@ async function showTable(name) {
 
         const cols = Object.keys(rows[0]);
         const hdr  = cols.map(c => `<th>${c}</th>`).join('');
-        const body = rows.map(r => `<tr>${cols.map(c => `<td>${r[c]}</td>`).join('')}</tr>`).join('');
+        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(c, r[c])).join('')}</tr>`).join('');
 
         resultArea.innerHTML =
             `<h2>${name}</h2>
