@@ -36,6 +36,12 @@ public class JdbcCityRepository implements CityRepository {
     }
 
     @Override
+    public void deleteById(String id) {
+        String sql = "DELETE FROM City WHERE CityID = :id";
+        jdbc.update(sql, new MapSqlParameterSource("id", id));
+    }
+
+    @Override
     public City save(City c) {
         // Upsert über EXISTS
         String existsSql = "SELECT COUNT(*) FROM City WHERE CityID = :id";
