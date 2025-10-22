@@ -38,6 +38,12 @@ class AccountServiceTest {
     }
 
     @Test
+    void getAccountByNameTrimsInputBeforeQuery() {
+        service.getAccountByName("  Acme  ");
+        verify(repo).findByName("Acme");
+    }
+
+    @Test
     void createAccountValidatesAndIndexesImmediatelyWithoutTransaction() {
         Account incoming = new Account(null, "Acme", "", "mail", "", "", "");
         when(repo.save(any(Account.class))).thenAnswer(invocation -> {
@@ -49,6 +55,17 @@ class AccountServiceTest {
         Account saved = service.createAccount(incoming);
         assertNotNull(saved.getAccountID());
         verify(lucene).indexAccount(anyString(), eq("Acme"), anyString(), anyString());
+    }
+
+    @Test
+    void createAccountContinuesWhenLuceneFails() {
+        Account incoming = new Account(UUID.randomUUID(), "Acme", "", "mail", "", "", "");
+        when(repo.save(incoming)).thenReturn(incoming);
+        doThrow(new RuntimeException("Lucene error")).when(lucene).indexAccount(any(), any(), any(), any());
+
+        Account saved = service.createAccount(incoming);
+        assertSame(incoming, saved);
+        verify(lucene).indexAccount(eq(incoming.getAccountID().toString()), eq("Acme"), anyString(), anyString());
     }
 
     @Test
@@ -81,6 +98,20 @@ class AccountServiceTest {
         assertEquals("New", existing.getAccountName());
         assertEquals("new@mail", existing.getContactEmail());
         verify(lucene).indexAccount(eq(id.toString()), eq("New"), eq("AT"), eq("new@mail"));
+    }
+
+    @Test
+    void updateAccountReturnsEmptyWhenUnknown() {
+        UUID id = UUID.randomUUID();
+        when(repo.findById(id)).thenReturn(Optional.empty());
+        assertTrue(service.updateAccount(id, new Account()).isEmpty());
+    }
+
+    @Test
+    void updateAccountRequiresArguments() {
+        Account patch = new Account();
+        assertThrows(NullPointerException.class, () -> service.updateAccount(null, patch));
+        assertThrows(NullPointerException.class, () -> service.updateAccount(UUID.randomUUID(), null));
     }
 
     @Test
