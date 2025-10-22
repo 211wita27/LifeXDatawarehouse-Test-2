@@ -91,6 +91,15 @@ mvn spring-boot:run
 
 ---
 
+## 🧪 Seed-Daten & Generator
+
+- `src/main/resources/data.sql` enthält jetzt rund **500 miteinander verknüpfte Datensätze** über alle Tabellen hinweg (Countries → ServiceContract). Die Mengenplanung ist in [`docs/data-volume-plan.md`](docs/data-volume-plan.md) dokumentiert.
+- Die **UUIDs** erhalten im letzten Block ein zweistelliges Hex-Präfix pro Tabelle (z. B. `07` für `Project`) und eine zehnstellige Sequenznummer. Dadurch lassen sich IDs im UI leichter gruppieren, bleiben aber vollständig UUID-kompatibel.
+- Zur Reproduktion dient das Hilfstool [`SeedDataGenerator`](src/test/java/at/htlle/freq/seed/SeedDataGenerator.java). Der Generator legt bei Bedarf ein Backup (`data.sql.legacy`) an und überschreibt anschließend die aktuelle Seed-Datei.
+- Nach Änderungen am Generator: `javac --release 17 -d target/test-classes src/test/java/at/htlle/freq/seed/SeedDataGenerator.java && java -cp target/test-classes at.htlle.freq.seed.SeedDataGenerator`
+
+---
+
 ## 🌐 REST-API (Schnellreferenz)
 
 - `GET  /accounts` – alle Accounts
