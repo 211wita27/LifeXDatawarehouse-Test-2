@@ -27,6 +27,185 @@ const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','true') : el.removeAttribute('aria-busy'); }
 
+const shortcutCache = new Map();
+
+function parseBool(value){
+    if (typeof value === 'boolean') return value;
+    const normalized = String(value ?? '').trim().toLowerCase();
+    if (!normalized) return false;
+    return ['true','1','yes','y','ja','wahr'].includes(normalized);
+}
+
+function formatDateLabel(value){
+    if (value === null || value === undefined) return '';
+    const str = String(value).trim();
+    if (!str) return '';
+    const timestamp = Date.parse(str);
+    if (!Number.isNaN(timestamp)){
+        return new Date(timestamp).toLocaleDateString('de-AT', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+    return str.length > 16 ? str.slice(0, 16) : str;
+}
+
+function formatDateRange(start, end){
+    const from = formatDateLabel(start);
+    const to   = formatDateLabel(end);
+    if (from && to) return `${from} → ${to}`;
+    return from || to || '';
+}
+
+async function getShortcutItems(kind){
+    if (!kind) return [];
+    const key = kind.toString();
+    if (!shortcutCache.has(key)){
+        shortcutCache.set(key, loadShortcutItems(key).catch(err => { shortcutCache.delete(key); throw err; }));
+    }
+    return shortcutCache.get(key);
+}
+
+async function loadShortcutItems(kind){
+    const key = (kind || '').toString().toLowerCase();
+    switch (key){
+        case 'projects-active': {
+            const res = await fetch('/projects');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const rows = await res.json();
+            return rows
+                .filter(row => parseBool(val(row,'StillActive','stillActive','still_active')))
+                .map(row => {
+                    const id       = val(row,'ProjectID');
+                    const name     = val(row,'ProjectName');
+                    const sap      = val(row,'ProjectSAPID');
+                    const bundle   = val(row,'BundleType');
+                    const variant  = val(row,'DeploymentVariantID');
+                    const meta = [];
+                    if (sap) meta.push(`SAP ${sap}`);
+                    if (bundle) meta.push(bundle);
+                    if (variant) meta.push(`Var. ${shortUuid(variant)}`);
+                    const primary = (name && name.trim()) || (sap ? `Projekt ${sap}` : (id ? `Projekt ${shortUuid(id)}` : 'Projekt'));
+                    return {
+                        primary,
+                        secondary: meta.join(' · ') || null,
+                        action: id ? { type: 'details', entity: 'project', id } : null,
+                    };
+                })
+                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'de', { sensitivity: 'base' }));
+        }
+        case 'servicecontracts-progress': {
+            const res = await fetch(`${API.table}/servicecontract?limit=200`);
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const rows = await res.json();
+            return rows
+                .filter(row => {
+                    const status = (val(row,'Status') ?? '').toString().trim().toLowerCase();
+                    return status === 'inprogress';
+                })
+                .map(row => {
+                    const id        = val(row,'ContractID');
+                    const number    = val(row,'ContractNumber');
+                    const projectId = val(row,'ProjectID');
+                    const siteId    = val(row,'SiteID');
+                    const range     = formatDateRange(val(row,'StartDate'), val(row,'EndDate'));
+                    const meta = [];
+                    if (range) meta.push(range);
+                    if (projectId) meta.push(`Projekt ${shortUuid(projectId)}`);
+                    if (siteId) meta.push(`Site ${shortUuid(siteId)}`);
+                    const primary = number ? `Vertrag ${number}` : (id ? `Vertrag ${shortUuid(id)}` : 'Vertrag');
+                    const query   = id ? `id:"${id}"` : null;
+                    return {
+                        primary,
+                        secondary: meta.join(' · ') || null,
+                        action: query ? { type: 'search', query } : null,
+                    };
+                })
+                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'de', { sensitivity: 'base' }));
+        }
+        case 'sites-bravo': {
+            const res = await fetch('/sites');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const rows = await res.json();
+            return rows
+                .filter(row => {
+                    const zone = (val(row,'FireZone') ?? '').toString().trim().toLowerCase();
+                    return zone === 'bravo';
+                })
+                .map(row => {
+                    const id        = val(row,'SiteID');
+                    const name      = val(row,'SiteName');
+                    const tenants   = val(row,'TenantCount');
+                    const projectId = val(row,'ProjectID');
+                    const zone      = val(row,'FireZone');
+                    const meta = [];
+                    if (zone) meta.push(`Zone ${zone}`);
+                    if (tenants !== undefined && tenants !== null && tenants !== '') meta.push(`${tenants} Einheiten`);
+                    if (projectId) meta.push(`Projekt ${shortUuid(projectId)}`);
+                    const primary = (name && name.trim()) || (id ? `Site ${shortUuid(id)}` : 'Site');
+                    return {
+                        primary,
+                        secondary: meta.join(' · ') || null,
+                        action: id ? { type: 'details', entity: 'site', id } : null,
+                    };
+                })
+                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'de', { sensitivity: 'base' }));
+        }
+        default:
+            return [];
+    }
+}
+
+function renderShortcutItems(listEl, items){
+    if (!listEl) return;
+    if (!Array.isArray(items) || !items.length){
+        listEl.innerHTML = '<p class="sc-status empty">(keine Einträge)</p>';
+        return;
+    }
+    const summary = `<div class="sc-summary">${items.length} Einträge</div>`;
+    const list = items.map((item, idx) => `
+        <li role="listitem">
+            <button type="button" class="sc-item${item.action ? '' : ' is-static'}" data-idx="${idx}">
+                <span class="sc-item-primary">${escapeHtml(item.primary || '')}</span>
+                ${item.secondary ? `<span class="sc-item-secondary">${escapeHtml(item.secondary)}</span>` : ''}
+            </button>
+        </li>`).join('');
+    listEl.innerHTML = `${summary}<ul class="sc-list">${list}</ul>`;
+    const buttons = listEl.querySelectorAll('.sc-item');
+    buttons.forEach(btn => {
+        const idx = Number(btn.dataset.idx);
+        const item = items[idx];
+        if (!item || !item.action){
+            btn.disabled = true;
+            btn.classList.add('is-static');
+            return;
+        }
+        const action = item.action;
+        if (action.type === 'details' && action.entity && action.id){
+            btn.addEventListener('click', () => toDetails(action.entity, action.id));
+        } else if (action.type === 'search' && action.query){
+            btn.addEventListener('click', () => runSearch(action.query));
+        } else {
+            btn.disabled = true;
+            btn.classList.add('is-static');
+        }
+    });
+}
+
+async function renderShortcutList(sc, listEl){
+    if (!sc || !listEl) return;
+    const kind = sc.dataset.list;
+    if (!kind){
+        listEl.innerHTML = '<p class="sc-status empty">(keine Datenquelle)</p>';
+        return;
+    }
+    listEl.innerHTML = '<p class="sc-status">Lade …</p>';
+    try {
+        const items = await getShortcutItems(kind);
+        renderShortcutItems(listEl, items);
+    } catch (err){
+        console.error('Shortcut-Liste konnte nicht geladen werden', err);
+        listEl.innerHTML = '<p class="sc-status error">Fehler beim Laden der Daten.</p>';
+    }
+}
+
 /* ---------- Lucene-Heuristik & QoL-Query-Builder ---------- */
 function looksLikeLucene(q){
     if (!q) return false;
@@ -199,50 +378,60 @@ function setupShortcuts() {
         const labelEl   = sc.querySelector('.label');
         const renameBtn = sc.querySelector('.rename');
         const chevBtn   = sc.querySelector('.chev');
-        const inputEl   = sc.querySelector('.panel input');
+        const panel     = sc.querySelector('.panel');
+        const listEl    = panel ? panel.querySelector('[data-role="list"]') : null;
+        const hasList   = !!(sc.dataset.list && listEl);
+        const inputEl   = hasList ? null : (panel ? panel.querySelector('input') : null);
         const defVal    = (sc.dataset.default || '').trim();
 
-        // Persistierte Werte laden
         const stLabelKey = `sc:${id}:label`;
         const stQueryKey = `sc:${id}:query`;
         labelEl.textContent = stGet(stLabelKey, labelEl.textContent);
-        inputEl.value       = stGet(stQueryKey, defVal);
-        inputEl.placeholder = 'Lucene-Query';
-        inputEl.setAttribute('aria-label','Lucene-Query');
 
-        // ARIA-Beziehungen & Zustände
-        const hid = `sc-head-${id}`;
-        const pid = `sc-panel-${id}`;
-        headBtn.id = hid;
-        headBtn.setAttribute('aria-controls', pid);
-        headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
-        const panel = sc.querySelector('.panel');
-        panel.id = pid;
-        panel.setAttribute('role','region');
-        panel.setAttribute('aria-labelledby', hid);
+        if (hasList) {
+            if (listEl && !listEl.innerHTML.trim()) {
+                listEl.innerHTML = '<p class="sc-status empty">Noch keine Daten geladen.</p>';
+            }
+        } else if (inputEl) {
+            inputEl.value = stGet(stQueryKey, defVal);
+            inputEl.placeholder = 'Lucene-Query';
+            inputEl.setAttribute('aria-label','Lucene-Query');
+        }
 
-        // Klick auf den blauen Button → Query ausführen
+        if (panel) {
+            const hid = `sc-head-${id}`;
+            const pid = `sc-panel-${id}`;
+            headBtn.id = hid;
+            headBtn.setAttribute('aria-controls', pid);
+            headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
+            panel.id = pid;
+            panel.setAttribute('role','region');
+            panel.setAttribute('aria-labelledby', hid);
+        }
+
         headBtn.addEventListener('click', (ev) => {
             if (ev.target === renameBtn || ev.target === chevBtn) return;
-            const q = (inputEl.value || '').trim() || defVal;
+            const q = hasList ? defVal : (((inputEl && inputEl.value) || '').trim() || defVal);
             if (q) {
-                stSet(stQueryKey, q);
+                if (!hasList) stSet(stQueryKey, q);
                 runSearch(q);
             }
         });
 
-        // Pfeil: nur auf/zu klappen
         chevBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             sc.classList.toggle('open');
-            headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
-            if (sc.classList.contains('open')) {
+            const open = sc.classList.contains('open');
+            headBtn.setAttribute('aria-expanded', open);
+            if (!open) return;
+            if (hasList && listEl) {
+                renderShortcutList(sc, listEl);
+            } else if (inputEl) {
                 inputEl.focus();
                 inputEl.select();
             }
         });
 
-        // Umbenennen (✏️)
         renameBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             const current = labelEl.textContent.trim();
@@ -253,21 +442,22 @@ function setupShortcuts() {
             }
         });
 
-        // Enter im Eingabefeld => Suche ausführen; Esc => Panel schließen
-        inputEl.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const q = inputEl.value.trim();
-                if (q) {
-                    stSet(stQueryKey, q);
-                    runSearch(q);
+        if (inputEl) {
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const q = inputEl.value.trim();
+                    if (q) {
+                        stSet(stQueryKey, q);
+                        runSearch(q);
+                    }
+                } else if (e.key === 'Escape') {
+                    sc.classList.remove('open');
+                    headBtn.setAttribute('aria-expanded', false);
                 }
-            } else if (e.key === 'Escape') {
-                sc.classList.remove('open');
-                headBtn.setAttribute('aria-expanded', false);
-            }
-        });
+            });
 
-        inputEl.addEventListener('blur', () => stSet(stQueryKey, inputEl.value.trim()));
+            inputEl.addEventListener('blur', () => stSet(stQueryKey, inputEl.value.trim()));
+        }
     });
 }
 
