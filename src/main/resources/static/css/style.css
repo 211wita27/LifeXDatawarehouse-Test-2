@@ -14,7 +14,9 @@ body{margin:0;font-family:Arial,Helvetica}
 /* Header & Logo ---------------------------------------------------- */
 header{background:#003a70;display:flex;align-items:center;gap:1rem;padding:.3rem 1rem}
 header img{height:120px;background:#fff;padding:6px;border-radius:6px}
-header nav a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.15rem}
+header nav{display:flex;gap:1rem;align-items:center}
+header nav a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.05rem;padding:.25rem .4rem;border-radius:4px}
+header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 
 /* Haupt-Layout ----------------------------------------------------- */
 .layout{max-width:1600px;margin:2rem auto;display:flex;gap:1rem}
@@ -77,6 +79,7 @@ header nav a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.15rem}
 .table-scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:650px}
 th,td{border:1px solid #ccc;padding:.45rem;text-align:left}
+table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
 #resultArea p{margin:0}
 #error{color:red;margin-top:1rem}
 
@@ -88,3 +91,64 @@ th,td{border:1px solid #ccc;padding:.45rem;text-align:left}
 #kv{border-collapse:collapse;width:100%}
 #kv th, #kv td{border:1px solid #ddd;padding:.45rem}
 #kv th.key{font-weight:bold;width:180px;background:#f3f7ff;text-align:left}
+
+/* =============== Reports Page =============== */
+.filters{background:#f7f9ff;border:1px solid #cfe0ff;border-radius:8px;padding:1rem;margin-bottom:1rem}
+.filters form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.8rem;align-items:end}
+.filters label{display:block;font-weight:600;margin-bottom:.25rem}
+.filters input,.filters select{width:100%;padding:.45rem}
+.filter-actions{display:flex;gap:.6rem;align-items:center}
+.filter-info{margin-top:.6rem;font-size:.9rem;color:#333}
+.field--custom{display:grid;grid-template-columns:repeat(2,minmax(120px,1fr));gap:.5rem}
+.field--custom[hidden]{display:none!important}
+
+.report-type-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.35rem}
+.type-btn{width:100%;text-align:left;padding:.45rem .6rem;border:1px solid #cfe0ff;background:#f7faff;border-radius:6px;cursor:pointer;font-weight:600;color:#003a70}
+.type-btn:hover{background:#e8f1ff}
+.type-btn.active{background:#0067c2;color:#fff;border-color:#0054a6}
+.quick-link{border:none;background:none;padding:.35rem 0;text-align:left;cursor:pointer;color:#0067c2;font-weight:600}
+.quick-link:hover{text-decoration:underline}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.8rem;margin-bottom:1rem}
+.kpi-card{background:#fff;border:1px solid #dde5f7;border-radius:8px;padding:.9rem;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.kpi-label{font-size:.85rem;color:#555}
+.kpi-value{font-size:1.6rem;font-weight:700;margin-top:.2rem;color:#003a70}
+.kpi-hint{font-size:.8rem;color:#777;margin-top:.25rem}
+
+.tabnav{display:flex;gap:.3rem;border-bottom:2px solid #e5e7eb;margin-bottom:1rem}
+.tabnav button{background:none;border:none;cursor:pointer;padding:.6rem .9rem;font-weight:600;border-bottom:3px solid transparent;color:#444}
+.tabnav button[aria-selected="true"]{border-color:#0067c2;color:#003a70}
+
+.report-panel{display:flex;flex-direction:column;gap:1rem}
+.report-chart{min-height:140px;border:1px solid #e0e7ff;border-radius:8px;padding:1rem;background:#f8faff}
+.chart-title{font-weight:600;margin-right:1rem}
+.generated-at{font-size:.85rem;color:#555}
+.chart-row{display:flex;align-items:center;gap:1rem;margin-bottom:.45rem}
+.chart-label{flex:0 0 140px;font-weight:600;color:#003a70}
+.chart-bar{flex:1 1 auto;background:#e3ebff;border-radius:999px;overflow:hidden;position:relative}
+.chart-fill{display:block;background:#0067c2;color:#fff;font-size:.85rem;padding:.25rem .6rem;border-radius:999px 0 0 999px;min-width:3%;white-space:nowrap}
+.chart-empty{color:#666;font-style:italic}
+
+.toolbar{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.toolbar .spacer{flex:1 1 auto}
+.toolbar .btn{background:#f0f4ff;border:1px solid #cfe0ff;border-radius:6px;padding:.45rem .9rem;text-decoration:none;color:#003a70;font-weight:600}
+.toolbar .btn:hover{background:#e1ecff}
+
+.severity-kritisch{color:#b91c1c;font-weight:600}
+.severity-warnung{color:#b45309;font-weight:600}
+.severity-beobachten{color:#0c4a6e;font-weight:600}
+.severity-ablauf-45-tage{color:#7c3aed;font-weight:600}
+.severity-ok{color:#047857;font-weight:600}
+.severity-abgeschlossen{color:#15803d;font-weight:600}
+.severity-abgebrochen{color:#7f1d1d;font-weight:600}
+.severity-uberfallig{color:#dc2626;font-weight:600}
+.severity-fallig-7-tage{color:#d97706;font-weight:600}
+
+#report-status{font-size:.9rem;color:#333}
+#report-status.error{color:#b91c1c}
+.help-note{margin-top:1rem;font-size:.9rem;color:#555}
+
+@media (max-width:900px){
+    .filters form{grid-template-columns:1fr}
+    .chart-label{flex:0 0 110px}
+}
