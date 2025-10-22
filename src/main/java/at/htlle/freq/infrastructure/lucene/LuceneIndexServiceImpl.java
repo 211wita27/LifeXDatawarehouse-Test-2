@@ -434,31 +434,34 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     private void indexDocument(String id, String type, String... fields) {
-        try (IndexWriter writer = openWriter()) {
-            Document doc = new Document();
-            String typeValue = safe(type);
-            String typeKey = typeValue.toLowerCase(Locale.ROOT);
+        try {
+            withWriter(writer -> {
+                Document doc = new Document();
+                String typeValue = safe(type);
+                String typeKey = typeValue.toLowerCase(Locale.ROOT);
+                String safeId = safe(id);
 
-            doc.add(new StringField("id", safe(id), Field.Store.YES));
-            doc.add(new StringField("type", typeKey, Field.Store.YES));
-            if (!typeValue.isEmpty()) {
-                doc.add(new StoredField("typeDisplay", typeValue));
-            }
+                doc.add(new StringField("id", safeId, Field.Store.YES));
+                doc.add(new StringField("type", typeKey, Field.Store.YES));
+                if (!typeValue.isEmpty()) {
+                    doc.add(new StoredField("typeDisplay", typeValue));
+                }
 
-            StringBuilder content = new StringBuilder();
-            if (!typeKey.isEmpty()) {
-                content.append(typeKey).append(' ');
-            }
-            for (String f : fields) {
-                content.append(safe(f)).append(" ");
-            }
-            String aggregated = content.toString().trim();
-            doc.add(new TextField("content", aggregated, Field.Store.YES));
-            doc.add(new StoredField("display", determineDisplay(type, id, fields)));
+                StringBuilder content = new StringBuilder();
+                if (!typeKey.isEmpty()) {
+                    content.append(typeKey).append(' ');
+                }
+                for (String f : fields) {
+                    content.append(safe(f)).append(' ');
+                }
+                String aggregated = content.toString().trim();
+                doc.add(new TextField("content", aggregated, Field.Store.YES));
+                doc.add(new StoredField("display", determineDisplay(type, id, fields)));
 
-                writer.updateDocument(new Term("id", id), doc);
+                writer.updateDocument(new Term("id", safeId), doc);
                 writer.commit();
             });
+
             IndexProgress progress = IndexProgress.get();
             if (progress.isActive()) {
                 progress.inc(progressKey(type));
