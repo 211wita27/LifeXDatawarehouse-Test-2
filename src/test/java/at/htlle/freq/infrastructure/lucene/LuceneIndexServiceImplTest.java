@@ -1,0 +1,91 @@
+package at.htlle.freq.infrastructure.lucene;
+
+import at.htlle.freq.infrastructure.search.SearchHit;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.Query;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+class LuceneIndexServiceImplTest {
+
+    private LuceneIndexServiceImpl service;
+    private final Path indexPath = Paths.get("target", "lifex-index");
+
+    @BeforeEach
+    void setUp() throws IOException {
+        if (Files.exists(indexPath)) {
+            Files.walk(indexPath)
+                    .sorted((a, b) -> b.compareTo(a))
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+        }
+        Files.createDirectories(indexPath);
+        service = new LuceneIndexServiceImpl();
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        if (Files.exists(indexPath)) {
+            Files.walk(indexPath)
+                    .sorted((a, b) -> b.compareTo(a))
+                    .forEach(p -> {
+                        try {
+                            Files.delete(p);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+        }
+    }
+
+    @Test
+    void indexAndSearchRoundTrip() throws Exception {
+        service.indexAccount("acc-1", "Acme", "Austria", "contact@acme.test");
+        service.indexProject("proj-1", "SAP-1", "HQ", null, null, true, null, null);
+
+        List<SearchHit> hits = service.search(new QueryParser("content", new org.apache.lucene.analysis.standard.StandardAnalyzer())
+                .parse("acme"));
+        assertEquals(1, hits.size());
+        assertEquals("acc-1", hits.get(0).getId());
+        assertEquals("account", hits.get(0).getType());
+    }
+
+    @Test
+    void searchStringHandlesParseErrorsGracefully() {
+        List<SearchHit> hits = service.search("\\");
+        assertTrue(hits.isEmpty());
+    }
+
+    @Test
+    void reindexAllClearsDocuments() throws Exception {
+        service.indexAccount("acc-2", "Test", null, null);
+        Query query = new QueryParser("content", new org.apache.lucene.analysis.standard.StandardAnalyzer()).parse("test");
+        assertFalse(service.search(query).isEmpty());
+
+        service.reindexAll();
+        assertTrue(service.search(query).isEmpty());
+    }
+
+    @Test
+    void safeHandlesNullValuesWhenIndexing() throws Exception {
+        service.indexAccount("acc-3", null, null, null);
+        List<SearchHit> hits = service.search(new QueryParser("content", new org.apache.lucene.analysis.standard.StandardAnalyzer())
+                .parse("*:*"));
+        assertEquals(1, hits.size());
+        assertEquals("", hits.get(0).getSnippet());
+    }
+}
