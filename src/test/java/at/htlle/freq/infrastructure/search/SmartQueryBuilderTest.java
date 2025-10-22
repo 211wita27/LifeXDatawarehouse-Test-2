@@ -31,11 +31,11 @@ class SmartQueryBuilderTest {
     }
 
     @Test
-    void buildParsesUserInputAcrossFields() {
+    void buildParsesUserInputAgainstContentField() {
         Query query = builder.build("Vienna Server");
         String lucene = query.toString();
-        assertTrue(lucene.contains("txt:vienna"));
-        assertTrue(lucene.contains("txt:server"));
+        assertTrue(lucene.contains("content:vienna"));
+        assertTrue(lucene.contains("content:server"));
     }
 
     @Test
