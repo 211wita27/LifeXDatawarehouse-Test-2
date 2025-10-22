@@ -44,17 +44,7 @@ class DomainPojoTest {
                 }
                 method.invoke(instance, value);
 
-                String getterName = paramType == boolean.class ?
-                        method.getName().replaceFirst("set", "is") :
-                        method.getName().replaceFirst("set", "get");
-
-                Method getter;
-                try {
-                    getter = type.getMethod(getterName);
-                } catch (NoSuchMethodException e) {
-                    // fall back to getX for Boolean properties
-                    getter = type.getMethod(method.getName().replaceFirst("set", "get"));
-                }
+                Method getter = resolveGetter(type, method, paramType);
 
                 Object result = getter.invoke(instance);
                 if (paramType.isPrimitive()) {
@@ -63,6 +53,22 @@ class DomainPojoTest {
                     assertSame(value, result, () -> type.getSimpleName() + "#" + getter.getName());
                 }
             }
+        }
+    }
+
+    private Method resolveGetter(Class<?> type, Method setter, Class<?> paramType) throws NoSuchMethodException {
+        String getterName = paramType == boolean.class
+                ? setter.getName().replaceFirst("set", "is")
+                : setter.getName().replaceFirst("set", "get");
+
+        try {
+            return type.getMethod(getterName);
+        } catch (NoSuchMethodException ex) {
+            // fall back to getX for Boolean properties where only get-prefixed accessor exists
+            if (!getterName.startsWith("get")) {
+                return type.getMethod(setter.getName().replaceFirst("set", "get"));
+            }
+            throw ex;
         }
     }
 
