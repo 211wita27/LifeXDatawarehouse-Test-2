@@ -67,13 +67,13 @@ INSERT INTO Radio (RadioID, SiteID, AssignedClientID, RadioBrand, RadioSerialNr,
     ('00000000-0000-0000-0000-000000000802', '00000000-0000-0000-0000-000000000503', NULL, 'Airbus', 'RD-MUC-01', 'Analog', NULL);
 
 -- Audio devices
-INSERT INTO AudioDevice (AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, Firmware, DeviceType) VALUES
+INSERT INTO AudioDevice (AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType) VALUES
     ('00000000-0000-0000-0000-000000000901', '00000000-0000-0000-0000-000000000701', 'Jabra', 'AD-VIE-01', '3.2.1', 'HEADSET'),
     ('00000000-0000-0000-0000-000000000902', '00000000-0000-0000-0000-000000000702', 'Bose', 'AD-VIE-02', '1.9.0', 'SPEAKER'),
     ('00000000-0000-0000-0000-000000000903', '00000000-0000-0000-0000-000000000704', 'Poly', 'AD-BAY-01', '2.1.5', 'HEADSET');
 
 -- Phone integrations
-INSERT INTO PhoneIntegration (PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, PhoneSerialNr, Firmware) VALUES
+INSERT INTO PhoneIntegration (PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, PhoneSerialNr, PhoneFirmware) VALUES
     ('00000000-0000-0000-0000-000000000a01', '00000000-0000-0000-0000-000000000701', 'Emergency', 'Avaya', 'PH-VIE-01', '1.4.0'),
     ('00000000-0000-0000-0000-000000000a02', '00000000-0000-0000-0000-000000000703', 'NonEmergency', 'Cisco', 'PH-MUC-01', '2.0.1');
 

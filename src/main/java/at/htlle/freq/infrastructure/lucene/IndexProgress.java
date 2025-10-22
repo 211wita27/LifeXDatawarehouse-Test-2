@@ -80,6 +80,9 @@ public final class IndexProgress {
         for (Map.Entry<String, Integer> e : totals.entrySet()) {
             doneSnap.put(e.getKey(), done.getOrDefault(e.getKey(), new AtomicInteger()).get());
         }
+        for (Map.Entry<String, AtomicInteger> entry : done.entrySet()) {
+            doneSnap.putIfAbsent(entry.getKey(), entry.getValue().get());
+        }
         int gt = grandTotal();
         int td = totalDone();
         int pct = (gt == 0) ? 100 : Math.min(100, (td * 100) / gt);
