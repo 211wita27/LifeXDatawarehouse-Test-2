@@ -36,7 +36,7 @@
 
             <!-- 1  Projekte – aktiv -->
             <div class="shortcut" data-id="sc1"
-                 data-default='type:project AND statusactive'>
+                 data-default='type:project AND active'>
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Projekte – aktiv</span>
@@ -47,21 +47,18 @@
 
             <!-- 2  Serviceverträge – In Progress -->
             <div class="shortcut" data-id="sc2"
-                 data-default='type:serviceContract AND statusinprogress'
-                 data-list="servicecontracts-progress">
+                 data-default='type:servicecontract AND inprogress'>
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Serviceverträge – In Progress</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel">
-                    <div class="panel-list" data-role="list"></div>
-                </div>
+                <div class="panel"><input placeholder="Lucene-Query (z. B. type:servicecontract AND inprogress)"></div>
             </div>
 
             <!-- 3  Sites – FireZone Bravo -->
             <div class="shortcut" data-id="sc3"
-                 data-default='type:site AND zonebravo'>
+                 data-default='type:site AND bravo'>
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Sites – FireZone Bravo</span>
