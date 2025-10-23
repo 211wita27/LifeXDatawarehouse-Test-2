@@ -162,9 +162,9 @@ tech*                       # Wildcard
 "green valley"              # Phrase
 +foo -bar                   # Muss / Nicht
 country:germany             # Feldsuche
-type:project AND true       # Aktive Projekte
-type:serviceContract AND InProgress  # Laufende Serviceverträge
-type:site AND Bravo         # Sites in FireZone Bravo
+type:project AND statusActive        # Aktive Projekte
+type:serviceContract AND statusInProgress  # Laufende Serviceverträge
+type:site AND zoneBravo              # Sites in FireZone Bravo
 type:server AND Lenovo      # Lenovo-Serverbestand
 ```
 
@@ -174,9 +174,9 @@ Wenn keine Lucene-Syntax erkannt wird, fügt das Frontend automatisch ein `*` an
 **Voreingestellte Dashboard-Shortcuts:**
 
 - Accounts – Gesamtbestand → `type:account`
-- Projekte – aktiv → `type:project AND true`
-- Serviceverträge – In Progress → `type:serviceContract AND InProgress`
-- Sites – FireZone Bravo → `type:site AND Bravo`
+- Projekte – aktiv → `type:project AND statusActive`
+- Serviceverträge – In Progress → `type:serviceContract AND statusInProgress`
+- Sites – FireZone Bravo → `type:site AND zoneBravo`
 - Server – Lenovo → `type:server AND Lenovo`
 
 **Indexierte Felder (Beispiele):**
