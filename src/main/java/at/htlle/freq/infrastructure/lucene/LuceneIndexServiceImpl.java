@@ -111,10 +111,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         writerLock.lock();
         try {
             Files.createDirectories(INDEX_DIR);
-            IndexWriterConfig config = new IndexWriterConfig(analyzer);
-            config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
             for (int attempt = 0; attempt < 2; attempt++) {
+                IndexWriterConfig config = new IndexWriterConfig(analyzer);
+                config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
+
                 try (FSDirectory dir = FSDirectory.open(INDEX_DIR);
                      IndexWriter writer = new IndexWriter(dir, config)) {
                     callback.execute(writer);
