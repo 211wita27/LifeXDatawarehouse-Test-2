@@ -8,6 +8,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.LockObtainFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,13 +113,39 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             Files.createDirectories(INDEX_DIR);
             IndexWriterConfig config = new IndexWriterConfig(analyzer);
             config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
-            try (FSDirectory dir = FSDirectory.open(INDEX_DIR);
-                 IndexWriter writer = new IndexWriter(dir, config)) {
-                callback.execute(writer);
+
+            for (int attempt = 0; attempt < 2; attempt++) {
+                try (FSDirectory dir = FSDirectory.open(INDEX_DIR);
+                     IndexWriter writer = new IndexWriter(dir, config)) {
+                    callback.execute(writer);
+                    return;
+                } catch (LockObtainFailedException e) {
+                    if (attempt == 0) {
+                        Path cleared = clearStaleLock();
+                        if (cleared != null) {
+                            log.warn("Verwaiste Lucene write.lock entfernt ({}). Neuer Versuch, den Index zu öffnen.",
+                                    cleared.toAbsolutePath());
+                            continue;
+                        }
+                    }
+                    throw e;
+                }
             }
         } finally {
             writerLock.unlock();
         }
+    }
+
+    private Path clearStaleLock() {
+        Path lockFile = INDEX_DIR.resolve("write.lock");
+        try {
+            if (Files.deleteIfExists(lockFile)) {
+                return lockFile;
+            }
+        } catch (IOException e) {
+            log.error("Konnte verwaiste Lucene write.lock nicht löschen: {}", lockFile.toAbsolutePath(), e);
+        }
+        return null;
     }
 
     private DirectoryReader openReader() throws IOException {
@@ -505,7 +532,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
         String type = firstNonBlank(typeDisplay, typeKey);
         String text = firstNonBlank(display, content, id, type);
-        String snippet = buildSnippet(content, text);
+        String snippet = buildSnippet(content, text, typeKey, typeDisplay);
 
         return new SearchHit(id, type, text, snippet);
     }
@@ -536,15 +563,17 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         return "";
     }
 
-    private String buildSnippet(String content, String text) {
+    private String buildSnippet(String content, String text, String... tokensToStrip) {
         String normalized = normalizeWhitespace(content);
         if (normalized.isEmpty()) {
             return "";
         }
 
-        String normalizedText = normalizeWhitespace(text);
-        if (!normalizedText.isEmpty() && normalized.toLowerCase().startsWith(normalizedText.toLowerCase())) {
-            normalized = normalized.substring(normalizedText.length()).trim();
+        normalized = stripLeadingToken(normalized, text);
+        if (tokensToStrip != null) {
+            for (String token : tokensToStrip) {
+                normalized = stripLeadingToken(normalized, token);
+            }
         }
 
         if (normalized.isEmpty()) {
@@ -556,6 +585,27 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             normalized = normalized.substring(0, limit - 1).trim() + "…";
         }
         return normalized;
+    }
+
+    private String stripLeadingToken(String value, String token) {
+        if (value.isEmpty() || token == null) {
+            return value;
+        }
+        String normalizedToken = normalizeWhitespace(token);
+        if (normalizedToken.isEmpty()) {
+            return value;
+        }
+        if (startsWithIgnoreCase(value, normalizedToken)) {
+            return value.substring(normalizedToken.length()).trim();
+        }
+        return value;
+    }
+
+    private boolean startsWithIgnoreCase(String value, String prefix) {
+        if (prefix == null || prefix.isEmpty() || value.length() < prefix.length()) {
+            return false;
+        }
+        return value.regionMatches(true, 0, prefix, 0, prefix.length());
     }
 
     private String normalizeWhitespace(String value) {
