@@ -2,6 +2,10 @@ package at.htlle.freq.infrastructure.lucene;
 
 import at.htlle.freq.domain.*;
 import at.htlle.freq.infrastructure.search.SearchHit;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
@@ -15,6 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -67,6 +73,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     private final StandardAnalyzer analyzer = new StandardAnalyzer();
     private final ReentrantLock writerLock = new ReentrantLock();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final Path storedLicenseJsonPath = INDEX_DIR.resolve("license-fragments.json");
 
     public LuceneIndexServiceImpl() {
         this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -169,6 +177,30 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         }
 
         return cleared;
+    }
+
+    private JsonNode readStoredLicenseJson() {
+        if (!Files.exists(storedLicenseJsonPath)) {
+            return JsonNodeFactory.instance.objectNode();
+        }
+
+        try (InputStream in = Files.newInputStream(storedLicenseJsonPath)) {
+            JsonNode parsed = objectMapper.readTree(in);
+            return parsed != null ? parsed : JsonNodeFactory.instance.objectNode();
+        } catch (IOException e) {
+            throw new LicenseReadingException("Konnte gespeichertes license-fragments.json nicht lesen", e);
+        }
+    }
+
+    private void writeStoredLicenseJson(ObjectNode node) {
+        try {
+            Files.createDirectories(storedLicenseJsonPath.getParent());
+            try (OutputStream out = Files.newOutputStream(storedLicenseJsonPath)) {
+                objectMapper.writerWithDefaultPrettyPrinter().writeValue(out, node);
+            }
+        } catch (IOException e) {
+            throw new LicenseReadingException("Konnte license-fragments.json nicht speichern", e);
+        }
     }
 
     private DirectoryReader openReader() throws IOException {
@@ -729,5 +761,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     public void indexUpgradePlan(String upgradePlanId, String siteId, String softwareId, String plannedWindowStart, String plannedWindowEnd,
                                  String status, String createdAt, String createdBy) {
         indexDocument(upgradePlanId, TYPE_UPGRADE_PLAN, siteId, softwareId, plannedWindowStart, plannedWindowEnd, status, createdAt, createdBy);
+    }
+
+    private static class LicenseReadingException extends RuntimeException {
+        private LicenseReadingException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }
