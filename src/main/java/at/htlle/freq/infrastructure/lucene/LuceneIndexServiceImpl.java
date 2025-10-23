@@ -12,6 +12,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -155,12 +156,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         boolean cleared = false;
 
         if (dir != null) {
-            try {
-                if (IndexWriter.isLocked(dir)) {
-                    IndexWriter.unlock(dir);
-                    log.warn("Lucene-Lock auf {} wurde mit IndexWriter.unlock() freigegeben.", INDEX_DIR.toAbsolutePath());
-                    cleared = true;
-                }
+            try (Lock luceneLock = dir.obtainLock(IndexWriter.WRITE_LOCK_NAME)) {
+                log.warn("Lucene-Lock auf {} wurde über obtainLock() freigegeben.", INDEX_DIR.toAbsolutePath());
+                cleared = true;
+            } catch (LockObtainFailedException e) {
+                log.debug("Lucene-Lock auf {} ist weiterhin aktiv und konnte nicht übernommen werden.", INDEX_DIR.toAbsolutePath());
             } catch (IOException e) {
                 log.error("Konnte Lucene-Lock nicht freigeben: {}", INDEX_DIR.toAbsolutePath(), e);
             }
