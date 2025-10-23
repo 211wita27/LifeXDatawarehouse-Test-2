@@ -36,7 +36,7 @@
 
             <!-- 1  Projekte – aktiv -->
             <div class="shortcut" data-id="sc1"
-                 data-default='type:project AND active'>
+                 data-default='type:project AND statusactive'>
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Projekte – aktiv</span>
@@ -47,18 +47,18 @@
 
             <!-- 2  Serviceverträge – In Progress -->
             <div class="shortcut" data-id="sc2"
-                 data-default='type:servicecontract AND inprogress'>
+                 data-default='type:servicecontract AND statusinprogress'>
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Serviceverträge – In Progress</span>
                     <span class="chev">▶</span>
                 </button>
-                <div class="panel"><input placeholder="Lucene-Query (z. B. type:servicecontract AND inprogress)"></div>
+                <div class="panel"><input placeholder="Lucene-Query (z. B. type:servicecontract AND statusinprogress)"></div>
             </div>
 
             <!-- 3  Sites – FireZone Bravo -->
             <div class="shortcut" data-id="sc3"
-                 data-default='type:site AND bravo'>
+                 data-default='type:site AND zonebravo'>
                 <button class="head">
                     <span class="rename">✏️</span>
                     <span class="label">Sites – FireZone Bravo</span>
@@ -126,7 +126,7 @@
             <li><code>"green valley"</code> Phrase</li>
             <li><code>+foo -bar</code> Muss / Nicht</li>
             <li><code>date:[2025-01-01 TO 2025-12-31]</code></li>
-            <li>Projektsuche: <code>type:project AND true</code></li>
+            <li>Projektsuche: <code>type:project AND statusactive</code></li>
         </ul>
 
         <hr>
