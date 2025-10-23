@@ -116,20 +116,26 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                 IndexWriterConfig config = new IndexWriterConfig(analyzer);
                 config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
 
-                try (FSDirectory dir = FSDirectory.open(INDEX_DIR);
-                     IndexWriter writer = new IndexWriter(dir, config)) {
-                    callback.execute(writer);
-                    return;
+                FSDirectory dir = null;
+                try {
+                    dir = FSDirectory.open(INDEX_DIR);
+                    try (IndexWriter writer = new IndexWriter(dir, config)) {
+                        callback.execute(writer);
+                        return;
+                    }
                 } catch (LockObtainFailedException e) {
-                    if (attempt == 0) {
-                        Path cleared = clearStaleLock();
-                        if (cleared != null) {
-                            log.warn("Verwaiste Lucene write.lock entfernt ({}). Neuer Versuch, den Index zu öffnen.",
-                                    cleared.toAbsolutePath());
-                            continue;
-                        }
+                    if (attempt == 0 && clearStaleLock(dir)) {
+                        continue;
                     }
                     throw e;
+                } finally {
+                    if (dir != null) {
+                        try {
+                            dir.close();
+                        } catch (IOException closeEx) {
+                            log.warn("Konnte Lucene-Verzeichnis nicht schließen", closeEx);
+                        }
+                    }
                 }
             }
         } finally {
@@ -137,16 +143,32 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         }
     }
 
-    private Path clearStaleLock() {
+    private boolean clearStaleLock(FSDirectory dir) {
+        boolean cleared = false;
+
+        if (dir != null) {
+            try {
+                if (IndexWriter.isLocked(dir)) {
+                    IndexWriter.unlock(dir);
+                    log.warn("Lucene-Lock auf {} wurde mit IndexWriter.unlock() freigegeben.", INDEX_DIR.toAbsolutePath());
+                    cleared = true;
+                }
+            } catch (IOException e) {
+                log.error("Konnte Lucene-Lock nicht freigeben: {}", INDEX_DIR.toAbsolutePath(), e);
+            }
+        }
+
         Path lockFile = INDEX_DIR.resolve("write.lock");
         try {
             if (Files.deleteIfExists(lockFile)) {
-                return lockFile;
+                log.warn("Verwaiste Lucene write.lock entfernt ({}).", lockFile.toAbsolutePath());
+                cleared = true;
             }
         } catch (IOException e) {
             log.error("Konnte verwaiste Lucene write.lock nicht löschen: {}", lockFile.toAbsolutePath(), e);
         }
-        return null;
+
+        return cleared;
     }
 
     private DirectoryReader openReader() throws IOException {
