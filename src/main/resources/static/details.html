@@ -83,6 +83,14 @@
             case 'radio': return 'Radio';
             case 'audio': return 'AudioDevice';
             case 'phone': return 'PhoneIntegration';
+            case 'country': return 'Country';
+            case 'city': return 'City';
+            case 'address': return 'Address';
+            case 'deploymentvariant': return 'DeploymentVariant';
+            case 'software': return 'Software';
+            case 'installedsoftware': return 'InstalledSoftware';
+            case 'upgradeplan': return 'UpgradePlan';
+            case 'servicecontract': return 'ServiceContract';
             default: return t;
         }
     }
@@ -96,6 +104,22 @@
         }
         return undefined;
     }
+    function formatDateLabel(value){
+        if (value === null || value === undefined) return '';
+        const str = ('' + value).trim();
+        if (!str) return '';
+        const ts = Date.parse(str);
+        if (!Number.isNaN(ts)) {
+            return new Date(ts).toLocaleDateString('de-AT', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        }
+        return str;
+    }
+    function formatDateRange(start, end){
+        const from = formatDateLabel(start);
+        const to = formatDateLabel(end);
+        if (from && to) return `${from} → ${to}`;
+        return from || to || '';
+    }
     function labelFor(type, row){
         switch((type||'').toLowerCase()){
             case 'account': return `${val(row,'AccountName') ?? 'Account'}`;
@@ -107,6 +131,14 @@
             case 'radio':   return `${val(row,'RadioBrand') ?? 'Radio'}`;
             case 'audio':   return `${val(row,'AudioDeviceBrand') ?? 'AudioDevice'}`;
             case 'phone':   return `${val(row,'PhoneBrand') ?? 'Phone'}`;
+            case 'country': return `${val(row,'CountryName') ?? val(row,'CountryCode') ?? 'Country'}`;
+            case 'city':    return `${val(row,'CityName') ?? 'City'}`;
+            case 'address': return `${val(row,'Street') ?? 'Address'}`;
+            case 'deploymentvariant': return `${val(row,'VariantName') ?? 'DeploymentVariant'}`;
+            case 'software': return `${val(row,'Name') ?? 'Software'}`;
+            case 'installedsoftware': return `${val(row,'InstalledSoftwareID') ?? 'InstalledSoftware'}`;
+            case 'upgradeplan': return `${val(row,'UpgradePlanID') ?? 'UpgradePlan'}`;
+            case 'servicecontract': return `${val(row,'ContractNumber') ?? 'ServiceContract'}`;
             default:        return '';
         }
     }
@@ -318,6 +350,24 @@
                 }
                 if (pills.length) sections.push({ title: 'Gehört zu', pills });
             }
+        } else if (type === 'ServiceContract') {
+            const pills = [];
+            const accId = val(row,'AccountID');
+            if (accId != null) {
+                const acc = await rowAccount(accId);
+                if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
+            }
+            const projId = val(row,'ProjectID');
+            if (projId != null) {
+                const proj = await rowProject(projId);
+                if (proj) pills.push(pillLink(`/details.html?type=project&id=${projId}`, 'Project', projId, labelFor('project', proj)));
+            }
+            const siteId = val(row,'SiteID');
+            if (siteId != null) {
+                const site = await rowSite(siteId);
+                if (site) pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
+            }
+            if (pills.length) sections.push({ title: 'Gehört zu', pills });
         }
 
         // Rendern
@@ -339,12 +389,29 @@
         const box = document.getElementById('children');
         box.innerHTML = '';
 
+        const loadServiceContracts = async (filterKey, value) => {
+            if (!value) return [];
+            const rows = await fetchJson(`/table/servicecontract?limit=200`);
+            if (!Array.isArray(rows)) return [];
+            return rows.filter(r => (val(r, filterKey) ?? '').toString() === value.toString());
+        };
+
         if(type==='Account'){
             const projects = await fetchJson(`/projects?accountId=${id}`);
             addSection(box, 'Projects', projects, p => {
                 const pid = val(p,'ProjectID');
                 const name = val(p,'ProjectName');
                 return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, null, pid, name);
+            });
+
+            const contracts = await loadServiceContracts('AccountID', id);
+            addSection(box, 'Service Contracts', contracts, sc => {
+                const cid = val(sc,'ContractID');
+                const label = val(sc,'ContractNumber');
+                const status = val(sc,'Status');
+                const meta = formatDateRange(val(sc,'StartDate'), val(sc,'EndDate'));
+                const desc = [status, meta].filter(Boolean).join(' · ');
+                return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
             });
         }
         else if(type==='Project'){
@@ -353,6 +420,16 @@
                 const sid = val(s,'SiteID');
                 const name = val(s,'SiteName');
                 return pillLink(`/details.html?type=site&id=${encodeURIComponent(sid)}`, null, sid, name);
+            });
+
+            const contracts = await loadServiceContracts('ProjectID', id);
+            addSection(box, 'Service Contracts', contracts, sc => {
+                const cid = val(sc,'ContractID');
+                const label = val(sc,'ContractNumber');
+                const status = val(sc,'Status');
+                const meta = formatDateRange(val(sc,'StartDate'), val(sc,'EndDate'));
+                const desc = [status, meta].filter(Boolean).join(' · ');
+                return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
             });
         }
         else if(type==='Site'){
@@ -375,6 +452,16 @@
                 const rid = val(r,'RadioID');
                 const brand = val(r,'RadioBrand');
                 return pillLink(`/details.html?type=radio&id=${encodeURIComponent(rid)}`, null, rid, brand);
+            });
+
+            const contracts = await loadServiceContracts('SiteID', id);
+            addSection(box, 'Service Contracts', contracts, sc => {
+                const cid = val(sc,'ContractID');
+                const label = val(sc,'ContractNumber');
+                const status = val(sc,'Status');
+                const meta = formatDateRange(val(sc,'StartDate'), val(sc,'EndDate'));
+                const desc = [status, meta].filter(Boolean).join(' · ');
+                return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
             });
         }
         else if(type==='Client'){

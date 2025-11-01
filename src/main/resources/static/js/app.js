@@ -254,6 +254,39 @@ const ENTITY_TYPE_MAP = {
     radio:   { detailType: 'radio',   typeToken: 'type:radio',   table: 'Radio',   aliases: ['radio', 'radios'] },
     audio:   { detailType: 'audio',   typeToken: 'type:audio',   table: 'AudioDevice', aliases: ['audio', 'audiodevice', 'audiodevices'] },
     phone:   { detailType: 'phone',   typeToken: 'type:phone',   table: 'PhoneIntegration', aliases: ['phone', 'phoneintegration', 'phoneintegrations'] },
+    country: { detailType: 'country', typeToken: 'type:country', table: 'Country', aliases: ['country', 'countries'] },
+    city:    { detailType: 'city',    typeToken: 'type:city',    table: 'City',    aliases: ['city', 'cities'] },
+    address: { detailType: 'address', typeToken: 'type:address', table: 'Address', aliases: ['address', 'addresses'] },
+    deploymentvariant: {
+        detailType: 'deploymentvariant',
+        typeToken: 'type:deploymentvariant',
+        table: 'DeploymentVariant',
+        aliases: ['deploymentvariant', 'variant', 'deploymentvariants', 'variants']
+    },
+    software: {
+        detailType: 'software',
+        typeToken: 'type:software',
+        table: 'Software',
+        aliases: ['software', 'softwares']
+    },
+    installedsoftware: {
+        detailType: 'installedsoftware',
+        typeToken: 'type:installedsoftware',
+        table: 'InstalledSoftware',
+        aliases: ['installedsoftware', 'installations']
+    },
+    upgradeplan: {
+        detailType: 'upgradeplan',
+        typeToken: 'type:upgradeplan',
+        table: 'UpgradePlan',
+        aliases: ['upgradeplan', 'upgradeplans']
+    },
+    servicecontract: {
+        detailType: 'servicecontract',
+        typeToken: 'type:servicecontract',
+        table: 'ServiceContract',
+        aliases: ['servicecontract', 'servicecontracts', 'contract', 'contracts']
+    },
 };
 
 const TABLE_NAME_LOOKUP = {};
@@ -324,6 +357,36 @@ function formatPreview(type, row){
     } else if (t==='phone'){
         const br=val(row,'PhoneBrand'); if (br) parts.push(br);
         const tp=val(row,'PhoneType'); if (tp) parts.push(tp);
+    } else if (t==='country'){
+        const code = val(row,'CountryCode'); if (code) parts.push(`Code ${code}`);
+        const name = val(row,'CountryName'); if (name) parts.push(name);
+    } else if (t==='city'){
+        const name = val(row,'CityName'); if (name) parts.push(name);
+        const cc = val(row,'CountryCode'); if (cc) parts.push(`Land ${cc}`);
+    } else if (t==='address'){
+        const street = val(row,'Street'); if (street) parts.push(street);
+        const cityId = val(row,'CityID'); if (cityId) parts.push(`City ${shortUuid(cityId)}`);
+    } else if (t==='deploymentvariant'){
+        const variant = val(row,'VariantName'); if (variant) parts.push(variant);
+        const code = val(row,'VariantCode'); if (code) parts.push(`#${code}`);
+        const active = val(row,'IsActive');
+        if (active !== undefined && active !== null) parts.push(parseBool(active) ? 'aktiv' : 'inaktiv');
+    } else if (t==='software'){
+        const name = val(row,'Name'); if (name) parts.push(name);
+        const release = val(row,'Release'); if (release) parts.push(`Release ${release}`);
+        const revision = val(row,'Revision'); if (revision) parts.push(`Rev ${revision}`);
+        const phase = val(row,'SupportPhase'); if (phase) parts.push(phase);
+    } else if (t==='installedsoftware'){
+        const siteId = val(row,'SiteID'); if (siteId) parts.push(`Site ${shortUuid(siteId)}`);
+        const swId = val(row,'SoftwareID'); if (swId) parts.push(`Software ${shortUuid(swId)}`);
+    } else if (t==='upgradeplan'){
+        const status = val(row,'Status'); if (status) parts.push(status);
+        const window = formatDateRange(val(row,'PlannedWindowStart'), val(row,'PlannedWindowEnd')); if (window) parts.push(window);
+        const createdBy = val(row,'CreatedBy'); if (createdBy) parts.push(`von ${createdBy}`);
+    } else if (t==='servicecontract'){
+        const number = val(row,'ContractNumber'); if (number) parts.push(`Vertrag ${number}`);
+        const status = val(row,'Status'); if (status) parts.push(status);
+        const duration = formatDateRange(val(row,'StartDate'), val(row,'EndDate')); if (duration) parts.push(duration);
     }
     return parts.join(' · ');
 }
