@@ -91,6 +91,7 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 .table-scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:650px}
 th,td{border:1px solid #ccc;padding:.45rem;text-align:left}
+.hint-icon{font-size:.75em;margin-left:.35rem;cursor:help;color:#0067c2;vertical-align:middle}
 .id-chip{
     display:inline-flex;
     align-items:center;
@@ -108,6 +109,10 @@ td .id-chip{vertical-align:middle}
 table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
 #resultArea p{margin:0}
 #error{color:red;margin-top:1rem}
+.hint-list{list-style:none;margin:.35rem 0 0 0;padding:0;display:flex;flex-direction:column;gap:.35rem}
+.hint-list li{font-size:.9rem;color:#1f2937}
+.hint-list code{background:#f3f6ff;border:1px solid #dbe7ff;border-radius:4px;padding:.1rem .35rem}
+.help .hint-empty{margin:.35rem 0 0 0;font-size:.9rem;color:#555;font-style:italic}
 
 /* ===============  Details-Ansicht  =============== */
 #back{display:inline-block;margin-bottom:1.2rem;color:#fff;background:#003a70;
