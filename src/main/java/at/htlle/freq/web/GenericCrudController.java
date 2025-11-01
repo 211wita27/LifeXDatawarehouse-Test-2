@@ -116,6 +116,17 @@ public class GenericCrudController {
 
         String sql = "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")";
         jdbc.update(sql, new MapSqlParameterSource(body));
+
+        String pk = PKS.get(table);
+        Object recordId = null;
+        if (pk != null) {
+            recordId = body.get(pk);
+        }
+        if (recordId == null) {
+            recordId = body.getOrDefault("id", body.getOrDefault("ID", "(unknown)"));
+        }
+
+        log.info("Inserted {} {} with fields {}", table, recordId, body.keySet());
     }
 
     // -------- UPDATE --------
@@ -151,7 +162,11 @@ public class GenericCrudController {
 
         String sql = "DELETE FROM " + table + " WHERE " + pk + " = :id";
         int count = jdbc.update(sql, new MapSqlParameterSource("id", id));
-        if (count == 0)
+        if (count == 0) {
+            log.warn("Attempted to delete {} {} but no record was found", table, id);
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no record deleted");
+        }
+
+        log.info("Deleted {} {} with fields {}", table, id, Collections.singleton(pk));
     }
 }
