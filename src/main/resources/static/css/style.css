@@ -108,6 +108,41 @@ td .id-chip{vertical-align:middle}
 table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
 #resultArea p{margin:0}
 #error{color:red;margin-top:1rem}
+.table-quick-filter{
+    display:inline-flex;
+    align-items:center;
+    gap:.25rem;
+    border:1px solid #cfe0ff;
+    background:#eef4ff;
+    border-radius:999px;
+    padding:.1rem .55rem;
+    font:inherit;
+    line-height:1.2;
+    color:#003a70;
+    cursor:pointer;
+    text-decoration:none;
+    appearance:none;
+    white-space:nowrap;
+}
+.table-quick-filter .id-chip{
+    background:transparent;
+    border:none;
+    padding:0;
+    font:inherit;
+    color:inherit;
+}
+.table-quick-filter:hover,
+.table-quick-filter:focus-visible{
+    background:#dbe8ff;
+    border-color:#9cbcff;
+    box-shadow:0 0 0 2px rgba(0,103,194,.25);
+    outline:none;
+}
+.table-quick-filter:focus-visible .id-chip,
+.table-quick-filter:hover .id-chip{
+    background:transparent;
+    border:none;
+}
 
 /* ===============  Details-Ansicht  =============== */
 #back{display:inline-block;margin-bottom:1.2rem;color:#fff;background:#003a70;

@@ -29,6 +29,26 @@ function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','
 
 const shortcutCache = new Map();
 
+if (resultArea) {
+    resultArea.addEventListener('click', (event) => {
+        let target = event.target;
+        if (target && typeof target.closest !== 'function' && target.parentElement) {
+            target = target.parentElement;
+        }
+        if (!target || typeof target.closest !== 'function') return;
+        const button = target.closest('.table-quick-filter');
+        if (!button) return;
+        const query = button.dataset.query;
+        if (!query) return;
+        event.preventDefault();
+        if (searchInput) {
+            searchInput.value = query;
+            if (typeof searchInput.focus === 'function') searchInput.focus();
+        }
+        runSearch(query);
+    });
+}
+
 function parseBool(value){
     if (typeof value === 'boolean') return value;
     const normalized = String(value ?? '').trim().toLowerCase();
@@ -544,15 +564,51 @@ async function runLucene(q) {
 }
 
 /* Tabellen-Viewer (100-Zeilen-Preview) */
-function renderTableCell(columnName, value) {
+function tableQuickFilterQuery(tableName, columnKey, rawValue) {
+    const column = (columnKey === undefined || columnKey === null) ? '' : String(columnKey);
+    const raw = (rawValue === undefined || rawValue === null) ? '' : String(rawValue).trim();
+    if (!column || !raw) return null;
+
+    const isIdColumn = /(id|guid)$/i.test(column);
+    if (isIdColumn) {
+        const escaped = raw.replace(/"/g, '\\"');
+        return `id:"${escaped}"`;
+    }
+
+    const table = (tableName === undefined || tableName === null) ? '' : String(tableName).trim().toLowerCase();
+    const typeToken = table ? `type:${table}` : '';
+
+    if (/^stillactive$/i.test(column)) {
+        const active = parseBool(rawValue);
+        const statusToken = active ? 'statusactive' : 'statusinactive';
+        return typeToken ? `${typeToken} AND ${statusToken}` : statusToken;
+    }
+
+    const prepared = buildUserQuery(raw);
+    if (!prepared) return null;
+    return typeToken ? `${typeToken} AND ${prepared}` : prepared;
+}
+
+function renderTableCell(tableName, columnName, value) {
     const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
     const raw = (value === undefined || value === null) ? '' : String(value);
+    const query = tableQuickFilterQuery(tableName, key, value);
+    const queryAttr = query ? escapeHtml(query) : '';
     const isIdColumn = /(id|guid)$/i.test(key);
+
     if (isIdColumn && raw) {
         const rendered = renderIdDisplay(value);
         const titleAttr = escapeHtml(rendered.title);
+        if (query) {
+            return `<td title="${titleAttr}"><button type="button" class="table-quick-filter" data-query="${queryAttr}">${rendered.inner}</button></td>`;
+        }
         return `<td title="${titleAttr}">${rendered.inner}</td>`;
     }
+
+    if (query && raw) {
+        return `<td><button type="button" class="table-quick-filter" data-query="${queryAttr}">${escapeHtml(raw)}</button></td>`;
+    }
+
     return `<td>${escapeHtml(raw)}</td>`;
 }
 
@@ -565,7 +621,7 @@ async function showTable(name) {
 
         const cols = Object.keys(rows[0]);
         const hdr  = cols.map(c => `<th>${c}</th>`).join('');
-        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(c, r[c])).join('')}</tr>`).join('');
+        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
 
         resultArea.innerHTML =
             `<h2>${name}</h2>
