@@ -202,11 +202,10 @@ erDiagram
 
 ## 🛡️ Qualität & CI
 
-- (geplant) Unit-Tests mit JUnit 5
-- Beispiel-GitHub Actions Workflow (`mvn test` + Docker build)
-- Checkstyle und SpotBugs (TODO)
-- Frontend: Debouncing, Autocomplete-Handling, API-Fallbacks
-- Backend: IndexProgress-Updates für die Fortschrittsanzeige stehen noch aus
+- **JUnit-Tests** – Maven führt die vorhandenen Tests unter `src/test/java` aus, u. a. für `IndexProgress` und dessen REST-Controller.
+- **IndexProgress-Updates** – Die Fortschrittsanzeige nutzt die produktiven Updates aus `IndexProgress`, sodass UI und API denselben Status liefern.
+- **Lokale Checks** – Vor Commits laufen `mvn test` sowie manuelle UI-Prüfungen (Autocomplete, Debouncing, API-Fallbacks).
+- **Statische Analyse** – Checkstyle und SpotBugs bleiben auf der Roadmap.
 
 ---
 
