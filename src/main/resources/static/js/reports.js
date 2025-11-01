@@ -7,7 +7,7 @@
     };
 
     const DEFAULT_PERIOD = 'quarter';
-    const numberFormat = new Intl.NumberFormat('en-US');
+    const numberFormat = new Intl.NumberFormat('de-DE');
 
     const state = {
         type: 'DIFFERENCE',
@@ -59,7 +59,7 @@
             await loadReport();
         } catch (err) {
             console.error('Options/initial data failed', err);
-            showError('Metadata could not be loaded. Please try again later.');
+            showError('Metadaten konnten nicht geladen werden. Bitte später erneut versuchen.');
         }
     }
 
@@ -158,7 +158,7 @@
         if (!periods[DEFAULT_PERIOD]) {
             const opt = document.createElement('option');
             opt.value = DEFAULT_PERIOD;
-            opt.textContent = 'This quarter';
+            opt.textContent = 'Dieses Quartal';
             elements.period.appendChild(opt);
         }
     }
@@ -169,7 +169,7 @@
         variants.forEach(v => {
             const opt = document.createElement('option');
             opt.value = v.code;
-            opt.textContent = v.label + (v.active ? '' : ' (inactive)');
+            opt.textContent = v.label + (v.active ? '' : ' (inaktiv)');
             elements.variant.appendChild(opt);
         });
     }
@@ -242,7 +242,7 @@
         } catch (err) {
             if (token !== fetchToken) return;
             console.error('Report fetch failed', err);
-            showError('Report could not be loaded.');
+            showError('Report konnte nicht geladen werden.');
         } finally {
             if (token === fetchToken) {
                 setBusy(false);
@@ -298,7 +298,7 @@
         if (!chart.length) {
             const empty = document.createElement('div');
             empty.className = 'chart-empty';
-            empty.textContent = 'No chart data available.';
+            empty.textContent = 'Keine Diagrammdaten verfügbar.';
             elements.chart.appendChild(empty);
             return;
         }
@@ -326,13 +326,13 @@
         if (!elements.tableWrapper) return;
         elements.tableWrapper.innerHTML = '';
         if (!table || !Array.isArray(table.columns)) {
-            elements.reportStatus.textContent = 'No data found.';
+            elements.reportStatus.textContent = 'Keine Daten gefunden.';
             return;
         }
         if (!table.rows || !table.rows.length) {
             const empty = document.createElement('div');
             empty.className = 'chart-empty';
-            empty.textContent = table.emptyMessage || 'No data in the selected period.';
+            empty.textContent = table.emptyMessage || 'Keine Daten im gewählten Zeitraum.';
             elements.tableWrapper.appendChild(empty);
             elements.reportStatus.textContent = empty.textContent;
             return;
@@ -378,12 +378,12 @@
 
         const count = table.rows.length;
         elements.reportStatus.classList.remove('error');
-        elements.reportStatus.textContent = `${count} record${count === 1 ? '' : 's'} loaded.`;
+        elements.reportStatus.textContent = `${count} Datensatz${count === 1 ? '' : 'e'} geladen.`;
     }
 
     function updateGeneratedAt(timestamp){
         if (!elements.generatedAt) return;
-        elements.generatedAt.textContent = timestamp ? `As of: ${timestamp}` : '';
+        elements.generatedAt.textContent = timestamp ? `Stand: ${timestamp}` : '';
     }
 
     function updateFilterInfo(){
@@ -394,14 +394,14 @@
         const periodLabel = periods[state.period] || periods[DEFAULT_PERIOD] || '';
         const pieces = [typeLabel];
         if (periodLabel) pieces.push(periodLabel);
-        if (state.variant) pieces.push(`Variant: ${state.variant}`);
+        if (state.variant) pieces.push(`Variante: ${state.variant}`);
         if (state.query) pieces.push(`Filter: "${state.query}"`);
         elements.filterInfo.textContent = pieces.join(' · ');
     }
 
     function updateRefreshInfo(timestamp){
         if (!elements.refreshInfo) return;
-        elements.refreshInfo.textContent = timestamp ? `Last updated on ${timestamp}.` : '';
+        elements.refreshInfo.textContent = timestamp ? `Zuletzt aktualisiert am ${timestamp}.` : '';
     }
 
     function updateExports(){
