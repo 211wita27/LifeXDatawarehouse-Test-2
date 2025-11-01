@@ -136,6 +136,7 @@ Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
 - **`create.html` – Datensatz-Erstellung**
   - Schritt-für-Schritt-Wizard zur Anlage neuer Datensätze (inkl. Country, City, Address, Software, InstalledSoftware, UpgradePlan und ServiceContract)
   - Dynamische Formularfelder je Entitätstyp mit abhängigen Dropdowns und asynchronen Datenquellen
+  - Dropdowns besitzen eine Live-Filterleiste für schnellere Navigation und Tastatursteuerung
   - Direkte Validierung der Eingaben im Browser (Pflichtfelder, Datentypen, Datumslogik)
   - Abschließende Übersicht vor dem Speichern
 

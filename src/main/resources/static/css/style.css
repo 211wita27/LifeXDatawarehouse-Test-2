@@ -11,6 +11,14 @@
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica}
 
+/* ===============  Select-Filter  =============== */
+.select-filter{position:relative;display:flex;flex-direction:column;gap:.35rem;width:100%;align-items:stretch}
+.select-filter__input{padding:.4rem;border:1px solid #cbd5e1;border-radius:6px;font:inherit;transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease}
+.select-filter__input:focus{outline:2px solid #2c64b5;outline-offset:2px}
+.select-filter--active .select-filter__input{border-color:#2c64b5;box-shadow:0 0 0 3px rgba(44,100,181,.12)}
+.select-filter[data-has-filter="true"] .select-filter__input{border-color:#0f766e;background:#f0fdfa;box-shadow:0 0 0 3px rgba(15,118,110,.16)}
+.select-filter--disabled .select-filter__input{background:#f3f4f6;color:#6b7280;cursor:not-allowed}
+
 /* Header & Logo ---------------------------------------------------- */
 header{background:#003a70;display:flex;align-items:center;gap:1rem;padding:.3rem 1rem}
 header img{height:120px;background:#fff;padding:6px;border-radius:6px}

@@ -65,6 +65,8 @@
     <div id="result" role="status" aria-live="polite" aria-atomic="true"></div>
 </main>
 
+<script src="/js/select-filter.js"></script>
+
 <script>
     function back(){
         dynamicForm.classList.add('hidden'); step1.classList.remove('hidden');
@@ -354,6 +356,24 @@
         }
     }
 
+    function notifySelectOptions(select, detail={}){
+        if(!select) return;
+        const rawOptions = Array.isArray(detail.options) ? detail.options : [];
+        const normalizedOptions = rawOptions
+            .map(entry => entry ? {
+                value: entry.value!=null?String(entry.value):'',
+                label: entry.label!=null?String(entry.label):String(entry.value??''),
+                disabled: entry.disabled ?? false
+            } : null)
+            .filter(Boolean);
+        const payload = {
+            options: normalizedOptions,
+            placeholder: detail.placeholder ?? '',
+            hasPlaceholder: detail.hasPlaceholder !== false
+        };
+        select.dispatchEvent(new CustomEvent('options-populated',{detail:payload}));
+    }
+
     function populateOptions(select,entries,options={}){
         const {placeholder='Bitte auswählen', allowEmpty=false}=options;
         const currentValue = select.value;
@@ -377,6 +397,8 @@
         }else{
             select.value='';
         }
+        const placeholderText = placeholder===null?'':placeholder;
+        notifySelectOptions(select,{options:entries, placeholder:placeholderText, hasPlaceholder:placeholder!==null});
     }
 
     function updateValueProxy(id,value){
@@ -455,6 +477,7 @@
         if(!source){
             select.innerHTML='';
             select.disabled=true;
+            notifySelectOptions(select,{options:[], placeholder:'', hasPlaceholder:false});
             if(manual){
                 manual.value='';
                 if(container.dataset.mode!=='manual') updateValueProxy(id,'');
@@ -465,6 +488,7 @@
 
         select.disabled=true;
         select.innerHTML=`<option value="">Lade Daten…</option>`;
+        notifySelectOptions(select,{options:[], placeholder:'Lade Daten…', hasPlaceholder:true});
         try{
             const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
             const data=await fetchJson(url);
@@ -755,6 +779,9 @@
         }
         f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
         initializeAsyncSelects(f);
+        if(window.enhanceSelectFiltering){
+            window.enhanceSelectFiltering(f);
+        }
         applyInputEnhancements(f);
         if(t==='Radio') wireRadioLogic();
     }
