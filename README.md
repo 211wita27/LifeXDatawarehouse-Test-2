@@ -19,7 +19,7 @@ Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben*
 - **Datenmodell** – relationale H2-In-Memory-DB (Account, Project, Site, Server …)
 - **API** – CRUD-REST-Controller je Entität + generischer GenericCrudController (GET/POST/PUT/DELETE)
 - **Reporting & Export** – KPI-Übersichten mit Filtern, KPI-Kacheln sowie CSV/PDF-Export via `/api/reports/*`
-- **Indexing** – Apache Lucene 8 (Full-Reindex alle 60 s + inkrementeller Camel-Sync, manuelles Reindexing über UI)
+- **Indexing** – Apache Lucene 8 (Full-Reindex alle 3 min + inkrementeller Camel-Sync, manuelles Reindexing über UI)
 - **Suche**
   - Globale Lucene-Query-Syntax im Dashboard und via `/search?q=`
   - Normale Suchbegriffe werden automatisch zu Präfix-Suchen (`beispiel*`)
