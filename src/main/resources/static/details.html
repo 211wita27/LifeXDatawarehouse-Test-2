@@ -84,6 +84,7 @@
     let detailBodyEl;
     let detailStatusEl;
     let editButtonEl;
+    const defaultDocumentTitle = document.title || 'Detailansicht';
 
     function escapeHtml(value){
         const map = {
@@ -367,12 +368,22 @@
         ensureDetailLayout();
         if(!detailTitleEl) return { baseLabel: '', captionText: '' };
         const typeLabelRaw = currentRawType || currentTable || '';
-        const baseLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Eintrag';
+        const typeLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Eintrag';
+        const explicitLabel = (labelFor(currentRawType, currentRow) ?? '').toString().trim();
+        const baseLabel = explicitLabel || typeLabel;
         const headingLabel = escapeHtml(baseLabel);
         const idChip = formatIdChip(currentId);
         detailTitleEl.innerHTML = idChip ? `${headingLabel} ${idChip}` : headingLabel;
         const captionIdRaw = (currentId ?? '').toString().trim();
-        const captionText = captionIdRaw ? `${baseLabel} ${captionIdRaw.startsWith('#') ? captionIdRaw : `#${captionIdRaw}`}` : baseLabel;
+        const captionId = captionIdRaw ? (captionIdRaw.startsWith('#') ? captionIdRaw : `#${captionIdRaw}`) : '';
+        const captionText = captionId ? `${baseLabel} ${captionId}` : baseLabel;
+        if(baseLabel){
+            detailBox.setAttribute('aria-label', baseLabel);
+            document.title = `${baseLabel} – ${defaultDocumentTitle}`;
+        }else{
+            detailBox.removeAttribute('aria-label');
+            document.title = defaultDocumentTitle;
+        }
         return { baseLabel, captionText };
     }
 
