@@ -298,6 +298,49 @@ Object.entries(ENTITY_TYPE_MAP).forEach(([key, info]) => {
     });
 });
 
+const COLUMN_DETAIL_TYPE_OVERRIDE_SUFFIXES = [
+    ['deploymentvariantguid', 'deploymentvariant'],
+    ['deploymentvariantid', 'deploymentvariant'],
+    ['servicecontractguid', 'servicecontract'],
+    ['servicecontractid', 'servicecontract'],
+    ['contractguid', 'servicecontract'],
+    ['contractid', 'servicecontract'],
+    ['projectguid', 'project'],
+    ['projectid', 'project'],
+    ['addressguid', 'address'],
+    ['addressid', 'address'],
+    ['accountguid', 'account'],
+    ['accountid', 'account'],
+    ['siteguid', 'site'],
+    ['siteid', 'site'],
+    ['assignedclientguid', 'client'],
+    ['assignedclientid', 'client'],
+    ['clientguid', 'client'],
+    ['clientid', 'client'],
+    ['softwareguid', 'software'],
+    ['softwareid', 'software'],
+];
+
+function resolveColumnDetailType(columnName, fallbackDetailType) {
+    const fallback = fallbackDetailType || null;
+    const normalized = normalizeTypeKey(columnName);
+    if (!normalized) return fallback;
+    for (const [suffix, detailType] of COLUMN_DETAIL_TYPE_OVERRIDE_SUFFIXES) {
+        if (normalized.endsWith(suffix)) {
+            return detailType;
+        }
+    }
+    return fallback;
+}
+
+function getTypeTokenForDetailType(detailType) {
+    const key = normalizeTypeKey(detailType);
+    if (!key) return null;
+    const info = ENTITY_TYPE_MAP[key];
+    if (info && info.typeToken) return info.typeToken;
+    return `type:${key}`;
+}
+
 function tableForType(t){
     const key = normalizeTypeKey(t);
     const info = ENTITY_TYPE_MAP[key];
@@ -656,12 +699,11 @@ async function runLucene(q) {
 }
 
 /* Tabellen-Viewer (100-Zeilen-Preview) */
-function tableQuickFilterQuery(tableName, columnKey, rawValue) {
+function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
     const column = (columnKey === undefined || columnKey === null) ? '' : String(columnKey);
     const raw = (rawValue === undefined || rawValue === null) ? '' : String(rawValue).trim();
     if (!column || !raw) return null;
 
-    const { typeToken } = getTableTypeInfo(tableName);
     const typeFilter = typeToken || '';
 
     const isIdColumn = /(id|guid)$/i.test(column);
@@ -686,20 +728,24 @@ function renderTableCell(tableName, columnName, value) {
     const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
     const raw = (value === undefined || value === null) ? '' : String(value);
     const isIdColumn = /(id|guid)$/i.test(key);
+    const tableTypeInfo = getTableTypeInfo(tableName);
+    const columnDetailType = resolveColumnDetailType(key, tableTypeInfo.detailType);
+    const columnTypeToken = columnDetailType === tableTypeInfo.detailType
+        ? tableTypeInfo.typeToken
+        : getTypeTokenForDetailType(columnDetailType);
 
     if (isIdColumn && raw) {
         const rendered = renderIdDisplay(value);
         const titleAttr = escapeHtml(rendered.title);
-        const { detailType } = getTableTypeInfo(tableName);
-        if (detailType) {
-            const href = `/details.html?type=${encodeURIComponent(detailType)}&id=${encodeURIComponent(raw)}`;
+        if (columnDetailType) {
+            const href = `/details.html?type=${encodeURIComponent(columnDetailType)}&id=${encodeURIComponent(raw)}`;
             const hrefAttr = escapeHtml(href);
             return `<td title="${titleAttr}"><a class="table-id-link" href="${hrefAttr}">${rendered.inner}</a></td>`;
         }
         return `<td title="${titleAttr}">${rendered.inner}</td>`;
     }
 
-    const query = tableQuickFilterQuery(tableName, key, value);
+    const query = tableQuickFilterQuery(columnTypeToken, key, value);
     const queryAttr = query ? escapeHtml(query) : '';
 
     if (query && raw) {
