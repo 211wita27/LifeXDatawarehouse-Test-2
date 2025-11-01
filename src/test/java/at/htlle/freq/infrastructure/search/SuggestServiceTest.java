@@ -1,6 +1,7 @@
 package at.htlle.freq.infrastructure.search;
 
 import at.htlle.freq.infrastructure.lucene.LuceneIndexServiceImpl;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -9,18 +10,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SuggestServiceTest {
 
-    private final Path indexPath = Paths.get("target", "lifex-index");
-    private final LuceneIndexServiceImpl lucene = new LuceneIndexServiceImpl();
-    private final SuggestService service = new SuggestService();
+    private LuceneIndexServiceImpl lucene;
+    private SuggestService service;
+    private Path indexPath;
 
     @BeforeEach
-    void cleanIndex() throws IOException {
-        if (Files.exists(indexPath)) {
+    void setUp() throws IOException {
+        indexPath = Paths.get("target", "test-index", UUID.randomUUID().toString());
+        lucene = new LuceneIndexServiceImpl();
+        lucene.setIndexPath(indexPath);
+        service = new SuggestService(lucene);
+    }
+
+    @AfterEach
+    void tearDown() throws IOException {
+        if (indexPath != null && Files.exists(indexPath)) {
             Files.walk(indexPath)
                     .sorted((a, b) -> b.compareTo(a))
                     .forEach(p -> {
@@ -31,7 +41,6 @@ class SuggestServiceTest {
                         }
                     });
         }
-        Files.createDirectories(indexPath);
     }
 
     @Test
