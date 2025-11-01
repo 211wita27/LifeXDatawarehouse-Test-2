@@ -9,6 +9,19 @@
         .container{max-width:900px;margin:2rem auto;background:#fff;padding:2rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
         fieldset{border:none;margin:0;padding:0}
         label{display:flex;align-items:center;gap:.6rem;margin-top:1rem;flex-wrap:wrap}
+        .async-label{display:grid;grid-template-columns:minmax(220px,max-content) 1fr;align-items:start;gap:1rem}
+        .async-label-text{white-space:nowrap}
+        .async-select{display:flex;align-items:center;gap:.6rem;flex-wrap:nowrap}
+        .async-select>.filterable-select{flex:1 1 auto;min-width:0;margin-top:0}
+        .async-select>.manual-input{flex:1 1 220px;min-width:0;margin-top:0}
+        .async-select .toggle-manual{margin-top:0;white-space:nowrap}
+        @media (max-width:720px){
+            .async-label{grid-template-columns:1fr}
+            .async-label-text{white-space:normal}
+            .async-select{flex-wrap:wrap}
+            .async-select>.manual-input{flex:1 1 100%}
+            .async-select .toggle-manual{margin-top:.3rem}
+        }
         input,select,button{padding:.4rem;font-size:1rem;margin-top:.3rem}
         button{cursor:pointer;margin-top:1.2rem}
         .success{color:green}.error{color:red}
@@ -659,7 +672,7 @@
         asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
         const manualValue = value ?? '';
-        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="manual-input hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
         const comboHtml=createFilterableSelect(id,{
             options:[],
             placeholder,
@@ -668,7 +681,7 @@
             value:value??'',
             emptyText
         });
-        return `<label class="async-label" for="${escapeAttr(id)}-input">${label}
+        return `<label class="async-label" for="${escapeAttr(id)}-input"><span class="async-label-text">${label}</span>
             <div class="async-select" data-field="${id}" data-source="${sourceKey}" data-required="${required}"${dependsOn?` data-depends-on="${dependsOn}"`:''}>
                 ${comboHtml}
                 ${manualInput}
