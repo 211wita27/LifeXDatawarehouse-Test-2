@@ -30,14 +30,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     private static final Logger log = LoggerFactory.getLogger(LuceneIndexServiceImpl.class);
-    private static final Path INDEX_DIR = Paths.get(LuceneIndexService.INDEX_PATH);
-
     private static final String TYPE_ACCOUNT = "account";
     private static final String TYPE_ADDRESS = "address";
     private static final String TYPE_AUDIO_DEVICE = "audioDevice";
@@ -75,7 +74,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     private final StandardAnalyzer analyzer = new StandardAnalyzer();
     private final ReentrantLock writerLock = new ReentrantLock();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final Path storedLicenseJsonPath = INDEX_DIR.resolve("license-fragments.json");
+    private volatile Path indexDir;
+    private volatile Path storedLicenseJsonPath;
 
     public LuceneIndexServiceImpl() {
         this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
@@ -114,12 +114,18 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         this.siteRepository = siteRepository;
         this.softwareRepository = softwareRepository;
         this.upgradePlanRepository = upgradePlanRepository;
+        setIndexPath(Paths.get(LuceneIndexService.INDEX_PATH));
+    }
+
+    public LuceneIndexServiceImpl(Path indexPath) {
+        this();
+        setIndexPath(indexPath);
     }
 
     private void withWriter(WriterCallback callback) throws IOException {
         writerLock.lock();
         try {
-            Files.createDirectories(INDEX_DIR);
+            Files.createDirectories(indexDir);
 
             for (int attempt = 0; attempt < 2; attempt++) {
                 IndexWriterConfig config = new IndexWriterConfig(analyzer);
@@ -127,7 +133,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
                 FSDirectory dir = null;
                 try {
-                    dir = FSDirectory.open(INDEX_DIR);
+                    dir = FSDirectory.open(indexDir);
                     try (IndexWriter writer = new IndexWriter(dir, config)) {
                         callback.execute(writer);
                         return;
@@ -158,16 +164,16 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         if (dir != null) {
             boolean lockAcquired = false;
             try (Lock luceneLock = dir.obtainLock(IndexWriter.WRITE_LOCK_NAME)) {
-                log.warn("Lucene-Lock auf {} wurde über obtainLock() freigegeben.", INDEX_DIR.toAbsolutePath());
+                log.warn("Lucene-Lock auf {} wurde über obtainLock() freigegeben.", indexDir.toAbsolutePath());
                 lockAcquired = true;
             } catch (LockObtainFailedException e) {
-                log.debug("Lucene-Lock auf {} ist weiterhin aktiv und konnte nicht übernommen werden.", INDEX_DIR.toAbsolutePath());
+                log.debug("Lucene-Lock auf {} ist weiterhin aktiv und konnte nicht übernommen werden.", indexDir.toAbsolutePath());
             } catch (IOException e) {
-                log.error("Konnte Lucene-Lock nicht freigeben: {}", INDEX_DIR.toAbsolutePath(), e);
+                log.error("Konnte Lucene-Lock nicht freigeben: {}", indexDir.toAbsolutePath(), e);
             }
 
             if (lockAcquired) {
-                Path lockFile = INDEX_DIR.resolve("write.lock");
+                Path lockFile = indexDir.resolve("write.lock");
                 try {
                     if (Files.deleteIfExists(lockFile)) {
                         log.warn("Verwaiste Lucene write.lock entfernt ({}).", lockFile.toAbsolutePath());
@@ -208,15 +214,27 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     private DirectoryReader openReader() throws IOException {
-        if (!Files.isDirectory(INDEX_DIR)) {
+        if (!Files.isDirectory(indexDir)) {
             return null;
         }
-        FSDirectory dir = FSDirectory.open(INDEX_DIR);
+        FSDirectory dir = FSDirectory.open(indexDir);
         if (!DirectoryReader.indexExists(dir)) {
             dir.close();
             return null;
         }
         return DirectoryReader.open(dir);
+    }
+
+    @Override
+    public synchronized Path getIndexPath() {
+        return Objects.requireNonNull(indexDir, "indexPath is not configured");
+    }
+
+    @Override
+    public synchronized void setIndexPath(Path indexPath) {
+        Path normalized = Objects.requireNonNull(indexPath, "indexPath must not be null");
+        this.indexDir = normalized;
+        this.storedLicenseJsonPath = this.indexDir.resolve("license-fragments.json");
     }
 
     // =================== Search ===================
@@ -490,7 +508,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             writer.deleteAll();
             writer.commit();
         });
-        log.info("Lucene-Index geleert (bereit für Reindex) am {}", INDEX_DIR.toAbsolutePath());
+        log.info("Lucene-Index geleert (bereit für Reindex) am {}", indexDir.toAbsolutePath());
     }
 
     private String progressKey(String type) {

@@ -10,36 +10,26 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class LuceneIndexServiceImplTest {
 
     private LuceneIndexServiceImpl service;
-    private final Path indexPath = Paths.get("target", "lifex-index");
+    private Path indexPath;
 
     @BeforeEach
     void setUp() throws IOException {
-        if (Files.exists(indexPath)) {
-            Files.walk(indexPath)
-                    .sorted((a, b) -> b.compareTo(a))
-                    .forEach(p -> {
-                        try {
-                            Files.delete(p);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
-        }
-        Files.createDirectories(indexPath);
+        indexPath = Path.of("target", "test-index", UUID.randomUUID().toString());
         service = new LuceneIndexServiceImpl();
+        service.setIndexPath(indexPath);
     }
 
     @AfterEach
     void tearDown() throws IOException {
-        if (Files.exists(indexPath)) {
+        if (indexPath != null && Files.exists(indexPath)) {
             Files.walk(indexPath)
                     .sorted((a, b) -> b.compareTo(a))
                     .forEach(p -> {

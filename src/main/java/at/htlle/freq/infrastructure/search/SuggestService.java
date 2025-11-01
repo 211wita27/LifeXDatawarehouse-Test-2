@@ -11,7 +11,7 @@ import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -22,6 +22,12 @@ import java.util.stream.Collectors;
  */
 @Service
 public class SuggestService {
+
+    private final LuceneIndexService lucene;
+
+    public SuggestService(LuceneIndexService lucene) {
+        this.lucene = lucene;
+    }
 
     // Felder, aus denen Vorschläge kommen sollen
     private static final List<String> FIELDS = List.of(
@@ -38,7 +44,9 @@ public class SuggestService {
 
         Set<String> out = new LinkedHashSet<>();
 
-        try (Directory dir = FSDirectory.open(Paths.get(LuceneIndexService.INDEX_PATH));
+        Path indexPath = lucene.getIndexPath();
+
+        try (Directory dir = FSDirectory.open(indexPath);
              DirectoryReader rd = DirectoryReader.open(dir)) {
 
             outer:
