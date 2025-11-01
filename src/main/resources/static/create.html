@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Datensatz anlegen</title>
+    <title>Create Record</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
@@ -18,23 +18,23 @@
     </style>
 </head>
 <body>
-<a href="#main" class="skip-link">Zum Inhalt springen</a>
+<a href="#main" class="skip-link">Skip to content</a>
 
 <header>
     <img src="/img/LifeXDatawarehouseLogo.png" alt="">
-    <nav aria-label="Hauptnavigation">
+    <nav aria-label="Main navigation">
         <a href="/index.html">Dashboard</a>
-        <a href="/create.html" aria-current="page">Daten anlegen</a>
+        <a href="/create.html" aria-current="page">Create data</a>
         <a href="/reports.html">Reports</a>
     </nav>
 </header>
 
 <main id="main" class="container" aria-live="polite">
-    <h1>Datensatz anlegen</h1>
+    <h1>Create a record</h1>
 
     <!-- Schritt 1 -->
     <fieldset id="step1">
-        <label for="entity">Welche Entität möchtest du anlegen?</label>
+        <label for="entity">Which entity would you like to create?</label>
         <select id="entity">
             <option value="Account">Account</option>
             <option value="Address">Address</option>
@@ -53,7 +53,7 @@
             <option value="UpgradePlan">UpgradePlan</option>
             <option value="WorkingPosition">Client (WorkingPosition)</option>
         </select>
-        <button onclick="next()">Weiter</button>
+        <button onclick="next()">Next</button>
     </fieldset>
 
     <!-- Schritt 2 -->
@@ -149,11 +149,11 @@
     const createFilterableSelect=(id,config={})=>{
         const {
             options=[],
-            placeholder='Bitte auswählen',
+            placeholder='Please select',
             required=true,
             name=id,
             value='',
-            emptyText='Keine Treffer',
+            emptyText='No matches',
             className=''
         }=config||{};
         const choices=toChoices(options);
@@ -172,7 +172,7 @@
             <div class="${componentClasses.join(' ')}" data-component="filterable-select" data-field="${escapeAttr(id)}" data-placeholder="${safePlaceholder}" data-empty-text="${safeEmptyText}" data-required="${required?'true':'false'}" data-initial-value="${hiddenValue}" data-options="${safeOptions}">
                 <div class="filterable-select-control">
                     <input type="text" id="${escapeAttr(id)}-input" class="filterable-select-input" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${escapeAttr(id)}-list" autocomplete="off" placeholder="${safePlaceholder}" value="${textValue}" ${required?'required':''}>
-                    <button type="button" class="filterable-select-toggle" aria-label="Aus Liste auswählen" aria-expanded="false" tabindex="-1"></button>
+                    <button type="button" class="filterable-select-toggle" aria-label="Select from list" aria-expanded="false" tabindex="-1"></button>
                 </div>
                 <div class="filterable-select-dropdown" id="${escapeAttr(id)}-list" role="listbox" aria-live="polite"></div>
                 <input type="hidden" id="${escapeAttr(id)}" name="${escapeAttr(name)}" value="${hiddenValue}">
@@ -232,7 +232,7 @@
         if(!state.filtered.length){
             const empty=document.createElement('div');
             empty.className='filterable-select-empty';
-            empty.textContent=container.dataset.emptyText||'Keine Treffer';
+            empty.textContent=container.dataset.emptyText||'No matches';
             dropdown.appendChild(empty);
             state.activeIndex=-1;
             input?.removeAttribute('aria-activedescendant');
@@ -265,7 +265,7 @@
         if(selected){
             input.setCustomValidity('');
         }else if(required){
-            input.setCustomValidity('Bitte wähle einen Eintrag aus der Liste aus.');
+            input.setCustomValidity('Please choose an entry from the list.');
         }else{
             input.setCustomValidity('');
         }
@@ -547,7 +547,7 @@
     const addSel=(id,lbl,choices,opts=true)=>{
         const config=(opts&&typeof opts==='object'&&!Array.isArray(opts))?{...opts}:{required:opts};
         if(config.required===undefined) config.required=true;
-        const placeholder=config.placeholder??'Bitte auswählen';
+        const placeholder=config.placeholder??'Please select';
         const values=Array.isArray(choices)?toChoices(choices):toChoices([]);
         const selectedValue=config.value??'';
         const comboHtml=createFilterableSelect(id,{
@@ -556,7 +556,7 @@
             required:config.required!==false,
             name:config.name||id,
             value:selectedValue,
-            emptyText:config.emptyText||'Keine Treffer'
+            emptyText:config.emptyText||'No matches'
         });
         return `<label for="${escapeAttr(id)}-input">${lbl}${comboHtml}</label>`;
     };
@@ -638,7 +638,7 @@
 
     function showEntityMessage(entityKey, context={}){
         if(!window.entityHint || !window.entityContext) return;
-        const base=formConfig.getMessage(entityKey)||`Du legst gerade einen Datensatz der Entität ${entityKey} an.`;
+        const base=formConfig.getMessage(entityKey)||`You are currently creating a record for entity ${entityKey}.`;
         const parts=[];
         if(context.accountId) parts.push(`Account ${shortContextId(context.accountId)}`);
         if(context.projectId) parts.push(`Project ${shortContextId(context.projectId)}`);
@@ -647,7 +647,7 @@
         let message=base;
         if(parts.length){
             const trimmed=base.endsWith('.')?base.slice(0,-1):base;
-            message=`${trimmed} für ${parts.join(' und ')} an.`;
+            message=`${trimmed} for ${parts.join(' and ')}.`;
         }
         entityHint.textContent=message;
         entityContext.classList.remove('hidden');
@@ -655,11 +655,11 @@
     }
 
     function renderAsyncSelect(id,label,sourceKey,options={}){
-        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null, name=null, value=null} = options;
+        const {required=true, allowManual=true, placeholder='Please select', dependsOn=null, emptyText='No entries available', filter=null, name=null, value=null} = options;
         asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
-        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
+        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter free text</button>` : '';
         const manualValue = value ?? '';
-        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="Enter UUID" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
         const comboHtml=createFilterableSelect(id,{
             options:[],
             placeholder,
@@ -725,7 +725,7 @@
             }
             manual.classList.remove('hidden');
             if(required) manual.setAttribute('required',''); else manual.removeAttribute('required');
-            if(toggle) toggle.textContent='Aus Liste wählen';
+            if(toggle) toggle.textContent='Choose from list';
             container.dataset.mode='manual';
             updateValueProxy(id,manual.value?.trim()||'');
         }else{
@@ -742,7 +742,7 @@
                     clearFilterableSelection(combo,{notify:false});
                 }
             }
-            if(toggle) toggle.textContent='Freitext eingeben';
+            if(toggle) toggle.textContent='Enter free text';
             container.dataset.mode='select';
             const hidden=document.getElementById(id);
             updateValueProxy(id,hidden?hidden.value:'');
@@ -761,7 +761,7 @@
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
             setFilterableSelectOptions(combo,[]);
-            updateFilterableSelectPlaceholder(combo,'Bitte zuerst die abhängige Auswahl treffen');
+            updateFilterableSelectPlaceholder(combo,'Please complete the dependent selection first');
             setFilterableSelectDisabled(combo,true);
             if(manual){
                 manual.value='';
@@ -773,7 +773,7 @@
         const source=formConfig.asyncSources[config.sourceKey];
         if(!source){
             setFilterableSelectOptions(combo,[]);
-            updateFilterableSelectPlaceholder(combo,'Keine Quelle verfügbar');
+            updateFilterableSelectPlaceholder(combo,'No source available');
             setFilterableSelectDisabled(combo,true);
             if(manual){
                 manual.value='';
@@ -784,7 +784,7 @@
         }
 
         setFilterableSelectDisabled(combo,true);
-        updateFilterableSelectPlaceholder(combo,'Lade Daten…');
+        updateFilterableSelectPlaceholder(combo,'Loading data…');
         try{
             const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
             const data=await fetchJson(url);
@@ -793,7 +793,7 @@
                 entries=entries.filter(entry=>config.filter(entry, dependencyValue));
             }
             setFilterableSelectOptions(combo,entries);
-            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : (config.placeholder||'Bitte auswählen');
+            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : (config.placeholder||'Please select');
             updateFilterableSelectPlaceholder(combo,placeholderText);
             setFilterableSelectDisabled(combo,false);
             const initialValue=config.initialValue;
@@ -823,7 +823,7 @@
         }catch(err){
             console.error(err);
             setFilterableSelectOptions(combo,[]);
-            updateFilterableSelectPlaceholder(combo,'Fehler beim Laden');
+            updateFilterableSelectPlaceholder(combo,'Error loading data');
             setFilterableSelectDisabled(combo,true);
             if(config.allowManual!==false){
                 setManualMode(id,'manual');
@@ -957,9 +957,9 @@
             h+= renderFieldFromConfig(field, overrides);
         });
         if(!fields.length){
-            h+= `<p class="form-hint">Für ${escapeAttr(t)} liegt keine Feldkonfiguration vor.</p>`;
+            h+= `<p class="form-hint">No field configuration is available for ${escapeAttr(t)}.</p>`;
         }
-        h+= `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
+        h+= `<button>Save</button> <button type="button" onclick="back()">Back</button>`;
         f.innerHTML = h;
         initializeFilterableSelects(f);
         initializeAsyncSelects(f);
@@ -1104,7 +1104,7 @@
                 const tenantRaw=v('tenant');
                 const tenantCount=tenantRaw ? Number(tenantRaw) : null;
                 if(tenantRaw && Number.isNaN(tenantCount)){
-                    fail('TenantCount muss eine Zahl sein.');
+                    fail('Tenant count must be a number.');
                     return;
                 }
                 p={
@@ -1192,7 +1192,7 @@
                 url='/row/country';
                 const countryCode=(v('countryCode')||'').toUpperCase();
                 if(countryCode.length!==2){
-                    fail('Country Code muss genau 2 Zeichen haben.');
+                    fail('Country code must be exactly 2 characters.');
                     return;
                 }
                 p={
@@ -1206,7 +1206,7 @@
                 const cityId=(v('cityId')||'').toUpperCase();
                 const country=v('countryCode');
                 if(!country){
-                    fail('Bitte ein Land auswählen.');
+                    fail('Please select a country.');
                     return;
                 }
                 p={
@@ -1243,7 +1243,7 @@
                 const plannedStart=v('plannedStart');
                 const plannedEnd=v('plannedEnd');
                 if(plannedStart && plannedEnd && plannedStart>plannedEnd){
-                    fail('Das geplante Ende muss nach dem Start liegen.');
+                    fail('The planned end must be after the start.');
                     return;
                 }
                 p={
@@ -1262,7 +1262,7 @@
                 const startDate=v('startDate');
                 const endDate=v('endDate');
                 if(startDate && endDate && startDate>endDate){
-                    fail('Enddatum darf nicht vor dem Startdatum liegen.');
+                    fail('End date cannot be before the start date.');
                     return;
                 }
                 p={
@@ -1278,14 +1278,14 @@
         }
 
         if(!url){
-            fail('Unbekannte Entität oder fehlende URL.');
+            fail('Unknown entity or missing URL.');
             return;
         }
 
         try{
             const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
             if(r.ok){
-                result.innerHTML=`<p class="success">✔ ${t} angelegt.</p>`;
+                result.innerHTML=`<p class="success">✔ ${t} created.</p>`;
                 e.target.reset();
                 const ids=Object.keys(asyncSelectConfigs);
                 for(const id of ids){
@@ -1294,7 +1294,7 @@
             }
             else   {result.innerHTML=`<p class="error" role="alert">${await r.text()}</p>`;}
         }catch{
-            result.innerHTML=`<p class="error" role="alert">Netzwerkfehler.</p>`;
+            result.innerHTML=`<p class="error" role="alert">Network error.</p>`;
         }finally{
             result.removeAttribute('aria-busy');
         }
