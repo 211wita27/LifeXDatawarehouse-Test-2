@@ -146,15 +146,419 @@
         });
     };
 
+    const createFilterableSelect=(id,config={})=>{
+        const {
+            options=[],
+            placeholder='Bitte auswählen',
+            required=true,
+            name=id,
+            value='',
+            emptyText='Keine Treffer',
+            className=''
+        }=config||{};
+        const choices=toChoices(options);
+        const normalizedValue=value??'';
+        const selected=choices.find(choice=>choice && String(choice.value)===String(normalizedValue));
+        const displayValue=selected?selected.label:(normalizedValue||'');
+        const componentClasses=['filterable-select'];
+        if(className) componentClasses.push(className);
+        if(required) componentClasses.push('is-required');
+        const safeOptions=escapeAttr(JSON.stringify(choices));
+        const safePlaceholder=escapeAttr(placeholder);
+        const safeEmptyText=escapeAttr(emptyText);
+        const hiddenValue=escapeAttr(normalizedValue);
+        const textValue=escapeAttr(displayValue);
+        return `
+            <div class="${componentClasses.join(' ')}" data-component="filterable-select" data-field="${escapeAttr(id)}" data-placeholder="${safePlaceholder}" data-empty-text="${safeEmptyText}" data-required="${required?'true':'false'}" data-initial-value="${hiddenValue}" data-options="${safeOptions}">
+                <div class="filterable-select-control">
+                    <input type="text" id="${escapeAttr(id)}-input" class="filterable-select-input" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="${escapeAttr(id)}-list" autocomplete="off" placeholder="${safePlaceholder}" value="${textValue}" ${required?'required':''}>
+                    <button type="button" class="filterable-select-toggle" aria-label="Aus Liste auswählen" aria-expanded="false" tabindex="-1"></button>
+                </div>
+                <div class="filterable-select-dropdown" id="${escapeAttr(id)}-list" role="listbox" aria-live="polite"></div>
+                <input type="hidden" id="${escapeAttr(id)}" name="${escapeAttr(name)}" value="${hiddenValue}">
+            </div>
+        `;
+    };
+
+    const filterableSelectState=new WeakMap();
+
+    const getFilterableSelectState=container=>{
+        if(!filterableSelectState.has(container)){
+            filterableSelectState.set(container,{options:[],filtered:[],activeIndex:-1});
+        }
+        return filterableSelectState.get(container);
+    };
+
+    const getFilterableElements=container=>({
+        input:container.querySelector('.filterable-select-input'),
+        dropdown:container.querySelector('.filterable-select-dropdown'),
+        toggle:container.querySelector('.filterable-select-toggle')
+    });
+
+    const updateFilterableSelectPlaceholder=(container,text)=>{
+        if(!container) return;
+        container.dataset.placeholder=text??'';
+        const {input}=getFilterableElements(container);
+        if(input){
+            input.placeholder=text??'';
+        }
+    };
+
+    const setFilterableSelectDisabled=(container,disabled)=>{
+        const {input,toggle}=getFilterableElements(container);
+        if(disabled){
+            container.classList.add('is-disabled');
+            if(input){
+                input.setAttribute('disabled','');
+                input.setAttribute('aria-disabled','true');
+            }
+            toggle?.setAttribute('disabled','');
+        }else{
+            container.classList.remove('is-disabled');
+            if(input){
+                input.removeAttribute('disabled');
+                input.removeAttribute('aria-disabled');
+            }
+            toggle?.removeAttribute('disabled');
+        }
+    };
+
+    const renderFilterableOptions=container=>{
+        const state=getFilterableSelectState(container);
+        const {dropdown,input}=getFilterableElements(container);
+        if(!dropdown) return;
+        dropdown.innerHTML='';
+        const currentValue=container.dataset.currentValue??'';
+        if(!state.filtered.length){
+            const empty=document.createElement('div');
+            empty.className='filterable-select-empty';
+            empty.textContent=container.dataset.emptyText||'Keine Treffer';
+            dropdown.appendChild(empty);
+            state.activeIndex=-1;
+            input?.removeAttribute('aria-activedescendant');
+            return;
+        }
+        state.filtered.forEach((option,index)=>{
+            const item=document.createElement('div');
+            item.className='filterable-select-option';
+            item.setAttribute('role','option');
+            item.dataset.optionIndex=String(index);
+            item.dataset.value=option.value;
+            item.id=`${container.dataset.field}-option-${index}`;
+            item.textContent=option.label;
+            if(String(option.value)===String(currentValue)){
+                item.setAttribute('aria-selected','true');
+            }
+            if(index===state.activeIndex){
+                item.classList.add('is-active');
+                input?.setAttribute('aria-activedescendant',item.id);
+            }
+            dropdown.appendChild(item);
+        });
+    };
+
+    const markFilterableSelection=(container,selected)=>{
+        const required=container.dataset.required==='true';
+        container.dataset.hasSelection=selected?'true':'false';
+        const {input}=getFilterableElements(container);
+        if(!input) return;
+        if(selected){
+            input.setCustomValidity('');
+        }else if(required){
+            input.setCustomValidity('Bitte wähle einen Eintrag aus der Liste aus.');
+        }else{
+            input.setCustomValidity('');
+        }
+    };
+
+    const closeFilterableSelect=container=>{
+        const {input,toggle,dropdown}=getFilterableElements(container);
+        container.classList.remove('is-open');
+        input?.setAttribute('aria-expanded','false');
+        toggle?.setAttribute('aria-expanded','false');
+        dropdown?.setAttribute('aria-hidden','true');
+    };
+
+    const openFilterableSelect=container=>{
+        const {input,toggle,dropdown}=getFilterableElements(container);
+        container.classList.add('is-open');
+        input?.setAttribute('aria-expanded','true');
+        toggle?.setAttribute('aria-expanded','true');
+        dropdown?.removeAttribute('aria-hidden');
+    };
+
+    const clearFilterableSelection=(container,{notify=true}={})=>{
+        const fieldId=container.dataset.field;
+        const {input}=getFilterableElements(container);
+        container.dataset.currentValue='';
+        if(input){
+            input.value='';
+        }
+        markFilterableSelection(container,false);
+        if(notify){
+            updateValueProxy(fieldId,'');
+        }else{
+            const hidden=document.getElementById(fieldId);
+            if(hidden) hidden.value='';
+        }
+    };
+
+    const commitFilterableSelection=(container,option,{silent=false}={})=>{
+        if(!option){
+            clearFilterableSelection(container,{notify:!silent});
+            return;
+        }
+        const fieldId=container.dataset.field;
+        const {input}=getFilterableElements(container);
+        container.dataset.currentValue=option.value;
+        if(input){
+            input.value=option.label;
+            input.dataset.userEdited='true';
+        }
+        markFilterableSelection(container,true);
+        if(silent){
+            const hidden=document.getElementById(fieldId);
+            if(hidden) hidden.value=option.value;
+        }else{
+            updateValueProxy(fieldId,option.value);
+        }
+        closeFilterableSelect(container);
+    };
+
+    const syncFilterableSelectionDisplay=container=>{
+        const state=getFilterableSelectState(container);
+        const currentValue=container.dataset.currentValue??'';
+        const {input}=getFilterableElements(container);
+        const match=state.options.find(opt=>String(opt.value)===String(currentValue));
+        if(match){
+            if(input) input.value=match.label;
+            markFilterableSelection(container,true);
+        }else{
+            if(input) input.value=currentValue||'';
+            if(currentValue){
+                markFilterableSelection(container,true);
+            }else{
+                markFilterableSelection(container,false);
+            }
+        }
+    };
+
+    const filterFilterableOptions=(container,term='')=>{
+        const state=getFilterableSelectState(container);
+        const normalized=term.trim().toLowerCase();
+        if(!normalized){
+            state.filtered=[...state.options];
+        }else{
+            state.filtered=state.options.filter(opt=>{
+                const label=(opt.label||'').toLowerCase();
+                const value=String(opt.value||'').toLowerCase();
+                return label.includes(normalized)||value.includes(normalized);
+            });
+        }
+        state.activeIndex=state.filtered.length?0:-1;
+        renderFilterableOptions(container);
+    };
+
+    const moveFilterableHighlight=(container,delta)=>{
+        const state=getFilterableSelectState(container);
+        if(!state.filtered.length) return;
+        state.activeIndex=Math.max(0,Math.min(state.filtered.length-1,state.activeIndex+delta));
+        const {dropdown,input}=getFilterableElements(container);
+        const options=dropdown?.querySelectorAll('.filterable-select-option')||[];
+        options.forEach((optionEl,index)=>{
+            if(index===state.activeIndex){
+                optionEl.classList.add('is-active');
+                input?.setAttribute('aria-activedescendant',optionEl.id);
+                optionEl.scrollIntoView({block:'nearest'});
+            }else{
+                optionEl.classList.remove('is-active');
+            }
+        });
+    };
+
+    const setFilterableSelectOptions=(container,options=[])=>{
+        const state=getFilterableSelectState(container);
+        state.options=toChoices(options);
+        state.filtered=[...state.options];
+        state.activeIndex=state.filtered.length?0:-1;
+        renderFilterableOptions(container);
+        syncFilterableSelectionDisplay(container);
+    };
+
+    const applyFilterableValue=(container,value,{silent=false}={})=>{
+        const state=getFilterableSelectState(container);
+        if(!value){
+            clearFilterableSelection(container,{notify:!silent});
+            return false;
+        }
+        const match=state.options.find(opt=>String(opt.value)===String(value));
+        if(match){
+            commitFilterableSelection(container,match,{silent});
+            return true;
+        }
+        container.dataset.currentValue=value;
+        syncFilterableSelectionDisplay(container);
+        if(!silent){
+            const hidden=document.getElementById(container.dataset.field);
+            if(hidden) hidden.value=value;
+        }
+        return false;
+    };
+
+    const initializeFilterableSelect=container=>{
+        if(!container || container.dataset.enhanced==='true') return;
+        container.dataset.enhanced='true';
+        const state=getFilterableSelectState(container);
+        let initialOptions=[];
+        try{
+            initialOptions=JSON.parse(container.dataset.options||'[]');
+        }catch{
+            initialOptions=[];
+        }
+        state.options=toChoices(initialOptions);
+        state.filtered=[...state.options];
+        state.activeIndex=state.filtered.length?0:-1;
+        const fieldId=container.dataset.field;
+        const {input,dropdown,toggle}=getFilterableElements(container);
+        const hidden=document.getElementById(fieldId);
+        const initialValue=hidden?.value||container.dataset.initialValue||'';
+        container.dataset.currentValue=initialValue;
+        if(input){
+            input.dataset.userEdited='';
+            input.placeholder=container.dataset.placeholder||input.placeholder||'';
+        }
+        renderFilterableOptions(container);
+        syncFilterableSelectionDisplay(container);
+        closeFilterableSelect(container);
+
+        const handleInput=()=>{
+            const current=input?.value||'';
+            input.dataset.userEdited='true';
+            filterFilterableOptions(container,current);
+            openFilterableSelect(container);
+            markFilterableSelection(container,false);
+            updateValueProxy(fieldId,'');
+        };
+
+        input?.addEventListener('input',handleInput);
+        input?.addEventListener('focus',()=>{
+            filterFilterableOptions(container,input.value||'');
+            openFilterableSelect(container);
+        });
+        input?.addEventListener('keydown',event=>{
+            const stateNow=getFilterableSelectState(container);
+            switch(event.key){
+                case 'ArrowDown':
+                    event.preventDefault();
+                    if(container.classList.contains('is-open')===false){
+                        filterFilterableOptions(container,input.value||'');
+                        openFilterableSelect(container);
+                    }else{
+                        moveFilterableHighlight(container,1);
+                    }
+                    break;
+                case 'ArrowUp':
+                    event.preventDefault();
+                    if(container.classList.contains('is-open')===false){
+                        filterFilterableOptions(container,input.value||'');
+                        openFilterableSelect(container);
+                        moveFilterableHighlight(container,-1);
+                    }else{
+                        moveFilterableHighlight(container,-1);
+                    }
+                    break;
+                case 'Enter':
+                    if(container.classList.contains('is-open') && stateNow.activeIndex>=0){
+                        event.preventDefault();
+                        commitFilterableSelection(container,stateNow.filtered[stateNow.activeIndex]);
+                    }
+                    break;
+                case 'Escape':
+                    if(container.classList.contains('is-open')){
+                        event.preventDefault();
+                        closeFilterableSelect(container);
+                    }else{
+                        clearFilterableSelection(container);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        });
+        input?.addEventListener('blur',()=>{
+            setTimeout(()=>{
+                if(container.contains(document.activeElement)) return;
+                closeFilterableSelect(container);
+                if(container.dataset.hasSelection==='true') return;
+                const currentValue=(input?.value||'').trim();
+                if(!currentValue){
+                    clearFilterableSelection(container);
+                    return;
+                }
+                const lower=currentValue.toLowerCase();
+                const stateNow=getFilterableSelectState(container);
+                const match=stateNow.options.find(opt=>opt.label.toLowerCase()===lower||String(opt.value).toLowerCase()===lower);
+                if(match){
+                    commitFilterableSelection(container,match);
+                }
+            },120);
+        });
+
+        dropdown?.addEventListener('mousedown',event=>event.preventDefault());
+        dropdown?.addEventListener('click',event=>{
+            const optionEl=event.target.closest('.filterable-select-option');
+            if(!optionEl) return;
+            const index=Number(optionEl.dataset.optionIndex);
+            const stateNow=getFilterableSelectState(container);
+            const option=stateNow.filtered[index];
+            if(option){
+                commitFilterableSelection(container,option);
+            }
+        });
+
+        toggle?.addEventListener('mousedown',event=>event.preventDefault());
+        toggle?.addEventListener('click',()=>{
+            if(container.classList.contains('is-open')){
+                closeFilterableSelect(container);
+            }else{
+                filterFilterableOptions(container,input?.value||'');
+                openFilterableSelect(container);
+                input?.focus();
+            }
+        });
+    };
+
+    let globalFilterableHandlerAttached=false;
+
+    const initializeFilterableSelects=(root=document)=>{
+        (root.querySelectorAll?.('[data-component="filterable-select"]')||[]).forEach(container=>initializeFilterableSelect(container));
+        if(!globalFilterableHandlerAttached){
+            document.addEventListener('click',event=>{
+                document.querySelectorAll('[data-component="filterable-select"].is-open').forEach(container=>{
+                    if(!container.contains(event.target)){
+                        closeFilterableSelect(container);
+                    }
+                });
+            });
+            globalFilterableHandlerAttached=true;
+        }
+    };
+
     const addSel=(id,lbl,choices,opts=true)=>{
         const config=(opts&&typeof opts==='object'&&!Array.isArray(opts))?{...opts}:{required:opts};
         if(config.required===undefined) config.required=true;
         const placeholder=config.placeholder??'Please select';
         const values=Array.isArray(choices)?toChoices(choices):toChoices([]);
         const selectedValue=config.value??'';
-        const selectAttrs=renderAttributes({id,name:config.name||id,required:config.required!==false});
-        const optionsHtml=values.map(o=>`<option value="${escapeAttr(o.value)}"${String(o.value)===String(selectedValue)?' selected':''}>${escapeAttr(o.label)}</option>`).join('');
-        return `<label for="${id}">${lbl}<select${selectAttrs}><option value="">${escapeAttr(placeholder)}</option>${optionsHtml}</select></label>`;
+        const comboHtml=createFilterableSelect(id,{
+            options:values,
+            placeholder,
+            required:config.required!==false,
+            name:config.name||id,
+            value:selectedValue,
+            emptyText:config.emptyText||'Keine Treffer'
+        });
+        return `<label for="${escapeAttr(id)}-input">${lbl}${comboHtml}</label>`;
     };
 
     const formConfig = window.FormConfig || {getFields:()=>[], asyncSources:{}, getMessage:()=>undefined};
@@ -260,11 +664,8 @@
         const hiddenValue = value!=null ? ` value="${escapeAttr(value)}"` : '';
         return `<label class="async-label">${label}
             <div class="async-select" data-field="${id}" data-source="${sourceKey}" data-required="${required}"${dependsOn?` data-depends-on="${dependsOn}"`:''}>
-                <select id="${id}-select" ${required?'required':''}>
-                    <option value="">${placeholder}</option>
-                </select>
+                ${comboHtml}
                 ${manualInput}
-                <input type="hidden" id="${id}"${hiddenName}${hiddenValue}>
                 ${manualToggle}
             </div>
         </label>`;
@@ -323,21 +724,24 @@
     function setManualMode(id,mode){
         const container=getAsyncContainer(id);
         if(!container) return;
-        const select=container.querySelector('select');
+        const combo=container.querySelector('[data-component="filterable-select"]');
         const manual=container.querySelector(`#${id}-manual`);
         const toggle=container.querySelector('.toggle-manual');
         const required=container.dataset.required==='true';
         if(!manual){
             container.dataset.mode='select';
-            select?.classList.remove('hidden');
-            if(select && required) select.setAttribute('required','');
+            if(combo){
+                combo.classList.remove('hidden');
+                setFilterableSelectDisabled(combo,false);
+            }
             return;
         }
         if(mode==='manual'){
-            select?.classList.add('hidden');
-            if(select) select.removeAttribute('required');
-            select?.setAttribute('aria-hidden','true');
-            if(select) select.disabled=true;
+            if(combo){
+                closeFilterableSelect(combo);
+                combo.classList.add('hidden');
+                setFilterableSelectDisabled(combo,true);
+            }
             manual.classList.remove('hidden');
             if(required) manual.setAttribute('required',''); else manual.removeAttribute('required');
             if(toggle) toggle.textContent='Choose from list';
@@ -346,15 +750,21 @@
         }else{
             manual.classList.add('hidden');
             manual.removeAttribute('required');
-            select?.classList.remove('hidden');
-            if(select) {
-                select.removeAttribute('aria-hidden');
-                if(required) select.setAttribute('required','');
-                select.disabled = select.options.length===0;
+            if(combo){
+                combo.classList.remove('hidden');
+                setFilterableSelectDisabled(combo,false);
+                const hidden=document.getElementById(id);
+                const current=hidden?.value||'';
+                if(current){
+                    applyFilterableValue(combo,current,{silent:true});
+                }else{
+                    clearFilterableSelection(combo,{notify:false});
+                }
             }
             if(toggle) toggle.textContent='Enter manually';
             container.dataset.mode='select';
-            updateValueProxy(id,select?select.value:'');
+            const hidden=document.getElementById(id);
+            updateValueProxy(id,hidden?hidden.value:'');
         }
     }
 
@@ -363,9 +773,9 @@
         if(!config) return;
         const container=getAsyncContainer(id);
         if(!container) return;
-        const select=container.querySelector('select');
+        const combo=container.querySelector('[data-component="filterable-select"]');
         const manual=container.querySelector(`#${id}-manual`);
-        if(!select) return;
+        if(!combo) return;
         const dependencyId=config.dependsOn;
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
@@ -381,8 +791,9 @@
 
         const source=formConfig.asyncSources[config.sourceKey];
         if(!source){
-            select.innerHTML='';
-            select.disabled=true;
+            setFilterableSelectOptions(combo,[]);
+            updateFilterableSelectPlaceholder(combo,'Keine Quelle verfügbar');
+            setFilterableSelectDisabled(combo,true);
             if(manual){
                 manual.value='';
                 if(container.dataset.mode!=='manual') updateValueProxy(id,'');
@@ -400,17 +811,23 @@
             if(typeof config.filter==='function'){
                 entries=entries.filter(entry=>config.filter(entry, dependencyValue));
             }
-            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : config.placeholder;
-            populateOptions(select,entries,{placeholder:placeholderText,allowEmpty:!config.required});
-            select.disabled=entries.length===0;
+            setFilterableSelectOptions(combo,entries);
+            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : (config.placeholder||'Bitte auswählen');
+            updateFilterableSelectPlaceholder(combo,placeholderText);
+            setFilterableSelectDisabled(combo,false);
             const initialValue=config.initialValue;
             if(container.dataset.mode!=='manual'){
-                if(initialValue!=null && entries.some(entry=>entry && String(entry.value)===String(initialValue))){
-                    select.value=initialValue;
-                    updateValueProxy(id,initialValue);
+                const hidden=document.getElementById(id);
+                const desiredValue=initialValue!=null?initialValue:(hidden?.value||'');
+                if(desiredValue){
+                    const matched=applyFilterableValue(combo,desiredValue,{silent:true});
+                    if(matched){
+                        updateValueProxy(id,desiredValue);
+                    }else{
+                        clearFilterableSelection(combo,{notify:true});
+                    }
                 }else{
-                    select.value='';
-                    updateValueProxy(id,'');
+                    clearFilterableSelection(combo,{notify:true});
                 }
             }
             if(entries.length===0 && config.allowManual!==false){
@@ -436,23 +853,19 @@
         Object.keys(asyncSelectConfigs).forEach(id=>{
             const container=form.querySelector(`.async-select[data-field="${id}"]`);
             if(!container) return;
-            const select=container.querySelector('select');
+            const combo=container.querySelector('[data-component="filterable-select"]');
             const manual=container.querySelector(`#${id}-manual`);
             const toggle=container.querySelector('.toggle-manual');
             const hidden=form.querySelector(`#${id}`);
             const cfg=asyncSelectConfigs[id]||{};
-            if(hidden) hidden.value=cfg.initialValue??'';
+            if(hidden && cfg.initialValue!=null) hidden.value=cfg.initialValue;
+            if(combo && cfg.initialValue!=null){
+                applyFilterableValue(combo,cfg.initialValue,{silent:true});
+            }
             if(manual && cfg.initialValue!=null){
                 manual.value=cfg.initialValue;
             }
             container.dataset.mode='select';
-            if(select){
-                select.addEventListener('change',()=>{
-                    if(container.dataset.mode!=='manual'){
-                        updateValueProxy(id,select.value);
-                    }
-                });
-            }
             if(manual){
                 manual.addEventListener('input',()=>{
                     if(container.dataset.mode==='manual'){
@@ -491,18 +904,13 @@
             if(container.dataset.mode==='manual'){
                 setManualMode(fieldId,'select');
             }
-            const select=container.querySelector('select');
+            const combo=container.querySelector('[data-component="filterable-select"]');
             const manual=container.querySelector(`#${fieldId}-manual`);
             const toggle=container.querySelector('.toggle-manual');
             await loadOptionsForField(fieldId);
             let applied=false;
-            if(select){
-                const match=Array.from(select.options||[]).find(opt=>opt.value===normalized);
-                if(match){
-                    select.value=normalized;
-                    select.dispatchEvent(new Event('change',{bubbles:true}));
-                    applied=true;
-                }
+            if(combo){
+                applied=applyFilterableValue(combo,normalized);
             }
             if(!applied && manual){
                 setManualMode(fieldId,'manual');
@@ -514,9 +922,8 @@
                 updateValueProxy(fieldId,normalized);
             }
             if(options.lock){
-                if(select){
-                    select.disabled=true;
-                    select.setAttribute('aria-disabled','true');
+                if(combo){
+                    setFilterableSelectDisabled(combo,true);
                 }
                 if(manual){
                     manual.disabled=true;
@@ -572,6 +979,7 @@
         }
         h+= `<button>Save</button> <button type="button" onclick="back()">Back</button>`;
         f.innerHTML = h;
+        initializeFilterableSelects(f);
         initializeAsyncSelects(f);
         applyInputEnhancements(f);
         showEntityMessage(t, {});
