@@ -88,7 +88,7 @@ function parseBool(value){
     if (typeof value === 'boolean') return value;
     const normalized = String(value ?? '').trim().toLowerCase();
     if (!normalized) return false;
-    return ['true','1','yes','y','on','ja','wahr'].includes(normalized);
+    return ['true','1','yes','y','ja','wahr'].includes(normalized);
 }
 
 function formatDateLabel(value){
@@ -97,7 +97,7 @@ function formatDateLabel(value){
     if (!str) return '';
     const timestamp = Date.parse(str);
     if (!Number.isNaN(timestamp)){
-        return new Date(timestamp).toLocaleDateString('en-GB', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        return new Date(timestamp).toLocaleDateString('de-AT', { year: 'numeric', month: '2-digit', day: '2-digit' });
     }
     return str.length > 16 ? str.slice(0, 16) : str;
 }
@@ -137,14 +137,14 @@ async function loadShortcutItems(kind){
                     if (sap) meta.push(`SAP ${sap}`);
                     if (bundle) meta.push(bundle);
                     if (variant) meta.push(`Var. ${shortUuid(variant)}`);
-                    const primary = (name && name.trim()) || (sap ? `Project ${sap}` : (id ? `Project ${shortUuid(id)}` : 'Project'));
+                    const primary = (name && name.trim()) || (sap ? `Projekt ${sap}` : (id ? `Projekt ${shortUuid(id)}` : 'Projekt'));
                     return {
                         primary,
                         secondary: meta.join(' · ') || null,
                         action: id ? { type: 'details', entity: 'project', id } : null,
                     };
                 })
-                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'en', { sensitivity: 'base' }));
+                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'de', { sensitivity: 'base' }));
         }
         case 'servicecontracts-progress': {
             const res = await fetch(`${API.table}/servicecontract?limit=200`);
@@ -163,9 +163,9 @@ async function loadShortcutItems(kind){
                     const range     = formatDateRange(val(row,'StartDate'), val(row,'EndDate'));
                     const meta = [];
                     if (range) meta.push(range);
-                    if (projectId) meta.push(`Project ${shortUuid(projectId)}`);
+                    if (projectId) meta.push(`Projekt ${shortUuid(projectId)}`);
                     if (siteId) meta.push(`Site ${shortUuid(siteId)}`);
-                    const primary = number ? `Contract ${number}` : (id ? `Contract ${shortUuid(id)}` : 'Contract');
+                    const primary = number ? `Vertrag ${number}` : (id ? `Vertrag ${shortUuid(id)}` : 'Vertrag');
                     const query   = id ? `id:"${id}"` : null;
                     return {
                         primary,
@@ -173,7 +173,7 @@ async function loadShortcutItems(kind){
                         action: query ? { type: 'search', query } : null,
                     };
                 })
-                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'en', { sensitivity: 'base' }));
+                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'de', { sensitivity: 'base' }));
         }
         case 'sites-bravo': {
             const res = await fetch('/sites');
@@ -192,8 +192,8 @@ async function loadShortcutItems(kind){
                     const zone      = val(row,'FireZone');
                     const meta = [];
                     if (zone) meta.push(`Zone ${zone}`);
-                    if (tenants !== undefined && tenants !== null && tenants !== '') meta.push(`${tenants} units`);
-                    if (projectId) meta.push(`Project ${shortUuid(projectId)}`);
+                    if (tenants !== undefined && tenants !== null && tenants !== '') meta.push(`${tenants} Einheiten`);
+                    if (projectId) meta.push(`Projekt ${shortUuid(projectId)}`);
                     const primary = (name && name.trim()) || (id ? `Site ${shortUuid(id)}` : 'Site');
                     return {
                         primary,
@@ -201,7 +201,7 @@ async function loadShortcutItems(kind){
                         action: id ? { type: 'details', entity: 'site', id } : null,
                     };
                 })
-                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'en', { sensitivity: 'base' }));
+                .sort((a, b) => (a.primary || '').localeCompare(b.primary || '', 'de', { sensitivity: 'base' }));
         }
         default:
             return [];
@@ -211,10 +211,10 @@ async function loadShortcutItems(kind){
 function renderShortcutItems(listEl, items){
     if (!listEl) return;
     if (!Array.isArray(items) || !items.length){
-        listEl.innerHTML = '<p class="sc-status empty">(no entries)</p>';
+        listEl.innerHTML = '<p class="sc-status empty">(keine Einträge)</p>';
         return;
     }
-    const summary = `<div class="sc-summary">${items.length} entries</div>`;
+    const summary = `<div class="sc-summary">${items.length} Einträge</div>`;
     const list = items.map((item, idx) => `
         <li role="listitem">
             <button type="button" class="sc-item${item.action ? '' : ' is-static'}" data-idx="${idx}">
@@ -248,26 +248,26 @@ async function renderShortcutList(sc, listEl){
     if (!sc || !listEl) return;
     const kind = sc.dataset.list;
     if (!kind){
-        listEl.innerHTML = '<p class="sc-status empty">(no data source)</p>';
+        listEl.innerHTML = '<p class="sc-status empty">(keine Datenquelle)</p>';
         return;
     }
-    listEl.innerHTML = '<p class="sc-status">Loading …</p>';
+    listEl.innerHTML = '<p class="sc-status">Lade …</p>';
     try {
         const items = await getShortcutItems(kind);
         renderShortcutItems(listEl, items);
     } catch (err){
-        console.error('Shortcut list could not be loaded', err);
-        listEl.innerHTML = '<p class="sc-status error">Error loading data.</p>';
+        console.error('Shortcut-Liste konnte nicht geladen werden', err);
+        listEl.innerHTML = '<p class="sc-status error">Fehler beim Laden der Daten.</p>';
     }
 }
 
-/* ---------- Lucene heuristics & QoL query builder ---------- */
+/* ---------- Lucene-Heuristik & QoL-Query-Builder ---------- */
 function looksLikeLucene(q){
     if (!q) return false;
     const s = q.trim();
     return s.includes(':') || s.includes('"') || s.includes(' AND ') || s.includes(' OR ') || s.endsWith('*');
 }
-/** User-friendly: apply prefix search (token*) for plain text */
+/** Nutzerfreundlich: bei „normalem Text“ automatisch Prefix-Suche (token*) */
 function buildUserQuery(raw){
     const s = (raw || '').trim();
     if (!s) return s;
@@ -417,7 +417,7 @@ function formatPreview(type, row){
         const sap=val(row,'ProjectSAPID');    if (sap) parts.push('SAP '+sap);
     } else if (t==='site'){
         const fz=val(row,'FireZone'); if (fz) parts.push('Zone '+fz);
-        const tc=val(row,'TenantCount'); if (tc!=null) parts.push(tc+' tenants');
+        const tc=val(row,'TenantCount'); if (tc!=null) parts.push(tc+' Tenants');
     } else if (t==='server'){
         ['ServerBrand','ServerOS','VirtualPlatform'].forEach(k=>{
             const v=val(row,k); if(v) parts.push(v);
@@ -441,7 +441,7 @@ function formatPreview(type, row){
         const name = val(row,'CountryName'); if (name) parts.push(name);
     } else if (t==='city'){
         const name = val(row,'CityName'); if (name) parts.push(name);
-        const cc = val(row,'CountryCode'); if (cc) parts.push(`Country ${cc}`);
+        const cc = val(row,'CountryCode'); if (cc) parts.push(`Land ${cc}`);
     } else if (t==='address'){
         const street = val(row,'Street'); if (street) parts.push(street);
         const cityId = val(row,'CityID'); if (cityId) parts.push(`City ${shortUuid(cityId)}`);
@@ -449,7 +449,7 @@ function formatPreview(type, row){
         const variant = val(row,'VariantName'); if (variant) parts.push(variant);
         const code = val(row,'VariantCode'); if (code) parts.push(`#${code}`);
         const active = val(row,'IsActive');
-        if (active !== undefined && active !== null) parts.push(parseBool(active) ? 'active' : 'inactive');
+        if (active !== undefined && active !== null) parts.push(parseBool(active) ? 'aktiv' : 'inaktiv');
     } else if (t==='software'){
         const name = val(row,'Name'); if (name) parts.push(name);
         const release = val(row,'Release'); if (release) parts.push(`Release ${release}`);
@@ -461,9 +461,9 @@ function formatPreview(type, row){
     } else if (t==='upgradeplan'){
         const status = val(row,'Status'); if (status) parts.push(status);
         const window = formatDateRange(val(row,'PlannedWindowStart'), val(row,'PlannedWindowEnd')); if (window) parts.push(window);
-        const createdBy = val(row,'CreatedBy'); if (createdBy) parts.push(`by ${createdBy}`);
+        const createdBy = val(row,'CreatedBy'); if (createdBy) parts.push(`von ${createdBy}`);
     } else if (t==='servicecontract'){
-        const number = val(row,'ContractNumber'); if (number) parts.push(`Contract ${number}`);
+        const number = val(row,'ContractNumber'); if (number) parts.push(`Vertrag ${number}`);
         const status = val(row,'Status'); if (status) parts.push(status);
         const duration = formatDateRange(val(row,'StartDate'), val(row,'EndDate')); if (duration) parts.push(duration);
     }
@@ -484,12 +484,12 @@ async function enrichRows(hits){
     await Promise.allSettled(jobs);
 }
 
-/* ===================== Event wiring ===================== */
+/* ===================== Event-Wiring ===================== */
 function wireEvents() {
-    // Main search button
+    // Hauptsuche (Button)
     searchBtn.onclick = () => runSearch(searchInput.value);
 
-    // Enter → search | Tab → accept top suggestion and search immediately
+    // Enter → suchen | Tab → Top-Vorschlag übernehmen + sofort suchen
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             runSearch(searchInput.value);
@@ -502,7 +502,7 @@ function wireEvents() {
         }
     });
 
-    // Selecting a datalist entry with the mouse → search automatically
+    // Auswahl eines datalist-Eintrags per Maus → automatisch suchen
     searchInput.addEventListener('change', () => {
         if ((searchInput.value || '').trim()) runSearch(searchInput.value);
     });
@@ -519,19 +519,19 @@ function wireEvents() {
         } catch {}
     }, 180));
 
-    // Reindex (sidebar button)
+    // Reindex (rechter Button)
     if (idxBtnSide) idxBtnSide.onclick = () => startReindex(idxBtnSide);
 
-    // Poll progress regularly
+    // Fortschritt regelmäßig prüfen
     setInterval(pollProgress, 50);
     pollProgress();
 
-    // Initialize shortcuts including ARIA wiring
+    // Shortcuts initialisieren inkl. ARIA
     setupShortcuts();
 }
 document.addEventListener('DOMContentLoaded', wireEvents);
 
-// Find and accept top suggestion (case-insensitive); true = applied
+// Top-Suggestion finden/übernehmen (case-insensitive); true = übernommen
 function completeFromSuggestions(){
     if (!sugList) return false;
     const cur = (searchInput.value || '').trim().toLowerCase();
@@ -547,14 +547,14 @@ function completeFromSuggestions(){
     return true;
 }
 
-// Trigger a reindex and immediately start polling
+// Startet den Reindex und stößt sofort ein Polling an
 async function startReindex(btn) {
     if (btn) btn.disabled = true;
     try {
         await fetch(API.reindex, { method: 'POST' });
         await pollProgress();
     } catch (e) {
-        console.error('Failed to start reindex', e);
+        console.error('Reindex-Start fehlgeschlagen', e);
     } finally {
         await sleep(150);
         if (btn) btn.disabled = false;
@@ -584,12 +584,12 @@ function setupShortcuts() {
 
         if (hasList) {
             if (listEl && !listEl.innerHTML.trim()) {
-                listEl.innerHTML = '<p class="sc-status empty">No data loaded yet.</p>';
+                listEl.innerHTML = '<p class="sc-status empty">Noch keine Daten geladen.</p>';
             }
         } else if (inputEl) {
             inputEl.value = readQuery();
-            inputEl.placeholder = 'Lucene query';
-            inputEl.setAttribute('aria-label','Lucene query');
+            inputEl.placeholder = 'Lucene-Query';
+            inputEl.setAttribute('aria-label','Lucene-Query');
         }
 
         if (panel) {
@@ -629,7 +629,7 @@ function setupShortcuts() {
         renameBtn.addEventListener('click', (ev) => {
             ev.stopPropagation();
             const current = labelEl.textContent.trim();
-            const name = prompt('New name for the shortcut:', current);
+            const name = prompt('Neuer Name für den Shortcut:', current);
             if (name && name.trim()) {
                 labelEl.textContent = name.trim();
                 writeLabel(labelEl.textContent);
@@ -655,7 +655,7 @@ function setupShortcuts() {
     });
 }
 
-/* ===================== Search ===================== */
+/* ===================== Suche ===================== */
 function runSearch(raw){
     const prepared = buildUserQuery(raw);
     runLucene(prepared);
@@ -701,7 +701,7 @@ async function runLucene(q) {
         const res  = await fetch(`${API.search}?q=${encodeURIComponent(query)}`);
         const hits = await res.json();
         if (!Array.isArray(hits) || !hits.length) {
-            resultArea.textContent = '(no matches)';
+            resultArea.textContent = '(keine Treffer)';
             return;
         }
 
@@ -723,7 +723,7 @@ async function runLucene(q) {
         resultArea.innerHTML = `
       <div class="table-scroll">
         <table>
-          <tr><th>Type</th><th>ID</th><th>Text / Snippet</th><th>Info</th></tr>
+          <tr><th>Typ</th><th>ID</th><th>Text / Snippet</th><th>Info</th></tr>
           ${rows}
         </table>
       </div>`;
@@ -731,13 +731,13 @@ async function runLucene(q) {
         enrichRows(hits);
 
     } catch (e) {
-        resultArea.innerHTML = `<p id="error" role="alert">Error: ${e}</p>`;
+        resultArea.innerHTML = `<p id="error" role="alert">Fehler: ${e}</p>`;
     } finally {
         setBusy(resultArea, false);
     }
 }
 
-/* Table viewer (100-row preview) */
+/* Tabellen-Viewer (100-Zeilen-Preview) */
 function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
     const column = (columnKey === undefined || columnKey === null) ? '' : String(columnKey);
     const raw = (rawValue === undefined || rawValue === null) ? '' : String(rawValue).trim();
@@ -799,7 +799,7 @@ async function showTable(name) {
         setBusy(resultArea, true);
         const res  = await fetch(`${API.table}/${encodeURIComponent(name)}`);
         const rows = await res.json();
-        if (!Array.isArray(rows) || !rows.length) { resultArea.textContent = '(empty)'; return; }
+        if (!Array.isArray(rows) || !rows.length) { resultArea.textContent = '(leer)'; return; }
 
         const cols = Object.keys(rows[0]);
         const hdr  = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('');
@@ -819,19 +819,19 @@ async function showTable(name) {
          </table>
        </div>`;
     } catch (e) {
-        resultArea.innerHTML = `<p id="error" role="alert">Error: ${e}</p>`;
+        resultArea.innerHTML = `<p id="error" role="alert">Fehler: ${e}</p>`;
     } finally {
         setBusy(resultArea, false);
     }
 }
 
-/* Details navigation (details.html) */
+/* Details-Navigation (details.html) */
 function toDetails(type, id) {
     location.href = `/details.html?type=${encodeURIComponent(type)}&id=${id}`;
 }
 window.toDetails = toDetails;
 
-/* ===================== Progress indicator ===================== */
+/* ===================== Fortschrittsanzeige ===================== */
 async function pollProgress() {
     try {
         const r = await fetch(API.progress);

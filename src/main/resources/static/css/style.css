@@ -51,7 +51,7 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 #search-input::-ms-clear{display:none}
 #search-btn{padding:.45rem 1rem;cursor:pointer}
 
-/* ===============  Blue button styling (for reindex) ====== */
+/* ===============  Blaues Button-Design (für Neu indexieren) ====== */
 .btn-primary,
 #idx-reindex-side{
     background:#0067c2;
