@@ -56,7 +56,7 @@
             }
         },
         clients:{
-            url:siteId=>siteId?`/clients?siteId=${encodeURIComponent(siteId)}`:null,
+            url:siteId=>siteId?`/clients?siteId=${encodeURIComponent(siteId)}`:'/clients',
             map:item=>{
                 const value = pick(item,'clientID','clientId','ClientID');
                 const name = pick(item,'clientName','ClientName');
