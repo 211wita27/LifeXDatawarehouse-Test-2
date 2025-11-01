@@ -65,6 +65,7 @@
     <div id="result" role="status" aria-live="polite" aria-atomic="true"></div>
 </main>
 
+<script src="/js/form-config.js"></script>
 <script>
     function back(){
         dynamicForm.classList.add('hidden'); step1.classList.remove('hidden');
@@ -150,147 +151,71 @@
         if(config.required===undefined) config.required=true;
         const placeholder=config.placeholder??'Bitte auswählen';
         const values=Array.isArray(choices)?toChoices(choices):toChoices([]);
-        const selectAttrs=renderAttributes({id,name:id,required:config.required!==false});
-        const optionsHtml=values.map(o=>`<option value="${escapeAttr(o.value)}">${escapeAttr(o.label)}</option>`).join('');
+        const selectedValue=config.value??'';
+        const selectAttrs=renderAttributes({id,name:config.name||id,required:config.required!==false});
+        const optionsHtml=values.map(o=>`<option value="${escapeAttr(o.value)}"${String(o.value)===String(selectedValue)?' selected':''}>${escapeAttr(o.label)}</option>`).join('');
         return `<label for="${id}">${lbl}<select${selectAttrs}><option value="">${escapeAttr(placeholder)}</option>${optionsHtml}</select></label>`;
     };
 
-    const pick = (obj,...keys)=>{
-        if(!obj) return undefined;
-        const entries = Object.keys(obj);
-        for(const key of keys){
-            if(key==null) continue;
-            if(obj[key]!==undefined && obj[key]!==null) return obj[key];
-            const match = entries.find(k=>k.toLowerCase()===String(key).toLowerCase());
-            if(match && obj[match]!==undefined && obj[match]!==null) return obj[match];
-        }
-        return undefined;
-    };
-
-    const formatLabel = (name,value)=>{
-        if(!value) return '';
-        if(!name) return value;
-        const short = String(value).split('-')[0];
-        return `${name} (${short})`;
-    };
-
-    const asyncSources = {
-        accounts:{
-            url:'/accounts',
-            map:item=>{
-                const value = pick(item,'accountID','accountId','AccountID');
-                const name = pick(item,'accountName','AccountName');
-                return value ? {value, label: formatLabel(name,value)} : null;
-            }
-        },
-        addresses:{
-            url:'/addresses',
-            map:item=>{
-                const value = pick(item,'addressID','addressId','AddressID');
-                const street = pick(item,'street','Street');
-                const city = pick(item,'cityID','CityID');
-                const label = street || city ? `${[street,city].filter(Boolean).join(', ')} (${String(value).split('-')[0]})` : value;
-                return value ? {value, label, cityID: pick(item,'cityID','CityID')} : null;
-            }
-        },
-        projects:{
-            url:accountId=>accountId?`/projects?accountId=${encodeURIComponent(accountId)}`:'/projects',
-            map:item=>{
-                const value = pick(item,'projectID','projectId','ProjectID');
-                const name = pick(item,'projectName','ProjectName');
-                const account = pick(item,'accountID','AccountID');
-                return value ? {value, label: formatLabel(name,value), accountID: account} : null;
-            }
-        },
-        sites:{
-            url:projectId=>projectId?`/sites?projectId=${encodeURIComponent(projectId)}`:'/sites',
-            map:item=>{
-                const value = pick(item,'siteID','siteId','SiteID');
-                const name = pick(item,'siteName','SiteName');
-                const project = pick(item,'projectID','ProjectID');
-                return value ? {value, label: formatLabel(name,value), projectID: project} : null;
-            }
-        },
-        clients:{
-            url:siteId=>siteId?`/clients?siteId=${encodeURIComponent(siteId)}`:null,
-            map:item=>{
-                const value = pick(item,'clientID','clientId','ClientID');
-                const name = pick(item,'clientName','ClientName');
-                return value ? {value, label: formatLabel(name,value), siteID: pick(item,'siteID','SiteID')} : null;
-            }
-        },
-        countries:{
-            url:'/table/country',
-            map:item=>{
-                const raw = pick(item,'countryCode','CountryCode','COUNTRYCODE');
-                if(!raw) return null;
-                const value=String(raw).toUpperCase();
-                const name = pick(item,'countryName','CountryName','COUNTRYNAME');
-                const label = name ? `${name} (${value})` : value;
-                return {value, label};
-            }
-        },
-        cities:{
-            url:'/table/city',
-            map:item=>{
-                const value = pick(item,'cityID','CityID','CITYID');
-                if(!value) return null;
-                const name = pick(item,'cityName','CityName','CITYNAME');
-                const country = pick(item,'countryCode','CountryCode','COUNTRYCODE');
-                const countryCode = country ? String(country).toUpperCase() : undefined;
-                const labelParts = [name, countryCode].filter(Boolean);
-                const short = String(value).split('-')[0];
-                const label = labelParts.length>0 ? `${labelParts.join(' • ')} (${short})` : String(value);
-                return {value, label, countryCode};
-            }
-        },
-        software:{
-            url:'/table/software',
-            map:item=>{
-                const value = pick(item,'softwareID','SoftwareID','SOFTWAREID');
-                if(!value) return null;
-                const name = pick(item,'name','Name');
-                const release = pick(item,'release','Release');
-                const labelParts = [name, release].filter(Boolean).join(' • ');
-                const short = String(value).split('-')[0];
-                const label = labelParts ? `${labelParts} (${short})` : String(value);
-                return {value, label};
-            }
-        },
-        deploymentVariants:{
-            url:'/deployment-variants',
-            map:item=>{
-                const value = pick(item,'variantID','variantId','VariantID');
-                if(!value) return null;
-                const code = pick(item,'variantCode','VariantCode');
-                const name = pick(item,'variantName','VariantName');
-                const parts = [code, name].filter(Boolean);
-                const label = parts.length>0 ? parts.join(' – ') : String(value);
-                return {value, label};
-            }
-        }
-    };
+    const formConfig = window.FormConfig || {getFields:()=>[], asyncSources:{}, getMessage:()=>undefined};
 
     let asyncSelectConfigs = {};
 
-    const entityMessages = {
-        Account: 'Du legst gerade einen Account an.',
-        Address: 'Du legst gerade eine Adresse an.',
-        AudioDevice: 'Du legst gerade ein Audiogerät an.',
-        City: 'Du legst gerade eine Stadt an.',
-        Country: 'Du legst gerade ein Land an.',
-        DeploymentVariant: 'Du legst gerade eine Deployment-Variante an.',
-        InstalledSoftware: 'Du legst gerade eine Software-Installation an.',
-        PhoneIntegration: 'Du legst gerade eine Telefonintegration an.',
-        Project: 'Du legst gerade ein Projekt an.',
-        Radio: 'Du legst gerade ein Funkgerät an.',
-        Server: 'Du legst gerade einen Server an.',
-        ServiceContract: 'Du legst gerade einen Servicevertrag an.',
-        Site: 'Du legst gerade einen Standort (Site) an.',
-        Software: 'Du legst gerade einen Software-Datensatz an.',
-        UpgradePlan: 'Du planst gerade ein Software-Upgrade.',
-        WorkingPosition: 'Du legst gerade eine Arbeitsstation (Client) an.'
-    };
+    function resolveDefaultValue(def){
+        if(def.defaultValue===undefined) return undefined;
+        if(typeof def.defaultValue==='function'){
+            try{
+                return def.defaultValue();
+            }catch(err){
+                console.error('Default value error', err);
+                return undefined;
+            }
+        }
+        return def.defaultValue;
+    }
+
+    function renderFieldFromConfig(def, overrides={}){
+        if(!def) return '';
+        const config={...def,...overrides};
+        const component=(config.component||'input').toLowerCase();
+        if(component==='select'){
+            const opts={
+                required: config.required!==false,
+                placeholder: config.placeholder,
+                name: config.name,
+                value: config.value
+            };
+            return addSel(config.id, config.label, config.options||[], opts);
+        }
+        if(component==='asyncselect'){
+            return renderAsyncSelect(config.id, config.label, config.source, {
+                required: config.required!==false,
+                allowManual: config.allowManual!==false,
+                placeholder: config.placeholder,
+                dependsOn: config.dependsOn||null,
+                emptyText: config.emptyText,
+                name: config.name,
+                value: config.value
+            });
+        }
+        const inputConfig={
+            required: config.required!==false,
+            type: config.inputType||config.type||'text',
+            placeholder: config.placeholder,
+            pattern: config.pattern,
+            maxlength: config.maxlength,
+            minlength: config.minlength,
+            min: config.min,
+            max: config.max,
+            step: config.step,
+            autocomplete: config.autocomplete,
+            inputmode: config.inputmode,
+            dataset: config.dataset,
+            name: config.name,
+            value: config.value
+        };
+        return add(config.id, config.label, inputConfig);
+    }
 
     function shortContextId(value){
         if(value===undefined || value===null) return '';
@@ -309,7 +234,7 @@
 
     function showEntityMessage(entityKey, context={}){
         if(!window.entityHint || !window.entityContext) return;
-        const base=entityMessages[entityKey]||`Du legst gerade einen Datensatz der Entität ${entityKey} an.`;
+        const base=formConfig.getMessage(entityKey)||`Du legst gerade einen Datensatz der Entität ${entityKey} an.`;
         const parts=[];
         if(context.accountId) parts.push(`Account ${shortContextId(context.accountId)}`);
         if(context.projectId) parts.push(`Project ${shortContextId(context.projectId)}`);
@@ -326,17 +251,20 @@
     }
 
     function renderAsyncSelect(id,label,sourceKey,options={}){
-        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null} = options;
-        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter};
+        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null, name=null, value=null} = options;
+        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
-        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" ${required?'required':''}>` : '';
+        const manualValue = value ?? '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
+        const hiddenName = name ? ` name="${escapeAttr(name)}"` : '';
+        const hiddenValue = value!=null ? ` value="${escapeAttr(value)}"` : '';
         return `<label class="async-label">${label}
             <div class="async-select" data-field="${id}" data-source="${sourceKey}" data-required="${required}"${dependsOn?` data-depends-on="${dependsOn}"`:''}>
                 <select id="${id}-select" ${required?'required':''}>
                     <option value="">${placeholder}</option>
                 </select>
                 ${manualInput}
-                <input type="hidden" id="${id}">
+                <input type="hidden" id="${id}"${hiddenName}${hiddenValue}>
                 ${manualToggle}
             </div>
         </label>`;
@@ -451,7 +379,7 @@
             return;
         }
 
-        const source=asyncSources[config.sourceKey];
+        const source=formConfig.asyncSources[config.sourceKey];
         if(!source){
             select.innerHTML='';
             select.disabled=true;
@@ -475,18 +403,25 @@
             const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : config.placeholder;
             populateOptions(select,entries,{placeholder:placeholderText,allowEmpty:!config.required});
             select.disabled=entries.length===0;
+            const initialValue=config.initialValue;
             if(container.dataset.mode!=='manual'){
-                select.value='';
-                updateValueProxy(id,'');
+                if(initialValue!=null && entries.some(entry=>entry && String(entry.value)===String(initialValue))){
+                    select.value=initialValue;
+                    updateValueProxy(id,initialValue);
+                }else{
+                    select.value='';
+                    updateValueProxy(id,'');
+                }
             }
             if(entries.length===0 && config.allowManual!==false){
                 if(manual){
-                    manual.value='';
+                    manual.value=initialValue??'';
                     setManualMode(id,'manual');
                 }
             }else if(container.dataset.mode!=='manual'){
                 setManualMode(id,'select');
             }
+            config.initialValue=undefined;
         }catch(err){
             console.error(err);
             populateOptions(select,[],{placeholder:'Fehler beim Laden'});
@@ -505,7 +440,11 @@
             const manual=container.querySelector(`#${id}-manual`);
             const toggle=container.querySelector('.toggle-manual');
             const hidden=form.querySelector(`#${id}`);
-            if(hidden) hidden.value='';
+            const cfg=asyncSelectConfigs[id]||{};
+            if(hidden) hidden.value=cfg.initialValue??'';
+            if(manual && cfg.initialValue!=null){
+                manual.value=cfg.initialValue;
+            }
             container.dataset.mode='select';
             if(select){
                 select.addEventListener('change',()=>{
@@ -619,143 +558,23 @@
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
         asyncSelectConfigs = {};
-        showEntityMessage(t, {});
-        switch(t){
-            case 'Account':
-                h+= add('name','Name')
-                    + add('contact','Kontaktperson')
-                    + add('email','E-Mail')
-                    + add('phone','Telefon')
-                    + add('vat','USt-ID')
-                    + add('country','Land');
-                break;
-
-            case 'Address':
-                h+= add('street','Straße')
-                    + renderAsyncSelect('cityID','City auswählen','cities',{allowManual:false, placeholder:'City auswählen'});
-                break;
-
-            case 'AudioDevice':
-                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + add('fw','Firmware')
-                    + addSel('dtype','DeviceType',['HEADSET','SPEAKER','MIC']);
-                break;
-
-            case 'City':
-                h+= add('cityId','CityID',{dataset:{uppercase:true}})
-                    + add('cityName','City Name')
-                    + renderAsyncSelect('countryCode','Country auswählen','countries',{allowManual:false, placeholder:'Land auswählen'});
-                break;
-
-            case 'Country':
-                h+= add('countryCode','Country Code',{pattern:'[A-Za-z]{2}', maxlength:2, dataset:{uppercase:true}, autocomplete:'off'})
-                    + add('countryName','Country Name');
-                break;
-
-            case 'DeploymentVariant':
-                h+= add('variantCode','VariantCode')
-                    + add('variantName','VariantName')
-                    + add('description','Description',{required:false})
-                    + addSel('active','IsActive',['true','false']);
-                break;
-
-            case 'InstalledSoftware':
-                h+= renderAsyncSelect('siteID','Site auswählen','sites',{placeholder:'Site auswählen', allowManual:false})
-                    + renderAsyncSelect('softwareID','Software auswählen','software',{placeholder:'Software auswählen', allowManual:false});
-                break;
-
-            case 'PhoneIntegration':
-                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
-                    + addSel('type','PhoneType',['Emergency','NonEmergency','Both'])
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + add('fw','Firmware');
-                break;
-
-            case 'Project':
-                h+= add('sap','SAP-ID',{required:false})
-                    + add('pname','Projektname')
-                    + renderAsyncSelect('variantId','Deployment-Variante auswählen','deploymentVariants',{placeholder:'Deployment-Variante auswählen'})
-                    + add('bundle','Bundle-Type',{required:false})
-                    + renderAsyncSelect('accId','Account auswählen','accounts')
-                    + renderAsyncSelect('addrId','Adresse auswählen','addresses',{allowManual:false, placeholder:'Adresse auswählen'});
-                break;
-
-            case 'Radio':
-                h+= renderAsyncSelect('siteId','Site auswählen','sites')
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + addSel('mode','Mode',['Analog','Digital'])
-                    + addSel('standard','Digital-Standard',['Airbus','Motorola','ESN','P25','Polycom','Teltronics'],{required:false})
-                    + renderAsyncSelect('client','AssignedClientID (UUID)','clients',{required:false, placeholder:'Client auswählen (optional)', dependsOn:'siteId'});
-                break;
-
-            case 'Server':
-                h+= renderAsyncSelect('siteId','Site auswählen','sites')
-                    + add('name','Servername')
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + add('os','Betriebssystem')
-                    + add('patch','Patch-Level')
-                    + addSel('vplat','Virtual-Platform',['BareMetal','HyperV','vSphere'])
-                    + add('vver','Virtual-Version',{required:false})
-                    + addSel('ha','HighAvailability',['true','false']);
-                break;
-
-            case 'ServiceContract':
-                h+= renderAsyncSelect('accountID','Account auswählen','accounts',{placeholder:'Account auswählen', allowManual:false})
-                    + renderAsyncSelect('projectID','Projekt auswählen','projects',{placeholder:'Projekt auswählen', allowManual:false, dependsOn:'accountID'})
-                    + renderAsyncSelect('siteID','Site auswählen','sites',{placeholder:'Site auswählen', allowManual:false, dependsOn:'projectID', emptyText:'Keine Sites für die Auswahl'})
-                    + add('contractNumber','Vertragsnummer')
-                    + addSel('status','Status',['Planned','Approved','InProgress','Done','Canceled'])
-                    + add('startDate','Startdatum',{type:'date'})
-                    + add('endDate','Enddatum',{type:'date'});
-                break;
-
-            case 'Site':
-                h+= renderAsyncSelect('pId','Project auswählen','projects')
-                    + add('name','Site-Name')
-                    + renderAsyncSelect('addrId','Adresse auswählen','addresses',{allowManual:false, placeholder:'Adresse auswählen'})
-                    + add('zone','FireZone',{required:false})
-                    + add('tenant','TenantCount',{type:'number', min:'0', step:'1', required:false});
-                break;
-
-            case 'Software':
-                h+= add('swName','Name')
-                    + add('swRelease','Release')
-                    + add('swRevision','Revision')
-                    + addSel('swPhase','SupportPhase',['Preview','Production','EoL'])
-                    + add('swLicense','License Model',{required:false})
-                    + add('swEos','End of Sales',{required:false,type:'date'})
-                    + add('swSupportStart','Support Start',{required:false,type:'date'})
-                    + add('swSupportEnd','Support End',{required:false,type:'date'});
-                break;
-
-            case 'UpgradePlan':
-                h+= renderAsyncSelect('siteID','Site auswählen','sites',{placeholder:'Site auswählen', allowManual:false})
-                    + renderAsyncSelect('softwareID','Software auswählen','software',{placeholder:'Software auswählen', allowManual:false})
-                    + add('plannedStart','Geplanter Start',{type:'date'})
-                    + add('plannedEnd','Geplantes Ende',{type:'date'})
-                    + addSel('status','Status',['Planned','Approved','InProgress','Done','Canceled'])
-                    + add('createdAt','Erstellt am',{type:'date', value:new Date().toISOString().split('T')[0]})
-                    + add('createdBy','Erstellt von');
-                break;
-
-            case 'WorkingPosition':
-                h+= renderAsyncSelect('siteId','Site auswählen','sites')
-                    + add('name','Client-Name')
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + add('os','OS')
-                    + add('patch','Patch-Level')
-                    + addSel('install','InstallType',['LOCAL','BROWSER']);
-                break;
+        const fields=formConfig.getFields(t) || [];
+        fields.forEach(field=>{
+            const defaultValue = resolveDefaultValue(field);
+            const overrides = {};
+            if(defaultValue!==undefined){
+                overrides.value=defaultValue;
+            }
+            h+= renderFieldFromConfig(field, overrides);
+        });
+        if(!fields.length){
+            h+= `<p class="form-hint">Für ${escapeAttr(t)} liegt keine Feldkonfiguration vor.</p>`;
         }
-        f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
+        h+= `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
+        f.innerHTML = h;
         initializeAsyncSelects(f);
         applyInputEnhancements(f);
+        showEntityMessage(t, {});
         if(t==='Radio') wireRadioLogic();
     }
 
