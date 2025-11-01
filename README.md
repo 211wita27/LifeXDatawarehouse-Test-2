@@ -217,7 +217,9 @@ erDiagram
 - ✔️ Create-Wizard
 - ✔️ Autocomplete in Suche
 - ✔️ Zusatzinfos in Ergebnisliste
-- ☐ CSV / Excel-Export per REST
+- ✔️ CSV-Export per REST (`/api/reports/export/csv`)
+- ✔️ PDF-Export per REST (`/api/reports/export/pdf`)
+- ☐ Excel-Export per REST
 - ☐ Benutzer-Auth (Spring Security + JWT)
 - ☐ Docker-Compose (PostgreSQL + OpenSearch)
 
