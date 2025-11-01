@@ -13,288 +13,96 @@ const searchInput = document.getElementById('search-input');
 const searchBtn   = document.getElementById('search-btn');
 
 const TABLE_QUERY_FRAGMENTS = {
-    account: [
-        {
-            field: 'AccountID',
-            header: { mode: 'stub', stub: 'accountid:' },
-            cell: { mode: 'value' },
-        },
-        {
-            field: 'Status',
-            header: {
-                mode: 'enum',
-                options: [
-                    { label: 'Aktive Accounts', value: true, fragment: 'statusactive', query: 'statusactive' },
-                    { label: 'Inaktive Accounts', value: false, fragment: 'statusinactive', query: 'statusinactive' },
-                ],
-            },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Aktive Accounts', query: 'statusactive' },
-                    { label: 'Inaktive Accounts', query: 'statusinactive' },
-                ],
-            },
-        },
-        {
-            field: 'Country',
-            header: { mode: 'stub', stub: 'country:' },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: '🇦🇹 Österreich', query: 'country:"Austria"' },
-                    { label: '🇩🇪 Deutschland', query: 'country:"Germany"' },
-                ],
-            },
-        },
-        {
-            field: 'ContactEmail',
-            header: { mode: 'stub', stub: 'contactemail:' },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Mit Kontakt-E-Mail', query: 'contactemail:*' },
-                ],
-            },
-        },
-    ],
-    project: [
-        {
-            field: 'ProjectID',
-            header: { mode: 'stub', stub: 'projectid:' },
-            cell: { mode: 'value' },
-        },
-        {
-            field: 'StillActive',
-            header: {
-                mode: 'enum',
-                options: [
-                    { label: 'Aktive Projekte', value: true, fragment: 'statusactive', query: 'statusactive' },
-                    { label: 'Abgeschlossene Projekte', value: false, fragment: 'statusinactive', query: 'statusinactive' },
-                ],
-            },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Aktive Projekte', query: 'statusactive' },
-                    { label: 'Abgeschlossene Projekte', query: 'statusinactive' },
-                ],
-            },
-        },
-        {
-            field: 'BundleType',
-            header: { mode: 'stub', stub: 'bundletype:' },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Bundle vorhanden', query: 'bundle:*' },
-                    { label: 'Ohne Bundle', query: '-bundle:*' },
-                ],
-            },
-        },
-        {
-            field: 'DeploymentVariantID',
-            header: { mode: 'stub', stub: 'deploymentvariantid:' },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Mit Deployment-Variante', query: 'deploymentvariantid:*' },
-                ],
-            },
-        },
-    ],
-    site: [
-        {
-            field: 'FireZone',
-            header: {
-                mode: 'enum',
-                options: [
-                    { label: 'Zone Alpha', fragment: 'zonealpha', query: 'zonealpha' },
-                    { label: 'Zone Bravo', fragment: 'zonebravo', query: 'zonebravo' },
-                    { label: 'Zone Charlie', fragment: 'zonecharlie', query: 'zonecharlie' },
-                ],
-            },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Zone Alpha', query: 'zonealpha' },
-                    { label: 'Zone Bravo', query: 'zonebravo' },
-                    { label: 'Zone Charlie', query: 'zonecharlie' },
-                ],
-            },
-        },
-        {
-            field: 'TenantCount',
-            header: { mode: 'stub', stub: 'tenantcount:' },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: '≥ 50 Einheiten', query: 'tenantcount:[50 TO *]' },
-                    { label: '≤ 10 Einheiten', query: 'tenantcount:[0 TO 10]' },
-                ],
-            },
-        },
-    ],
-    server: [
-        {
-            field: 'ServerBrand',
-            header: { mode: 'enum', options: [
-                { label: 'Lenovo', fragment: 'serverbrand:lenovo', query: 'serverbrand:lenovo' },
-                { label: 'Dell', fragment: 'serverbrand:dell', query: 'serverbrand:dell' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Lenovo', query: 'serverbrand:lenovo' },
-                    { label: 'Dell', query: 'serverbrand:dell' },
-                ],
-            },
-        },
-        {
-            field: 'ServerOS',
-            header: { mode: 'enum', options: [
-                { label: 'Windows Server', fragment: 'serveros:windows*', query: 'serveros:windows*' },
-                { label: 'Linux Server', fragment: 'serveros:linux*', query: 'serveros:linux*' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Windows Server', query: 'serveros:windows*' },
-                    { label: 'Linux Server', query: 'serveros:linux*' },
-                ],
-            },
-        },
-        {
-            field: 'VirtualPlatform',
-            header: { mode: 'stub', stub: 'virtualplatform:' },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Virtuelle Maschinen', query: 'virtualplatform:*' },
-                ],
-            },
-        },
-    ],
-    clients: [
-        {
-            field: 'ClientOS',
-            header: { mode: 'enum', options: [
-                { label: 'Windows', fragment: 'clientos:windows*', query: 'clientos:windows*' },
-                { label: 'macOS', fragment: 'clientos:mac*', query: 'clientos:mac*' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Windows', query: 'clientos:windows*' },
-                    { label: 'macOS', query: 'clientos:mac*' },
-                ],
-            },
-        },
-        {
-            field: 'ClientBrand',
-            header: { mode: 'enum', options: [
-                { label: 'Lenovo', fragment: 'clientbrand:lenovo', query: 'clientbrand:lenovo' },
-                { label: 'HP', fragment: 'clientbrand:hp', query: 'clientbrand:hp' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Lenovo', query: 'clientbrand:lenovo' },
-                    { label: 'HP', query: 'clientbrand:hp' },
-                ],
-            },
-        },
-    ],
-    radio: [
-        {
-            field: 'Mode',
-            header: { mode: 'enum', options: [
-                { label: 'Analog', fragment: 'mode:analog', query: 'mode:analog' },
-                { label: 'Digital', fragment: 'mode:digital', query: 'mode:digital' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Analog', query: 'mode:analog' },
-                    { label: 'Digital', query: 'mode:digital' },
-                ],
-            },
-        },
-        {
-            field: 'DigitalStandard',
-            header: { mode: 'enum', options: [
-                { label: 'TETRA', fragment: 'digitalstandard:tetra', query: 'digitalstandard:tetra' },
-                { label: 'DMR', fragment: 'digitalstandard:dmr', query: 'digitalstandard:dmr' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'TETRA', query: 'digitalstandard:tetra' },
-                    { label: 'DMR', query: 'digitalstandard:dmr' },
-                ],
-            },
-        },
-    ],
-    audiodevice: [
-        {
-            field: 'Direction',
-            header: { mode: 'enum', options: [
-                { label: 'Input', fragment: 'direction:input', query: 'direction:input' },
-                { label: 'Output', fragment: 'direction:output', query: 'direction:output' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Input', query: 'direction:input' },
-                    { label: 'Output', query: 'direction:output' },
-                ],
-            },
-        },
-        {
-            field: 'AudioDeviceBrand',
-            header: { mode: 'enum', options: [
-                { label: 'Sennheiser', fragment: 'audiodevicebrand:sennheiser', query: 'audiodevicebrand:sennheiser' },
-                { label: 'Poly', fragment: 'audiodevicebrand:poly', query: 'audiodevicebrand:poly' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Sennheiser', query: 'audiodevicebrand:sennheiser' },
-                    { label: 'Poly', query: 'audiodevicebrand:poly' },
-                ],
-            },
-        },
-    ],
-    phoneintegration: [
-        {
-            field: 'PhoneType',
-            header: { mode: 'enum', options: [
-                { label: 'Desk Phones', fragment: 'phonetype:desk', query: 'phonetype:desk' },
-                { label: 'Softphones', fragment: 'phonetype:soft', query: 'phonetype:soft' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Desk Phones', query: 'phonetype:desk' },
-                    { label: 'Softphones', query: 'phonetype:soft' },
-                ],
-            },
-        },
-        {
-            field: 'PhoneBrand',
-            header: { mode: 'enum', options: [
-                { label: 'Cisco', fragment: 'phonebrand:cisco', query: 'phonebrand:cisco' },
-                { label: 'Microsoft Teams', fragment: 'phonebrand:"Microsoft"', query: 'phonebrand:"Microsoft"' },
-            ] },
-            cell: {
-                mode: 'options',
-                options: [
-                    { label: 'Cisco', query: 'phonebrand:cisco' },
-                    { label: 'Microsoft Teams', query: 'phonebrand:"Microsoft"' },
-                ],
-            },
-        },
-    ],
+    account: {
+        status: [
+            { label: 'Aktive Accounts', query: 'statusactive' },
+            { label: 'Inaktive Accounts', query: 'statusinactive' },
+        ],
+        country: [
+            { label: '🇦🇹 Österreich', query: 'country:"Austria"' },
+            { label: '🇩🇪 Deutschland', query: 'country:"Germany"' },
+        ],
+        contactemail: [
+            { label: 'Mit Kontakt-E-Mail', query: 'contactemail:*' },
+        ],
+    },
+    project: {
+        stillactive: [
+            { label: 'Aktive Projekte', query: 'statusactive' },
+            { label: 'Abgeschlossene Projekte', query: 'statusinactive' },
+        ],
+        bundletype: [
+            { label: 'Bundle vorhanden', query: 'bundle:*' },
+            { label: 'Ohne Bundle', query: '-bundle:*' },
+        ],
+        deploymentvariantid: [
+            { label: 'Mit Deployment-Variante', query: 'deploymentvariantid:*' },
+        ],
+    },
+    site: {
+        firezone: [
+            { label: 'Zone Alpha', query: 'zonealpha' },
+            { label: 'Zone Bravo', query: 'zonebravo' },
+            { label: 'Zone Charlie', query: 'zonecharlie' },
+        ],
+        tenantcount: [
+            { label: '≥ 50 Einheiten', query: 'tenantcount:[50 TO *]' },
+            { label: '≤ 10 Einheiten', query: 'tenantcount:[0 TO 10]' },
+        ],
+    },
+    server: {
+        serverbrand: [
+            { label: 'Lenovo', query: 'serverbrand:lenovo' },
+            { label: 'Dell', query: 'serverbrand:dell' },
+        ],
+        serveros: [
+            { label: 'Windows Server', query: 'serveros:windows*' },
+            { label: 'Linux Server', query: 'serveros:linux*' },
+        ],
+        virtualplatform: [
+            { label: 'Virtuelle Maschinen', query: 'virtualplatform:*' },
+        ],
+    },
+    clients: {
+        clientos: [
+            { label: 'Windows', query: 'clientos:windows*' },
+            { label: 'macOS', query: 'clientos:mac*' },
+        ],
+        clientbrand: [
+            { label: 'Lenovo', query: 'clientbrand:lenovo' },
+            { label: 'HP', query: 'clientbrand:hp' },
+        ],
+    },
+    radio: {
+        mode: [
+            { label: 'Analog', query: 'mode:analog' },
+            { label: 'Digital', query: 'mode:digital' },
+        ],
+        digitalstandard: [
+            { label: 'TETRA', query: 'digitalstandard:tetra' },
+            { label: 'DMR', query: 'digitalstandard:dmr' },
+        ],
+    },
+    audiodevice: {
+        direction: [
+            { label: 'Input', query: 'direction:input' },
+            { label: 'Output', query: 'direction:output' },
+        ],
+        audiodevicebrand: [
+            { label: 'Sennheiser', query: 'audiodevicebrand:sennheiser' },
+            { label: 'Poly', query: 'audiodevicebrand:poly' },
+        ],
+    },
+    phoneintegration: {
+        phonetype: [
+            { label: 'Desk Phones', query: 'phonetype:desk' },
+            { label: 'Softphones', query: 'phonetype:soft' },
+        ],
+        phonebrand: [
+            { label: 'Cisco', query: 'phonebrand:cisco' },
+            { label: 'Microsoft Teams', query: 'phonebrand:"Microsoft"' },
+        ],
+    },
 };
 
 const idxBox  = document.getElementById('idx-box');
@@ -314,32 +122,15 @@ function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','
 
 const normalizeKey = (value) => (value ?? '').toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
 
-function getTableConfig(tableName){
-    const tableKey = normalizeKey(tableName);
-    const tableConfig = TABLE_QUERY_FRAGMENTS[tableKey];
-    return Array.isArray(tableConfig) ? tableConfig : [];
-}
-
-function getColumnConfig(tableName, columnName){
-    if (!tableName || !columnName) return null;
-    const columnKey = normalizeKey(columnName);
-    return getTableConfig(tableName).find(entry => normalizeKey(entry.field) === columnKey) || null;
-}
-
-function getHeaderConfig(tableName, columnName){
-    const columnConfig = getColumnConfig(tableName, columnName);
-    return columnConfig && columnConfig.header ? columnConfig.header : null;
-}
-
-function getCellConfig(tableName, columnName){
-    const columnConfig = getColumnConfig(tableName, columnName);
-    return columnConfig && columnConfig.cell ? columnConfig.cell : null;
-}
-
 function getColumnFragments(tableName, columnName){
-    const cellConfig = getCellConfig(tableName, columnName);
-    if (!cellConfig || !Array.isArray(cellConfig.options)) return [];
-    return cellConfig.options.filter(opt => opt && typeof opt.query === 'string' && opt.query.trim());
+    if (!tableName || !columnName) return [];
+    const tableKey = normalizeKey(tableName);
+    const columnKey = normalizeKey(columnName);
+    const tableConfig = TABLE_QUERY_FRAGMENTS[tableKey];
+    if (!tableConfig) return [];
+    const options = tableConfig[columnKey];
+    if (!Array.isArray(options)) return [];
+    return options.filter(opt => opt && typeof opt.query === 'string' && opt.query.trim());
 }
 
 function splitQueryFragments(query){
@@ -404,30 +195,6 @@ function queryContainsFragment(fragment, query){
     return fragments.some(f => normalizeFragment(f) === key);
 }
 
-function queryContainsFieldPrefix(field, query){
-    if (!field) return false;
-    const fieldKey = normalizeKey(field);
-    const fragments = splitQueryFragments(query || (searchInput ? searchInput.value : ''));
-    return fragments.some(fragment => {
-        const idx = fragment.indexOf(':');
-        if (idx === -1) return false;
-        const fragmentField = normalizeKey(fragment.slice(0, idx));
-        return fragmentField === fieldKey;
-    });
-}
-
-function buildFieldValueFragment(field, value){
-    if (value === null || value === undefined) return '';
-    const trimmedField = (field ?? '').toString().trim();
-    if (!trimmedField) return '';
-    const rawValue = String(value).trim();
-    if (!rawValue) return '';
-    const escaped = rawValue.replace(/"/g, '\\"');
-    const needsQuotes = /[\s,:]/.test(escaped);
-    const valuePart = needsQuotes ? `"${escaped}"` : escaped;
-    return `${trimmedField}:${valuePart}`;
-}
-
 function applyQueryFragment(fragment){
     if (!searchInput) return;
     const merged = mergeQueryWithFragment(searchInput.value, fragment);
@@ -436,211 +203,31 @@ function applyQueryFragment(fragment){
     runSearch(searchInput.value);
 }
 
-function insertFieldStub(field, stubValue){
-    if (!searchInput) return;
-    const stub = (stubValue || (field ? `${field}:` : '')).trim();
-    if (!stub) return;
-    const currentQuery = searchInput.value || '';
-    if (queryContainsFieldPrefix(field, currentQuery) || currentQuery.toLowerCase().includes(stub.toLowerCase())){
-        searchInput.focus();
-        const pos = searchInput.value.length;
-        searchInput.setSelectionRange(pos, pos);
-        return;
-    }
-    const merged = mergeQueryWithFragment(currentQuery, stub);
-    searchInput.value = merged.endsWith(' ') ? merged : `${merged} `;
-    searchInput.focus();
-    const position = searchInput.value.length;
-    searchInput.setSelectionRange(position, position);
-    refreshActiveTableMarkers();
-}
-
-function insertValueFragment(fragment){
-    if (!searchInput || !fragment) return;
-    const merged = mergeQueryWithFragment(searchInput.value, fragment);
-    searchInput.value = merged.endsWith(' ') ? merged : `${merged} `;
-    searchInput.focus();
-    const position = searchInput.value.length;
-    searchInput.setSelectionRange(position, position);
-    refreshActiveTableMarkers();
-}
-
 function refreshActiveTableMarkers(){
     if (!resultArea) return;
-    const query = searchInput ? searchInput.value : '';
     const buttons = resultArea.querySelectorAll('.table-title-button');
     buttons.forEach(btn => {
         const frag = btn.dataset.fragment;
-        const isActive = queryContainsFragment(frag, query);
+        const isActive = queryContainsFragment(frag);
         btn.classList.toggle('is-active', isActive);
         if (isActive){
             btn.setAttribute('aria-pressed', 'true');
         } else {
             btn.removeAttribute('aria-pressed');
         }
-    });
-
-    const headerButtons = resultArea.querySelectorAll('.table-header-button');
-    headerButtons.forEach(btn => {
-        const mode = btn.dataset.mode || 'stub';
-        let isActive = false;
-        if (mode === 'enum'){
-            let options = [];
-            if (btn.dataset.options){
-                try {
-                    options = JSON.parse(btn.dataset.options);
-                } catch {
-                    options = [];
-                }
-            }
-            isActive = options.some(opt => queryContainsFragment(opt.fragment || opt.query, query));
-        } else if (mode === 'stub'){
-            const stub = btn.dataset.stub || `${btn.dataset.field || ''}:`;
-            isActive = queryContainsFieldPrefix(btn.dataset.field, query) || (stub ? query.toLowerCase().includes(stub.toLowerCase()) : false);
-        } else if (mode === 'value'){
-            const fragment = btn.dataset.fragment;
-            if (fragment){
-                isActive = queryContainsFragment(fragment, query);
-            } else {
-                isActive = queryContainsFieldPrefix(btn.dataset.field, query);
-            }
-        }
-        btn.classList.toggle('is-active', isActive);
-        if (isActive){
-            btn.setAttribute('aria-pressed', 'true');
-        } else {
-            btn.removeAttribute('aria-pressed');
-        }
-        const headerCell = btn.closest('.table-header-cell');
-        if (headerCell){
-            headerCell.classList.toggle('is-filter-active', isActive);
-        }
-    });
-
-    const cells = resultArea.querySelectorAll('td[data-field]');
-    cells.forEach(cell => {
-        const mode = cell.dataset.mode;
-        let isActive = false;
-        if (mode === 'value'){
-            const fragment = cell.dataset.fragment;
-            if (fragment){
-                isActive = queryContainsFragment(fragment, query);
-            }
-        } else if (mode === 'options'){
-            let options = [];
-            if (cell.dataset.options){
-                try {
-                    options = JSON.parse(cell.dataset.options);
-                } catch {
-                    options = [];
-                }
-            }
-            isActive = options.some(opt => queryContainsFragment(opt.fragment || opt.query, query));
-        }
-        cell.classList.toggle('is-active', isActive);
-    });
-}
-
-function closeHeaderPopovers(except){
-    if (!resultArea) return;
-    const openHeaders = resultArea.querySelectorAll('.table-header-cell.is-open');
-    openHeaders.forEach(headerCell => {
-        if (except && headerCell === except) return;
-        headerCell.classList.remove('is-open');
-        const button = headerCell.querySelector('.table-header-button');
-        if (button) button.setAttribute('aria-expanded', 'false');
     });
 }
 
 if (resultArea){
     resultArea.addEventListener('click', (event) => {
-        const optionTrigger = event.target.closest('.table-fragment-option');
-        if (optionTrigger){
-            const fragment = optionTrigger.dataset.fragment;
-            if (fragment){
-                event.preventDefault();
-                closeHeaderPopovers();
-                applyQueryFragment(fragment);
-            }
-            return;
-        }
-
-        const headerButton = event.target.closest('.table-header-button');
-        if (headerButton){
-            const mode = headerButton.dataset.mode || 'stub';
-            const headerCell = headerButton.closest('.table-header-cell');
-            if (mode === 'enum'){
-                event.preventDefault();
-                const wasOpen = headerCell ? headerCell.classList.contains('is-open') : false;
-                closeHeaderPopovers(headerCell);
-                if (headerCell){
-                    if (!wasOpen){
-                        headerCell.classList.add('is-open');
-                        headerButton.setAttribute('aria-expanded', 'true');
-                    } else {
-                        headerCell.classList.remove('is-open');
-                        headerButton.setAttribute('aria-expanded', 'false');
-                    }
-                }
-                return;
-            }
-            closeHeaderPopovers();
-            if (mode === 'stub'){
-                event.preventDefault();
-                insertFieldStub(headerButton.dataset.field, headerButton.dataset.stub);
-                return;
-            }
-            if (mode === 'value'){
-                const fragment = headerButton.dataset.fragment;
-                if (fragment){
-                    event.preventDefault();
-                    insertValueFragment(fragment);
-                }
-                return;
-            }
-        }
-
-        const tableButton = event.target.closest('.table-title-button');
-        if (tableButton){
-            const fragment = tableButton.dataset.fragment;
-            if (fragment){
-                event.preventDefault();
-                closeHeaderPopovers();
-                applyQueryFragment(fragment);
-            }
-            return;
-        }
-
-        const cell = event.target.closest('td[data-field]');
-        if (cell){
-            const mode = cell.dataset.mode;
-            if (mode === 'value'){
-                const fragment = cell.dataset.fragment;
-                if (fragment){
-                    event.preventDefault();
-                    insertValueFragment(fragment);
-                }
-            }
-            closeHeaderPopovers();
-            return;
-        }
-
-        closeHeaderPopovers();
+        const trigger = event.target.closest('.table-fragment-option, .table-title-button');
+        if (!trigger) return;
+        const fragment = trigger.dataset.fragment;
+        if (!fragment) return;
+        event.preventDefault();
+        applyQueryFragment(fragment);
     });
 }
-
-document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape'){
-        closeHeaderPopovers();
-    }
-});
-
-document.addEventListener('click', (event) => {
-    if (!resultArea) return;
-    if (!event.target.closest('#resultArea')){
-        closeHeaderPopovers();
-    }
-});
 
 const shortcutCache = new Map();
 
@@ -1169,8 +756,6 @@ function renderTableCell(tableName, columnName, value) {
     const raw = (value === undefined || value === null) ? '' : String(value);
     const isIdColumn = /(id|guid)$/i.test(key);
     const fragments = getColumnFragments(tableName, key);
-    const cellConfig = getCellConfig(tableName, key) || {};
-    const cellMode = cellConfig.mode || (fragments.length ? 'options' : 'value');
     const hasFragments = fragments.length > 0;
     let innerHtml = escapeHtml(raw);
     if (isIdColumn && raw) {
@@ -1178,25 +763,9 @@ function renderTableCell(tableName, columnName, value) {
         const titleAttr = escapeHtml(rendered.title);
         innerHtml = `<span class="cell-id" title="${titleAttr}">${rendered.inner}</span>`;
     }
-
-    const dataAttrs = [];
-    if (key) dataAttrs.push(`data-field="${escapeHtml(key)}"`);
-    if (cellMode) dataAttrs.push(`data-mode="${escapeHtml(cellMode)}"`);
-
-    if (!hasFragments && cellMode === 'value') {
-        const fragment = cellConfig.fragment || buildFieldValueFragment(key, raw);
-        if (fragment) {
-            dataAttrs.push(`data-fragment='${escapeHtml(fragment)}'`);
-        }
-        const attrString = dataAttrs.length ? ` ${dataAttrs.join(' ')}` : '';
-        return `<td${attrString}>${innerHtml}</td>`;
-    }
-
     if (!hasFragments) {
-        const attrString = dataAttrs.length ? ` ${dataAttrs.join(' ')}` : '';
-        return `<td${attrString}>${innerHtml}</td>`;
+        return `<td>${innerHtml}</td>`;
     }
-
     const options = fragments.map((opt, idx) => {
         const label = opt.label || opt.query;
         const query = formatFragment(opt.query);
@@ -1209,10 +778,8 @@ function renderTableCell(tableName, columnName, value) {
     }).join('');
     const safeColumn = escapeHtml(key);
     const cellLabel = key ? `Filteroptionen für ${key}` : 'Filteroptionen';
-    const attrString = dataAttrs.length ? ` ${dataAttrs.join(' ')}` : '';
-    const optionData = fragments.length ? ` data-options='${escapeHtml(JSON.stringify(fragments))}'` : '';
     return `
-        <td class="has-fragment-options"${attrString}${optionData}>
+        <td class="has-fragment-options">
             <div class="cell-value" role="button" tabindex="0" aria-label="${escapeHtml(cellLabel)}">
                 <span class="cell-value-text">${innerHtml}</span>
                 <span class="cell-value-hint" aria-hidden="true">⋯</span>
@@ -1232,58 +799,7 @@ async function showTable(name) {
         if (!Array.isArray(rows) || !rows.length) { resultArea.textContent = '(leer)'; return; }
 
         const cols = Object.keys(rows[0]);
-        const hdr  = cols.map((column, idx) => {
-            const headerConfig = getHeaderConfig(name, column) || {};
-            const headerMode = headerConfig.mode || 'stub';
-            const options = Array.isArray(headerConfig.options) ? headerConfig.options.filter(opt => opt && (opt.fragment || opt.query)) : [];
-            const hasOptions = headerMode === 'enum' && options.length > 0;
-            const safeColumn = escapeHtml(column);
-            const safeTable = escapeHtml(name);
-            const buttonAttrs = [
-                'type="button"',
-                'class="table-header-button"',
-                `data-table="${safeTable}"`,
-                `data-field="${safeColumn}"`,
-                `data-mode="${escapeHtml(headerMode)}"`,
-            ];
-            if (headerMode === 'stub') {
-                const stubValue = headerConfig.stub || `${column}:`;
-                buttonAttrs.push(`data-stub="${escapeHtml(stubValue)}"`);
-            }
-            if (hasOptions) {
-                buttonAttrs.push('aria-haspopup="menu"');
-                buttonAttrs.push('aria-expanded="false"');
-                const popoverId = `table-header-popover-${normalizeKey(name)}-${normalizeKey(column)}-${idx}`;
-                buttonAttrs.push(`aria-controls="${escapeHtml(popoverId)}"`);
-                buttonAttrs.push(`data-options='${escapeHtml(JSON.stringify(options))}'`);
-                const optionsHtml = options.map((opt, optionIdx) => {
-                    const label = opt.label || opt.query;
-                    const fragment = formatFragment(opt.fragment || opt.query);
-                    const description = opt.description ? `<small>${escapeHtml(opt.description)}</small>` : '';
-                    return `
-                        <button type="button" role="menuitem" class="table-fragment-option" data-fragment='${escapeHtml(fragment)}' data-option-idx="${optionIdx}">
-                            <span class="table-fragment-option-label">${escapeHtml(label)}</span>
-                            ${description}
-                        </button>`;
-                }).join('');
-                const popover = `
-                    <div id="${escapeHtml(popoverId)}" class="table-header-popover" role="menu" aria-label="Filteroptionen für ${safeColumn}">
-                        <p class="table-header-popover-title">${safeColumn}</p>
-                        <div class="table-header-popover-options">${optionsHtml}</div>
-                    </div>`;
-                const classes = ['table-header-cell', 'has-header-options'];
-                return `<th class="${classes.join(' ')}">` + `<button ${buttonAttrs.join(' ')}>${safeColumn}</button>${popover}` + '</th>';
-            }
-            buttonAttrs.push('aria-haspopup="false"');
-            if (headerMode === 'value') {
-                const fragment = headerConfig.fragment ? formatFragment(headerConfig.fragment) : '';
-                if (fragment) {
-                    buttonAttrs.push(`data-fragment='${escapeHtml(fragment)}'`);
-                }
-            }
-            const classes = ['table-header-cell'];
-            return `<th class="${classes.join(' ')}"><button ${buttonAttrs.join(' ')}>${safeColumn}</button></th>`;
-        }).join('');
+        const hdr  = cols.map(c => `<th>${c}</th>`).join('');
         const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
         const typeFragment = `type:${name}`;
 
