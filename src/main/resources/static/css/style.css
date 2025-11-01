@@ -91,6 +91,31 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 .table-scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:650px}
 th,td{border:1px solid #ccc;padding:.45rem;text-align:left}
+.table-title-bar{display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem}
+.table-title-button{background:#f0f4ff;border:1px solid #cfe0ff;border-radius:999px;padding:.45rem 1rem;font-size:1.1rem;font-weight:700;color:#003a70;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.12);transition:background .15s ease,color .15s ease,border-color .15s ease}
+.table-title-button:hover{background:#e4edff}
+.table-title-button.is-active{background:#0067c2;color:#fff;border-color:#0054a6;box-shadow:0 4px 12px rgba(0,103,194,.25)}
+.table-title-hint{font-size:.85rem;color:#4b5563}
+.table-click-hint{margin:.25rem 0 1rem;font-size:.9rem;color:#374151}
+.table-click-hint strong{color:#003a70}
+.has-fragment-options{position:relative;overflow:visible;background:#fff;transition:background .15s ease}
+.has-fragment-options:hover,.has-fragment-options:focus-within{background:#f8fbff}
+.cell-value{display:flex;align-items:center;justify-content:space-between;gap:.35rem;min-height:1.2rem;cursor:pointer;outline:none}
+.cell-value:focus{outline:2px solid #0067c2;outline-offset:2px;background:#f0f6ff}
+.cell-value:focus + .cell-popover{display:block}
+.cell-value:focus .cell-value-hint{color:#0067c2}
+.cell-value-text{flex:1 1 auto;min-width:0}
+.cell-value-hint{flex:0 0 auto;font-size:.8rem;color:#94a3b8}
+.has-fragment-options:hover .cell-value-hint,.has-fragment-options:focus-within .cell-value-hint{color:#0067c2}
+.cell-popover{position:absolute;top:100%;left:0;margin-top:.25rem;display:none;min-width:190px;background:#fff;border:1px solid #cfe0ff;border-radius:8px;padding:.55rem;box-shadow:0 10px 22px rgba(15,23,42,.18);z-index:40}
+.has-fragment-options:hover .cell-popover,.has-fragment-options:focus-within .cell-popover{display:block}
+.cell-popover-title{margin:0 0 .35rem 0;font-size:.85rem;font-weight:600;color:#0f172a}
+.cell-popover-options{display:flex;flex-direction:column;gap:.25rem}
+.table-fragment-option{display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;width:100%;border:none;background:none;padding:.35rem .45rem;border-radius:6px;font-size:.9rem;cursor:pointer;color:#0f172a}
+.table-fragment-option:hover{background:#eef4ff}
+.table-fragment-option:focus{outline:2px solid #0067c2;outline-offset:1px}
+.table-fragment-option small{font-size:.75rem;color:#475569}
+.cell-id{display:inline-flex;align-items:center;gap:.25rem}
 .id-chip{
     display:inline-flex;
     align-items:center;

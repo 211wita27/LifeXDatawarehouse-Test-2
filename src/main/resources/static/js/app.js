@@ -12,6 +12,99 @@ const resultArea  = document.getElementById('resultArea');
 const searchInput = document.getElementById('search-input');
 const searchBtn   = document.getElementById('search-btn');
 
+const TABLE_QUERY_FRAGMENTS = {
+    account: {
+        status: [
+            { label: 'Aktive Accounts', query: 'statusactive' },
+            { label: 'Inaktive Accounts', query: 'statusinactive' },
+        ],
+        country: [
+            { label: '🇦🇹 Österreich', query: 'country:"Austria"' },
+            { label: '🇩🇪 Deutschland', query: 'country:"Germany"' },
+        ],
+        contactemail: [
+            { label: 'Mit Kontakt-E-Mail', query: 'contactemail:*' },
+        ],
+    },
+    project: {
+        stillactive: [
+            { label: 'Aktive Projekte', query: 'statusactive' },
+            { label: 'Abgeschlossene Projekte', query: 'statusinactive' },
+        ],
+        bundletype: [
+            { label: 'Bundle vorhanden', query: 'bundle:*' },
+            { label: 'Ohne Bundle', query: '-bundle:*' },
+        ],
+        deploymentvariantid: [
+            { label: 'Mit Deployment-Variante', query: 'deploymentvariantid:*' },
+        ],
+    },
+    site: {
+        firezone: [
+            { label: 'Zone Alpha', query: 'zonealpha' },
+            { label: 'Zone Bravo', query: 'zonebravo' },
+            { label: 'Zone Charlie', query: 'zonecharlie' },
+        ],
+        tenantcount: [
+            { label: '≥ 50 Einheiten', query: 'tenantcount:[50 TO *]' },
+            { label: '≤ 10 Einheiten', query: 'tenantcount:[0 TO 10]' },
+        ],
+    },
+    server: {
+        serverbrand: [
+            { label: 'Lenovo', query: 'serverbrand:lenovo' },
+            { label: 'Dell', query: 'serverbrand:dell' },
+        ],
+        serveros: [
+            { label: 'Windows Server', query: 'serveros:windows*' },
+            { label: 'Linux Server', query: 'serveros:linux*' },
+        ],
+        virtualplatform: [
+            { label: 'Virtuelle Maschinen', query: 'virtualplatform:*' },
+        ],
+    },
+    clients: {
+        clientos: [
+            { label: 'Windows', query: 'clientos:windows*' },
+            { label: 'macOS', query: 'clientos:mac*' },
+        ],
+        clientbrand: [
+            { label: 'Lenovo', query: 'clientbrand:lenovo' },
+            { label: 'HP', query: 'clientbrand:hp' },
+        ],
+    },
+    radio: {
+        mode: [
+            { label: 'Analog', query: 'mode:analog' },
+            { label: 'Digital', query: 'mode:digital' },
+        ],
+        digitalstandard: [
+            { label: 'TETRA', query: 'digitalstandard:tetra' },
+            { label: 'DMR', query: 'digitalstandard:dmr' },
+        ],
+    },
+    audiodevice: {
+        direction: [
+            { label: 'Input', query: 'direction:input' },
+            { label: 'Output', query: 'direction:output' },
+        ],
+        audiodevicebrand: [
+            { label: 'Sennheiser', query: 'audiodevicebrand:sennheiser' },
+            { label: 'Poly', query: 'audiodevicebrand:poly' },
+        ],
+    },
+    phoneintegration: {
+        phonetype: [
+            { label: 'Desk Phones', query: 'phonetype:desk' },
+            { label: 'Softphones', query: 'phonetype:soft' },
+        ],
+        phonebrand: [
+            { label: 'Cisco', query: 'phonebrand:cisco' },
+            { label: 'Microsoft Teams', query: 'phonebrand:"Microsoft"' },
+        ],
+    },
+};
+
 const idxBox  = document.getElementById('idx-box');
 const idxBar  = document.querySelector('#idx-bar > span');
 const idxText = document.getElementById('idx-text');
@@ -26,6 +119,115 @@ const stGet = (k, d) => { try { const v = localStorage.getItem(k); return v === 
 const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','true') : el.removeAttribute('aria-busy'); }
+
+const normalizeKey = (value) => (value ?? '').toString().trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+
+function getColumnFragments(tableName, columnName){
+    if (!tableName || !columnName) return [];
+    const tableKey = normalizeKey(tableName);
+    const columnKey = normalizeKey(columnName);
+    const tableConfig = TABLE_QUERY_FRAGMENTS[tableKey];
+    if (!tableConfig) return [];
+    const options = tableConfig[columnKey];
+    if (!Array.isArray(options)) return [];
+    return options.filter(opt => opt && typeof opt.query === 'string' && opt.query.trim());
+}
+
+function splitQueryFragments(query){
+    const result = [];
+    if (!query) return result;
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < query.length; i += 1){
+        const ch = query[i];
+        if (ch === '"'){
+            inQuotes = !inQuotes;
+            current += ch;
+            continue;
+        }
+        if (!inQuotes){
+            const slice = query.slice(i, i + 5);
+            if (slice.toUpperCase() === ' AND '){
+                const trimmed = current.trim();
+                if (trimmed) result.push(trimmed);
+                current = '';
+                i += 4;
+                continue;
+            }
+        }
+        current += ch;
+    }
+    const trimmed = current.trim();
+    if (trimmed) result.push(trimmed);
+    return result;
+}
+
+const normalizeFragment = (fragment) => fragment.replace(/\s+/g, ' ').trim().toLowerCase();
+
+function formatFragment(fragment){
+    let trimmed = (fragment || '').trim();
+    if (!trimmed) return '';
+    const hasQuotes = /^".*"$/.test(trimmed);
+    if (!hasQuotes && /\s/.test(trimmed) && !/[():]/.test(trimmed)){
+        trimmed = `"${trimmed}"`;
+    }
+    return trimmed;
+}
+
+function mergeQueryWithFragment(currentQuery, fragment){
+    const formatted = formatFragment(fragment);
+    if (!formatted) return currentQuery || '';
+    const fragments = splitQueryFragments(currentQuery || '');
+    const normalized = new Set(fragments.map(normalizeFragment));
+    const key = normalizeFragment(formatted);
+    if (!normalized.has(key)){
+        fragments.push(formatted);
+    }
+    return fragments.join(' AND ');
+}
+
+function queryContainsFragment(fragment, query){
+    if (!fragment) return false;
+    const formatted = formatFragment(fragment);
+    if (!formatted) return false;
+    const fragments = splitQueryFragments(query || (searchInput ? searchInput.value : ''));
+    const key = normalizeFragment(formatted);
+    return fragments.some(f => normalizeFragment(f) === key);
+}
+
+function applyQueryFragment(fragment){
+    if (!searchInput) return;
+    const merged = mergeQueryWithFragment(searchInput.value, fragment);
+    searchInput.value = merged;
+    refreshActiveTableMarkers();
+    runSearch(searchInput.value);
+}
+
+function refreshActiveTableMarkers(){
+    if (!resultArea) return;
+    const buttons = resultArea.querySelectorAll('.table-title-button');
+    buttons.forEach(btn => {
+        const frag = btn.dataset.fragment;
+        const isActive = queryContainsFragment(frag);
+        btn.classList.toggle('is-active', isActive);
+        if (isActive){
+            btn.setAttribute('aria-pressed', 'true');
+        } else {
+            btn.removeAttribute('aria-pressed');
+        }
+    });
+}
+
+if (resultArea){
+    resultArea.addEventListener('click', (event) => {
+        const trigger = event.target.closest('.table-fragment-option, .table-title-button');
+        if (!trigger) return;
+        const fragment = trigger.dataset.fragment;
+        if (!fragment) return;
+        event.preventDefault();
+        applyQueryFragment(fragment);
+    });
+}
 
 const shortcutCache = new Map();
 
@@ -328,6 +530,9 @@ function wireEvents() {
         } catch {}
     }, 180));
 
+    searchInput.addEventListener('input', refreshActiveTableMarkers);
+    searchInput.addEventListener('change', refreshActiveTableMarkers);
+
     // Reindex (rechter Button)
     if (idxBtnSide) idxBtnSide.onclick = () => startReindex(idxBtnSide);
 
@@ -337,6 +542,8 @@ function wireEvents() {
 
     // Shortcuts initialisieren inkl. ARIA
     setupShortcuts();
+
+    refreshActiveTableMarkers();
 }
 document.addEventListener('DOMContentLoaded', wireEvents);
 
@@ -544,16 +751,44 @@ async function runLucene(q) {
 }
 
 /* Tabellen-Viewer (100-Zeilen-Preview) */
-function renderTableCell(columnName, value) {
+function renderTableCell(tableName, columnName, value) {
     const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
     const raw = (value === undefined || value === null) ? '' : String(value);
     const isIdColumn = /(id|guid)$/i.test(key);
+    const fragments = getColumnFragments(tableName, key);
+    const hasFragments = fragments.length > 0;
+    let innerHtml = escapeHtml(raw);
     if (isIdColumn && raw) {
         const rendered = renderIdDisplay(value);
         const titleAttr = escapeHtml(rendered.title);
-        return `<td title="${titleAttr}">${rendered.inner}</td>`;
+        innerHtml = `<span class="cell-id" title="${titleAttr}">${rendered.inner}</span>`;
     }
-    return `<td>${escapeHtml(raw)}</td>`;
+    if (!hasFragments) {
+        return `<td>${innerHtml}</td>`;
+    }
+    const options = fragments.map((opt, idx) => {
+        const label = opt.label || opt.query;
+        const query = formatFragment(opt.query);
+        const description = opt.description ? `<small>${escapeHtml(opt.description)}</small>` : '';
+        return `
+            <button type="button" role="menuitem" class="table-fragment-option" data-fragment='${escapeHtml(query)}' data-option-idx="${idx}">
+                <span class="table-fragment-option-label">${escapeHtml(label)}</span>
+                ${description}
+            </button>`;
+    }).join('');
+    const safeColumn = escapeHtml(key);
+    const cellLabel = key ? `Filteroptionen für ${key}` : 'Filteroptionen';
+    return `
+        <td class="has-fragment-options">
+            <div class="cell-value" role="button" tabindex="0" aria-label="${escapeHtml(cellLabel)}">
+                <span class="cell-value-text">${innerHtml}</span>
+                <span class="cell-value-hint" aria-hidden="true">⋯</span>
+            </div>
+            <div class="cell-popover" role="menu" aria-label="Filteroptionen für ${safeColumn}">
+                <p class="cell-popover-title">${safeColumn}</p>
+                <div class="cell-popover-options">${options}</div>
+            </div>
+        </td>`;
 }
 
 async function showTable(name) {
@@ -565,15 +800,21 @@ async function showTable(name) {
 
         const cols = Object.keys(rows[0]);
         const hdr  = cols.map(c => `<th>${c}</th>`).join('');
-        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(c, r[c])).join('')}</tr>`).join('');
+        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
+        const typeFragment = `type:${name}`;
 
         resultArea.innerHTML =
-            `<h2>${name}</h2>
-       <div class="table-scroll">
-         <table>
-           <tr>${hdr}</tr>${body}
+            `<div class="table-title-bar">
+                <button type="button" class="table-title-button" data-fragment="${escapeHtml(typeFragment)}" title="Filter ${escapeHtml(typeFragment)} ausführen">${escapeHtml(name)}</button>
+                <span class="table-title-hint">Klick = Filter setzen</span>
+            </div>
+        <div class="table-scroll">
+          <table>
+            <tr>${hdr}</tr>${body}
          </table>
        </div>`;
+
+        refreshActiveTableMarkers();
     } catch (e) {
         resultArea.innerHTML = `<p id="error" role="alert">Fehler: ${e}</p>`;
     } finally {
