@@ -29,6 +29,42 @@ function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','
 
 const shortcutCache = new Map();
 
+const shortcutStorage = (() => {
+    const prefix = 'sc:';
+    const keyFor = (id, kind) => `${prefix}${id}:${kind}`;
+    const read = (key, fallback) => {
+        try {
+            const stored = localStorage.getItem(key);
+            return stored === null ? fallback : stored;
+        } catch {
+            return fallback;
+        }
+    };
+    const write = (key, value) => {
+        try {
+            if (value === undefined || value === null) {
+                localStorage.removeItem(key);
+            } else {
+                localStorage.setItem(key, value);
+            }
+        } catch {}
+    };
+    return {
+        getLabel(id, fallback = '') {
+            return read(keyFor(id, 'label'), fallback);
+        },
+        setLabel(id, value) {
+            write(keyFor(id, 'label'), (value ?? '').toString());
+        },
+        getQuery(id, fallback = '') {
+            return read(keyFor(id, 'query'), fallback);
+        },
+        setQuery(id, value) {
+            write(keyFor(id, 'query'), (value ?? '').toString());
+        },
+    };
+})();
+
 if (resultArea) {
     resultArea.addEventListener('click', (event) => {
         let target = event.target;
@@ -539,16 +575,19 @@ function setupShortcuts() {
         const inputEl   = hasList ? null : (panel ? panel.querySelector('input') : null);
         const defVal    = (sc.dataset.default || '').trim();
 
-        const stLabelKey = `sc:${id}:label`;
-        const stQueryKey = `sc:${id}:query`;
-        labelEl.textContent = stGet(stLabelKey, labelEl.textContent);
+        const readLabel = () => shortcutStorage.getLabel(id, labelEl.textContent);
+        const readQuery = () => shortcutStorage.getQuery(id, defVal);
+        const writeLabel = (value) => shortcutStorage.setLabel(id, value);
+        const writeQuery = (value) => shortcutStorage.setQuery(id, value);
+
+        labelEl.textContent = readLabel();
 
         if (hasList) {
             if (listEl && !listEl.innerHTML.trim()) {
                 listEl.innerHTML = '<p class="sc-status empty">Noch keine Daten geladen.</p>';
             }
         } else if (inputEl) {
-            inputEl.value = stGet(stQueryKey, defVal);
+            inputEl.value = readQuery();
             inputEl.placeholder = 'Lucene-Query';
             inputEl.setAttribute('aria-label','Lucene-Query');
         }
@@ -568,7 +607,7 @@ function setupShortcuts() {
             if (ev.target === renameBtn || ev.target === chevBtn) return;
             const q = hasList ? defVal : (((inputEl && inputEl.value) || '').trim() || defVal);
             if (q) {
-                if (!hasList) stSet(stQueryKey, q);
+                if (!hasList) writeQuery(q);
                 runSearch(q);
             }
         });
@@ -593,7 +632,7 @@ function setupShortcuts() {
             const name = prompt('Neuer Name für den Shortcut:', current);
             if (name && name.trim()) {
                 labelEl.textContent = name.trim();
-                stSet(stLabelKey, labelEl.textContent);
+                writeLabel(labelEl.textContent);
             }
         });
 
@@ -602,7 +641,7 @@ function setupShortcuts() {
                 if (e.key === 'Enter') {
                     const q = inputEl.value.trim();
                     if (q) {
-                        stSet(stQueryKey, q);
+                        writeQuery(q);
                         runSearch(q);
                     }
                 } else if (e.key === 'Escape') {
@@ -611,7 +650,7 @@ function setupShortcuts() {
                 }
             });
 
-            inputEl.addEventListener('blur', () => stSet(stQueryKey, inputEl.value.trim()));
+            inputEl.addEventListener('blur', () => writeQuery(inputEl.value.trim()));
         }
     });
 }
