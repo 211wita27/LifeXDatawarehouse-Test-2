@@ -156,24 +156,28 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         boolean cleared = false;
 
         if (dir != null) {
+            boolean lockAcquired = false;
             try (Lock luceneLock = dir.obtainLock(IndexWriter.WRITE_LOCK_NAME)) {
                 log.warn("Lucene-Lock auf {} wurde über obtainLock() freigegeben.", INDEX_DIR.toAbsolutePath());
-                cleared = true;
+                lockAcquired = true;
             } catch (LockObtainFailedException e) {
                 log.debug("Lucene-Lock auf {} ist weiterhin aktiv und konnte nicht übernommen werden.", INDEX_DIR.toAbsolutePath());
             } catch (IOException e) {
                 log.error("Konnte Lucene-Lock nicht freigeben: {}", INDEX_DIR.toAbsolutePath(), e);
             }
-        }
 
-        Path lockFile = INDEX_DIR.resolve("write.lock");
-        try {
-            if (Files.deleteIfExists(lockFile)) {
-                log.warn("Verwaiste Lucene write.lock entfernt ({}).", lockFile.toAbsolutePath());
+            if (lockAcquired) {
+                Path lockFile = INDEX_DIR.resolve("write.lock");
+                try {
+                    if (Files.deleteIfExists(lockFile)) {
+                        log.warn("Verwaiste Lucene write.lock entfernt ({}).", lockFile.toAbsolutePath());
+                    }
+                } catch (IOException e) {
+                    log.error("Konnte verwaiste Lucene write.lock nicht löschen: {}", lockFile.toAbsolutePath(), e);
+                }
+
                 cleared = true;
             }
-        } catch (IOException e) {
-            log.error("Konnte verwaiste Lucene write.lock nicht löschen: {}", lockFile.toAbsolutePath(), e);
         }
 
         return cleared;
