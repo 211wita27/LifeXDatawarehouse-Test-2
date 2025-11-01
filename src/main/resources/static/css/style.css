@@ -167,13 +167,16 @@ table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
 .id-chip{display:inline-flex;align-items:center;font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.85em;
     color:#334155;background:#eef2ff;border:1px solid #d6dcff;border-radius:999px;padding:.1rem .4rem;line-height:1.2;vertical-align:middle}
 .id-chip:not(:first-child){margin-left:.35rem}
-.detail-header{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.detail-header{display:flex;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.detail-header-main{flex:1;min-width:0;position:relative;padding-right:4.5rem}
 .detail-header-actions{margin-left:auto;display:flex;align-items:center;gap:.5rem}
 .detail-edit-button{display:inline-flex;align-items:center;justify-content:center;width:2.2rem;height:2.2rem;border-radius:999px;border:1px solid #2c64b5;background:#fff;color:#2c64b5;cursor:pointer;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
 .detail-edit-button:hover,.detail-edit-button:focus-visible{background:#2c64b5;color:#fff}
 .detail-edit-button:focus-visible{outline:2px solid #2c64b5;outline-offset:2px}
 .detail-edit-button.is-active{background:#2c64b5;color:#fff}
 .detail-edit-icon{width:1.1rem;height:1.1rem;fill:currentColor}
+.detail-type-badge{position:absolute;top:.15rem;right:0;display:none;padding:.15rem .5rem;border-radius:999px;font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;font-weight:600;color:#64748b;background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.35)}
+.detail-type-badge.is-visible{display:inline-flex;align-items:center;justify-content:center}
 .detail-status{margin-bottom:1rem;padding:.6rem .75rem;border-radius:6px;background:#f4f6fb;color:#1f2a44;border:1px solid #d0defc;display:none}
 .detail-status.is-visible{display:block}
 .detail-status--success{background:#ecfdf3;color:#166534;border-color:#bbf7d0}

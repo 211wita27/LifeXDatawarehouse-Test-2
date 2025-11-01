@@ -82,6 +82,7 @@
     const childrenBox = document.getElementById('children');
 
     let detailTitleEl;
+    let detailTypeEl;
     let detailBodyEl;
     let detailStatusEl;
     let editButtonEl;
@@ -644,13 +645,14 @@
 
     function resetDetailRefs(){
         detailTitleEl = null;
+        detailTypeEl = null;
         detailBodyEl = null;
         detailStatusEl = null;
         editButtonEl = null;
     }
 
     function ensureDetailLayout(){
-        const hasElements = detailTitleEl?.isConnected && detailBodyEl?.isConnected && detailStatusEl?.isConnected && editButtonEl?.isConnected;
+        const hasElements = detailTitleEl?.isConnected && detailBodyEl?.isConnected && detailStatusEl?.isConnected && editButtonEl?.isConnected && detailTypeEl?.isConnected;
         if(hasElements) return;
 
         detailBox.innerHTML = '';
@@ -658,9 +660,20 @@
         const header = document.createElement('div');
         header.className = 'detail-header';
 
+        const headerMain = document.createElement('div');
+        headerMain.className = 'detail-header-main';
+
         detailTitleEl = document.createElement('h1');
         detailTitleEl.id = 'detail-title';
-        header.appendChild(detailTitleEl);
+        headerMain.appendChild(detailTitleEl);
+
+        detailTypeEl = document.createElement('span');
+        detailTypeEl.className = 'detail-type-badge';
+        detailTypeEl.setAttribute('aria-hidden', 'true');
+        detailTypeEl.hidden = true;
+        headerMain.appendChild(detailTypeEl);
+
+        header.appendChild(headerMain);
 
         const actions = document.createElement('div');
         actions.className = 'detail-header-actions';
@@ -737,11 +750,24 @@
         if(!detailTitleEl) return { baseLabel: '', captionText: '' };
         const typeLabelRaw = currentRawType || currentTable || '';
         const typeLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Eintrag';
+        const normalizedType = tableForType(typeLabelRaw || currentTable || '') || '';
         const explicitLabel = (labelFor(currentRawType, currentRow) ?? '').toString().trim();
         const baseLabel = explicitLabel || typeLabel;
         const headingLabel = escapeHtml(baseLabel);
         const idChip = formatIdChip(currentId);
         detailTitleEl.innerHTML = idChip ? `${headingLabel} ${idChip}` : headingLabel;
+        if(detailTypeEl){
+            const normalized = normalizedType ? normalizedType.toString().trim() : '';
+            if(normalized){
+                detailTypeEl.textContent = normalized;
+                detailTypeEl.hidden = false;
+                detailTypeEl.classList.add('is-visible');
+            }else{
+                detailTypeEl.textContent = '';
+                detailTypeEl.hidden = true;
+                detailTypeEl.classList.remove('is-visible');
+            }
+        }
         const captionIdRaw = (currentId ?? '').toString().trim();
         const captionId = captionIdRaw ? (captionIdRaw.startsWith('#') ? captionIdRaw : `#${captionIdRaw}`) : '';
         const captionText = captionId ? `${baseLabel} ${captionId}` : baseLabel;
