@@ -1180,22 +1180,44 @@
         box.innerHTML = '';
 
         // Helper functions for row fetches
-        const rowAccount  = async (accountId)  => await fetchJson(`/row/Account/${accountId}`);
-        const rowProject  = async (projectId)  => await fetchJson(`/row/Project/${projectId}`);
-        const rowSite     = async (siteId)     => await fetchJson(`/row/Site/${siteId}`);
-        const rowClient   = async (clientId)   => await fetchJson(`/row/Clients/${clientId}`); // changed
-        const rowCity     = async (cityId)     => await fetchJson(`/row/City/${encodeURIComponent(cityId)}`);
-        const rowSoftware = async (softwareId) => await fetchJson(`/row/Software/${encodeURIComponent(softwareId)}`);
+        const rowAccount           = async (accountId)  => await fetchJson(`/row/Account/${accountId}`);
+        const rowProject           = async (projectId)  => await fetchJson(`/row/Project/${projectId}`);
+        const rowSite              = async (siteId)     => await fetchJson(`/row/Site/${siteId}`);
+        const rowClient            = async (clientId)   => await fetchJson(`/row/Clients/${clientId}`); // changed
+        const rowCity              = async (cityId)     => await fetchJson(`/row/City/${encodeURIComponent(cityId)}`);
+        const rowSoftware          = async (softwareId) => await fetchJson(`/row/Software/${encodeURIComponent(softwareId)}`);
+        const rowDeploymentVariant = async (variantId)  => await fetchJson(`/row/DeploymentVariant/${encodeURIComponent(variantId)}`);
 
         const sections = [];
 
         if (type === 'Project') {
+            const pills = [];
+
             const accId = val(row,'AccountID');
             if (accId != null) {
                 const acc = await rowAccount(accId);
-                if (acc) sections.push({
+                if (acc) {
+                    pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
+                }
+            }
+
+            const variantId = val(row,'DeploymentVariantID');
+            if (variantId != null) {
+                const variant = await rowDeploymentVariant(variantId);
+                if (variant) {
+                    pills.push(pillLink(
+                        `/details.html?type=deploymentvariant&id=${encodeURIComponent(variantId)}`,
+                        'Deployment Variant',
+                        variantId,
+                        labelFor('deploymentvariant', variant)
+                    ));
+                }
+            }
+
+            if (pills.length) {
+                sections.push({
                     title: 'Belongs to',
-                    pills: [ pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)) ]
+                    pills
                 });
             }
         } else if (type === 'Site') {
@@ -1499,6 +1521,17 @@
                 const desc = [status, meta].filter(Boolean).join(' · ');
                 return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
             }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId: val(row,'AccountID'), projectId: id } });
+        }
+        else if(type==='DeploymentVariant'){
+            const projectRows = await fetchJson(`/table/project?limit=200`);
+            const projects = Array.isArray(projectRows)
+                ? projectRows.filter(p => (val(p,'DeploymentVariantID') ?? '').toString() === (id ?? '').toString())
+                : [];
+            addSection(box, 'Projects', projects, p => {
+                const pid = val(p,'ProjectID');
+                const name = val(p,'ProjectName');
+                return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, null, pid, name);
+            }, { entity: 'Project', label: 'Project', params: { deploymentVariantId: id } });
         }
         else if(type==='Site'){
             let projectId = val(row,'ProjectID');
