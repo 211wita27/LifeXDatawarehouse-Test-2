@@ -19,6 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SearchControllerIntegrationTest {
 
+    private static final String ACME_ACCOUNT_ID = "bfacb3aa-2756-4c62-9f92-040000000001";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -28,7 +30,6 @@ class SearchControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         luceneIndexService.reindexAll();
-        luceneIndexService.indexAccount("acc-integration", "Acme Integration", "Austria", "contact@acme.example");
     }
 
     @AfterEach
@@ -40,7 +41,8 @@ class SearchControllerIntegrationTest {
     void plainTextQueryReturnsHits() throws Exception {
         mockMvc.perform(get("/search").param("q", "Acme Integration"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value("acc-integration"))
-                .andExpect(jsonPath("$[0].type").value("account"));
+                .andExpect(jsonPath("$[0].id").value(ACME_ACCOUNT_ID))
+                .andExpect(jsonPath("$[0].type").value("account"))
+                .andExpect(jsonPath("$[0].text").value("Acme Integration"));
     }
 }

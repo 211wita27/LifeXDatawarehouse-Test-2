@@ -174,6 +174,19 @@ public final class SeedDataGenerator {
 
         List<Account> accounts = new ArrayList<>();
         for (int i = 0; i < 30; i++) {
+            if (i == 0) {
+                Country country = countries.get(0);
+                accounts.add(new Account(
+                        generateId(EntityType.ACCOUNT),
+                        "Acme Integration",
+                        "Ingrid Novak",
+                        "ingrid.novak@acme-integration.example",
+                        "+43 720000",
+                        country.code() + "19999999",
+                        country.name()
+                ));
+                continue;
+            }
             String prefix = orgPrefixes.get(i % orgPrefixes.size());
             String suffix = orgSuffixes.get((i / orgPrefixes.size()) % orgSuffixes.size());
             String accountName = prefix + " " + suffix + " " + String.format(Locale.ROOT, "%02d", i + 1);
