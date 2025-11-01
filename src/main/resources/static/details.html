@@ -51,6 +51,40 @@
 
 <script>
     /* -------------------- Helpers -------------------- */
+    const PKS = {
+        Account: 'AccountID',
+        Project: 'ProjectID',
+        Site: 'SiteID',
+        Server: 'ServerID',
+        Clients: 'ClientID',
+        Radio: 'RadioID',
+        AudioDevice: 'AudioDeviceID',
+        PhoneIntegration: 'PhoneIntegrationID',
+        Country: 'CountryCode',
+        City: 'CityID',
+        Address: 'AddressID',
+        DeploymentVariant: 'VariantID',
+        Software: 'SoftwareID',
+        InstalledSoftware: 'InstalledSoftwareID',
+        UpgradePlan: 'UpgradePlanID',
+        ServiceContract: 'ContractID'
+    };
+
+    let currentRow = null;
+    let currentTable = null;
+    let currentId = null;
+    let currentRawType = null;
+    let isEditing = false;
+
+    const detailBox = document.getElementById('view');
+    const parentsBox = document.getElementById('parents');
+    const childrenBox = document.getElementById('children');
+
+    let detailTitleEl;
+    let detailBodyEl;
+    let detailStatusEl;
+    let editButtonEl;
+
     function escapeHtml(value){
         const map = {
             '&': '&amp;',
@@ -239,9 +273,349 @@
         container.appendChild(sec);
     }
 
+    function resetDetailRefs(){
+        detailTitleEl = null;
+        detailBodyEl = null;
+        detailStatusEl = null;
+        editButtonEl = null;
+    }
+
+    function ensureDetailLayout(){
+        const hasElements = detailTitleEl?.isConnected && detailBodyEl?.isConnected && detailStatusEl?.isConnected && editButtonEl?.isConnected;
+        if(hasElements) return;
+
+        detailBox.innerHTML = '';
+
+        const header = document.createElement('div');
+        header.className = 'detail-header';
+
+        detailTitleEl = document.createElement('h1');
+        detailTitleEl.id = 'detail-title';
+        header.appendChild(detailTitleEl);
+
+        const actions = document.createElement('div');
+        actions.className = 'detail-header-actions';
+
+        editButtonEl = document.createElement('button');
+        editButtonEl.type = 'button';
+        editButtonEl.className = 'detail-edit-button';
+        editButtonEl.setAttribute('aria-label', 'Eintrag bearbeiten');
+        editButtonEl.innerHTML = '<svg class="detail-edit-icon" aria-hidden="true" focusable="false" viewBox="0 0 20 20"><path d="M2.5 13.79 2 17l3.21-.5 9.06-9.06-2.71-2.71-9.06 9.06ZM15.85 3.86c.39-.39.39-1.03 0-1.42l-1.29-1.29a1 1 0 0 0-1.42 0l-1.6 1.59 2.71 2.71 1.6-1.59Z"/></svg>';
+        editButtonEl.addEventListener('click', () => {
+            if(!currentRow) return;
+            if(isEditing){
+                exitEditMode();
+            }else{
+                enterEditMode();
+            }
+        });
+
+        actions.appendChild(editButtonEl);
+        header.appendChild(actions);
+        detailBox.appendChild(header);
+
+        detailStatusEl = document.createElement('div');
+        detailStatusEl.id = 'detail-status';
+        detailStatusEl.className = 'detail-status';
+        detailStatusEl.setAttribute('role', 'status');
+        detailStatusEl.setAttribute('aria-live', 'polite');
+        detailStatusEl.setAttribute('aria-atomic', 'true');
+        detailBox.appendChild(detailStatusEl);
+
+        detailBodyEl = document.createElement('div');
+        detailBodyEl.className = 'detail-body';
+        detailBox.appendChild(detailBodyEl);
+    }
+
+    function updateModeIndicator(){
+        if(!detailBox) return;
+        detailBox.dataset.mode = isEditing ? 'edit' : 'view';
+        if(isEditing){
+            detailBox.classList.add('is-editing');
+        }else{
+            detailBox.classList.remove('is-editing');
+        }
+    }
+
+    function updateEditButton(){
+        ensureDetailLayout();
+        if(!editButtonEl) return;
+        editButtonEl.disabled = !currentRow;
+        editButtonEl.setAttribute('aria-pressed', isEditing ? 'true' : 'false');
+        editButtonEl.classList.toggle('is-active', !!isEditing);
+        editButtonEl.title = isEditing ? 'Bearbeitung aktiv' : 'Eintrag bearbeiten';
+    }
+
+    function setStatus(message, variant){
+        ensureDetailLayout();
+        const classes = ['detail-status'];
+        if(message){
+            classes.push('is-visible');
+        }
+        if(variant){
+            classes.push(`detail-status--${variant}`);
+        }
+        detailStatusEl.className = classes.join(' ');
+        detailStatusEl.textContent = message || '';
+    }
+
+    function clearStatus(){
+        setStatus('', '');
+    }
+
+    function updateHeading(){
+        ensureDetailLayout();
+        if(!detailTitleEl) return { baseLabel: '', captionText: '' };
+        const typeLabelRaw = currentRawType || currentTable || '';
+        const baseLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Eintrag';
+        const headingLabel = escapeHtml(baseLabel);
+        const idChip = formatIdChip(currentId);
+        detailTitleEl.innerHTML = idChip ? `${headingLabel} ${idChip}` : headingLabel;
+        const captionIdRaw = (currentId ?? '').toString().trim();
+        const captionText = captionIdRaw ? `${baseLabel} ${captionIdRaw.startsWith('#') ? captionIdRaw : `#${captionIdRaw}`}` : baseLabel;
+        return { baseLabel, captionText };
+    }
+
+    function inferValueType(value){
+        if(value === null || value === undefined) return 'text';
+        if(typeof value === 'number') return 'number';
+        if(typeof value === 'string'){
+            const trimmed = value.trim();
+            if(!trimmed) return 'text';
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            const dateTimePattern = /^\d{4}-\d{2}-\d{2}[T\s]/;
+            if((datePattern.test(trimmed) || dateTimePattern.test(trimmed)) && !Number.isNaN(Date.parse(trimmed))){
+                return 'date';
+            }
+        }
+        return 'text';
+    }
+
+    function formatInputValue(value, type){
+        if(value === null || value === undefined) return '';
+        if(type === 'date'){
+            const str = String(value).trim();
+            const pureDate = /^\d{4}-\d{2}-\d{2}$/;
+            if(pureDate.test(str)) return str;
+            const parsed = Date.parse(str);
+            if(!Number.isNaN(parsed)){
+                const d = new Date(parsed);
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            }
+            return str;
+        }
+        return String(value ?? '');
+    }
+
+    function renderViewMode(row){
+        ensureDetailLayout();
+        updateModeIndicator();
+        updateEditButton();
+        const { captionText } = updateHeading();
+        const entries = Object.entries(row || {});
+        const kvRows = entries.map(([k,v]) => {
+            const cellValue = v === null || v === undefined ? '' : escapeHtml(String(v));
+            return `<tr><th scope="row" class="key">${escapeHtml(k)}</th><td>${cellValue}</td></tr>`;
+        }).join('');
+        detailBodyEl.innerHTML = `<table id="kv">
+  <caption class="visually-hidden">Felder von ${escapeHtml(captionText)}</caption>
+  ${kvRows}
+</table>`;
+    }
+
+    function renderEditMode(row){
+        ensureDetailLayout();
+        updateModeIndicator();
+        updateEditButton();
+        updateHeading();
+
+        detailBodyEl.innerHTML = '';
+
+        const form = document.createElement('form');
+        form.className = 'detail-edit-form';
+        form.setAttribute('aria-label', 'Eintrag bearbeiten');
+
+        const grid = document.createElement('div');
+        grid.className = 'detail-form-grid';
+        const pkName = currentTable ? PKS[currentTable] : null;
+
+        Object.entries(row || {}).forEach(([key, value]) => {
+            const inputId = `field-${key}`;
+            const label = document.createElement('label');
+            label.className = 'detail-field';
+            label.setAttribute('for', inputId);
+
+            const labelText = document.createElement('span');
+            labelText.className = 'detail-field-label';
+            labelText.textContent = key;
+
+            const input = document.createElement('input');
+            input.id = inputId;
+            input.name = key;
+            input.className = 'detail-input';
+
+            const valueType = inferValueType(value);
+            input.dataset.valueType = valueType;
+            if(valueType === 'number'){
+                input.type = 'number';
+                input.step = 'any';
+            }else if(valueType === 'date'){
+                input.type = 'date';
+            }else{
+                input.type = 'text';
+            }
+            input.value = formatInputValue(value, valueType);
+            input.required = false;
+
+            if(pkName && pkName.toLowerCase() === key.toLowerCase()){
+                input.readOnly = true;
+                input.setAttribute('aria-readonly', 'true');
+                input.classList.add('detail-input-readonly');
+            }
+
+            label.appendChild(labelText);
+            label.appendChild(input);
+            grid.appendChild(label);
+        });
+
+        form.appendChild(grid);
+
+        const actions = document.createElement('div');
+        actions.className = 'detail-form-actions';
+
+        const saveButton = document.createElement('button');
+        saveButton.type = 'submit';
+        saveButton.className = 'btn-primary';
+        saveButton.textContent = 'Speichern';
+
+        const cancelButton = document.createElement('button');
+        cancelButton.type = 'button';
+        cancelButton.className = 'btn-secondary';
+        cancelButton.textContent = 'Abbrechen';
+        cancelButton.addEventListener('click', () => {
+            exitEditMode();
+        });
+
+        actions.appendChild(saveButton);
+        actions.appendChild(cancelButton);
+        form.appendChild(actions);
+
+        form.addEventListener('submit', event => {
+            event.preventDefault();
+            saveForm(form, saveButton);
+        });
+
+        detailBodyEl.appendChild(form);
+
+        const focusTarget = form.querySelector('input:not([readonly])');
+        if(focusTarget){
+            focusTarget.focus();
+        }
+    }
+
+    function renderDetail(){
+        if(!currentRow){
+            updateEditButton();
+            return;
+        }
+        if(isEditing){
+            renderEditMode(currentRow);
+        }else{
+            renderViewMode(currentRow);
+        }
+    }
+
+    function enterEditMode(){
+        if(!currentRow) return;
+        isEditing = true;
+        renderDetail();
+    }
+
+    function exitEditMode(){
+        if(!currentRow) return;
+        isEditing = false;
+        renderDetail();
+    }
+
+    async function saveForm(form, saveButton){
+        if(!currentTable || !currentId) return;
+
+        const payload = {};
+        form.querySelectorAll('input').forEach(input => {
+            if(!input.name) return;
+            const type = input.dataset.valueType;
+            if(type === 'number'){
+                payload[input.name] = input.value === '' ? null : Number(input.value);
+            }else if(type === 'date'){
+                payload[input.name] = input.value === '' ? null : input.value;
+            }else{
+                payload[input.name] = input.value;
+            }
+        });
+
+        setStatus('Änderungen werden gespeichert …', 'info');
+        saveButton.disabled = true;
+        if(editButtonEl) editButtonEl.disabled = true;
+
+        try{
+            const res = await fetch(`/row/${currentTable}/${encodeURIComponent(currentId)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if(!res.ok){
+                const text = await res.text();
+                throw new Error(text || res.statusText);
+            }
+            setStatus('Änderungen gespeichert.', 'success');
+            isEditing = false;
+            await loadData({ preserveStatus: true });
+        }catch(err){
+            setStatus(`Fehler beim Speichern: ${err.message}`, 'error');
+        }finally{
+            saveButton.disabled = false;
+            if(editButtonEl) editButtonEl.disabled = false;
+        }
+    }
+
+    async function loadData(options){
+        if(!currentTable || !currentId) return;
+        const preserveStatus = options && options.preserveStatus;
+
+        detailBox.setAttribute('aria-busy', 'true');
+        try{
+            const res = await fetch(`/row/${currentTable}/${encodeURIComponent(currentId)}`);
+            if(!res.ok){
+                resetDetailRefs();
+                if(res.status === 404){
+                    detailBox.textContent = 'Eintrag nicht gefunden.';
+                }else{
+                    detailBox.textContent = 'Fehler beim Laden.';
+                }
+                return;
+            }
+            const row = await res.json();
+            currentRow = row;
+            if(!preserveStatus) clearStatus();
+            renderDetail();
+
+            const typeKey = (currentTable === 'Clients') ? 'Client' : currentTable;
+            await loadParents(typeKey, currentId, row);
+            await loadChildren(typeKey, currentId, row);
+        }catch(e){
+            resetDetailRefs();
+            detailBox.textContent = 'Fehler: ' + e;
+        }finally{
+            detailBox.removeAttribute('aria-busy');
+        }
+    }
+
     /* -------------------- Eltern laden -------------------- */
     async function loadParents(type, id, row){
-        const box = document.getElementById('parents');
+        const box = parentsBox;
         box.innerHTML = '';
 
         // Hilfsfunktionen für Row-Fetches
@@ -456,7 +830,7 @@
     /* -------------------- Kinder laden -------------------- */
     async function loadChildren(type, id, row){
         row = row || {};
-        const box = document.getElementById('children');
+        const box = childrenBox;
         box.innerHTML = '';
 
         const loadServiceContracts = async (filterKey, value) => {
@@ -589,44 +963,20 @@
 
     /* -------------------- Boot -------------------- */
     (async () => {
-        const p = new URLSearchParams(location.search);
-        const rawType = p.get('type');
-        const id = p.get('id');
-        const box = document.getElementById('view');
+        const params = new URLSearchParams(location.search);
+        currentRawType = params.get('type');
+        const idParam = params.get('id');
 
-        if(!rawType || !id){ box.textContent = 'Parameter fehlen.'; box.removeAttribute('aria-busy'); return; }
-
-        const table = tableForType(rawType);
-        try{
-            const res = await fetch(`/row/${table}/${id}`);
-            if(!res.ok){ box.textContent = 'Eintrag nicht gefunden.'; box.removeAttribute('aria-busy'); return; }
-            const row = await res.json();
-
-            const kvRows = Object.entries(row)
-                .map(([k,v])=>`<tr><th scope="row" class="key">${k}</th><td>${v}</td></tr>`).join('');
-            const typeLabelRaw = rawType || table || '';
-            const baseLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Eintrag';
-            const headingLabel = escapeHtml(baseLabel);
-            const idChip = formatIdChip(id);
-            const captionIdRaw = (id ?? '').toString().trim();
-            const captionText = captionIdRaw ? `${baseLabel} ${captionIdRaw.startsWith('#') ? captionIdRaw : `#${captionIdRaw}`}` : baseLabel;
-
-            box.innerHTML = `<h1>${idChip ? `${headingLabel} ${idChip}` : headingLabel}</h1>
-<table id="kv">
-  <caption class="visually-hidden">Felder von ${escapeHtml(captionText)}</caption>
-  ${kvRows}
-</table>`;
-
-            const typeKey = (table==='Clients') ? 'Client' : table; // geändert
-
-            await loadParents(typeKey, id, row);
-            await loadChildren(typeKey, id, row);
-
-        }catch(e){
-            box.textContent = 'Fehler: ' + e;
-        } finally {
-            box.removeAttribute('aria-busy');
+        if(!currentRawType || !idParam){
+            detailBox.textContent = 'Parameter fehlen.';
+            detailBox.removeAttribute('aria-busy');
+            return;
         }
+
+        currentTable = tableForType(currentRawType);
+        currentId = idParam;
+
+        await loadData();
     })();
 </script>
 </body>
