@@ -1,5 +1,7 @@
 package at.htlle.freq.web;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -10,6 +12,8 @@ import java.util.*;
 
 @RestController
 public class GenericCrudController {
+
+    private static final Logger log = LoggerFactory.getLogger(GenericCrudController.class);
 
     private final NamedParameterJdbcTemplate jdbc;
 
@@ -133,6 +137,8 @@ public class GenericCrudController {
         int count = jdbc.update(sql, params);
         if (count == 0)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no record updated");
+
+        log.info("Updated {} {} with fields {}", table, id, body.keySet());
     }
 
     // -------- DELETE --------
