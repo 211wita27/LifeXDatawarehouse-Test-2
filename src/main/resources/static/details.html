@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="/css/style.css">
     <style>
         .section{margin-top:1.2rem}
-        .section h2{margin:.2rem 0 .6rem 0}
+        .section h2{margin:.2rem 0 .6rem 0;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
         .pill{
             display:inline-block;background:#e9f1ff;border:1px solid #cfe0ff;border-radius:999px;
             padding:.15rem .55rem;margin:.12rem .2rem;cursor:pointer;text-decoration:none;color:inherit
@@ -14,6 +14,15 @@
         .pill:hover{background:#dbeaff}
         .empty{color:#666}
         .sep{margin:0 .35rem;color:#999}
+        .section h2 .count{color:#6b7280;font-size:.9rem;font-weight:400}
+        .add-link{
+            display:inline-flex;align-items:center;justify-content:center;
+            width:1.8rem;height:1.8rem;border-radius:999px;border:1px solid #2c64b5;
+            color:#2c64b5;text-decoration:none;font-weight:600;font-size:1.2rem;line-height:1;
+            transition:background .2s ease,color .2s ease;
+        }
+        .section h2 .add-link{margin-left:auto}
+        .add-link:focus,.add-link:hover{background:#2c64b5;color:#fff;outline:2px solid transparent;outline-offset:2px;box-shadow:0 0 0 2px rgba(44,100,181,.35)}
     </style>
 </head>
 <body>
@@ -169,17 +178,63 @@
         a.innerHTML = html;
         return a;
     }
-    function addSection(container, title, items, toLink){
+    function buildCreateHref(meta){
+        if(!meta || !meta.entity) return null;
+        const params = new URLSearchParams();
+        params.set('entity', meta.entity);
+        const entries = meta.params && typeof meta.params === 'object' ? Object.entries(meta.params) : [];
+        entries.forEach(([key,value])=>{
+            if(value!==undefined && value!==null && value!==''){
+                params.set(key, value);
+            }
+        });
+        const query = params.toString();
+        return `create.html${query ? `?${query}` : ''}`;
+    }
+    function describeCreateMeta(meta){
+        if(!meta) return '';
+        const label = meta.label || meta.entity || '';
+        const contextParts = [];
+        const ctx = meta.params || {};
+        if(ctx.accountId) contextParts.push(`Account ${shortId(ctx.accountId).replace(/^##/, '#')}`);
+        if(ctx.projectId) contextParts.push(`Project ${shortId(ctx.projectId).replace(/^##/, '#')}`);
+        if(ctx.siteId) contextParts.push(`Site ${shortId(ctx.siteId).replace(/^##/, '#')}`);
+        if(ctx.clientId) contextParts.push(`Client ${shortId(ctx.clientId).replace(/^##/, '#')}`);
+        if(contextParts.length){
+            return `Neuen ${label} für ${contextParts.join(' und ')} anlegen`;
+        }
+        return `Neuen ${label} anlegen`;
+    }
+    function addSection(container, title, items, toLink, createMeta){
+        const list = Array.isArray(items) ? items : [];
         const sec = document.createElement('div');
         sec.className = 'section';
-        sec.innerHTML = `<h2>${title} <span class="muted" style="font-size:.9rem">(${items.length})</span></h2>`;
-        if(!items.length){
-            sec.innerHTML += `<div class="empty">(keine Einträge)</div>`;
+        const heading = document.createElement('h2');
+        heading.innerHTML = `${escapeHtml(title)} <span class="count">(${list.length})</span>`;
+        if(createMeta){
+            const href = buildCreateHref(createMeta);
+            if(href){
+                const addLink = document.createElement('a');
+                addLink.className = 'add-link';
+                addLink.href = href;
+                const aria = describeCreateMeta(createMeta);
+                addLink.setAttribute('aria-label', aria);
+                addLink.title = aria;
+                addLink.textContent = '+';
+                heading.appendChild(addLink);
+            }
+        }
+        sec.appendChild(heading);
+        if(!list.length){
+            const empty = document.createElement('div');
+            empty.className = 'empty';
+            empty.textContent = '(keine Einträge)';
+            sec.appendChild(empty);
             container.appendChild(sec);
             return;
         }
         const wrap = document.createElement('div');
-        items.forEach(it => wrap.appendChild(toLink(it)));
+        list.forEach(it => wrap.appendChild(toLink(it)));
         sec.appendChild(wrap);
         container.appendChild(sec);
     }
@@ -399,7 +454,8 @@
     }
 
     /* -------------------- Kinder laden -------------------- */
-    async function loadChildren(type, id){
+    async function loadChildren(type, id, row){
+        row = row || {};
         const box = document.getElementById('children');
         box.innerHTML = '';
 
@@ -416,7 +472,7 @@
                 const pid = val(p,'ProjectID');
                 const name = val(p,'ProjectName');
                 return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, null, pid, name);
-            });
+            }, { entity: 'Project', label: 'Project', params: { accountId: id } });
 
             const contracts = await loadServiceContracts('AccountID', id);
             addSection(box, 'Service Contracts', contracts, sc => {
@@ -426,7 +482,7 @@
                 const meta = formatDateRange(val(sc,'StartDate'), val(sc,'EndDate'));
                 const desc = [status, meta].filter(Boolean).join(' · ');
                 return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
-            });
+            }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId: id } });
         }
         else if(type==='Project'){
             const sites = await fetchJson(`/sites?projectId=${id}`);
@@ -434,7 +490,7 @@
                 const sid = val(s,'SiteID');
                 const name = val(s,'SiteName');
                 return pillLink(`/details.html?type=site&id=${encodeURIComponent(sid)}`, null, sid, name);
-            });
+            }, { entity: 'Site', label: 'Site', params: { projectId: id } });
 
             const contracts = await loadServiceContracts('ProjectID', id);
             addSection(box, 'Service Contracts', contracts, sc => {
@@ -444,29 +500,36 @@
                 const meta = formatDateRange(val(sc,'StartDate'), val(sc,'EndDate'));
                 const desc = [status, meta].filter(Boolean).join(' · ');
                 return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
-            });
+            }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId: val(row,'AccountID'), projectId: id } });
         }
         else if(type==='Site'){
+            let projectId = val(row,'ProjectID');
+            let accountId = val(row,'AccountID');
+            if(!accountId && projectId){
+                const projectRow = await fetchJson(`/row/Project/${encodeURIComponent(projectId)}`);
+                if(projectRow) accountId = val(projectRow,'AccountID');
+            }
+
             const servers = await fetchJson(`/servers?siteId=${id}`);
             addSection(box, 'Server', servers, s => {
                 const sid = val(s,'ServerID');
                 const name = val(s,'ServerName');
                 return pillLink(`/details.html?type=server&id=${encodeURIComponent(sid)}`, null, sid, name);
-            });
+            }, { entity: 'Server', label: 'Server', params: { accountId, projectId, siteId: id } });
 
             const clients = await fetchJson(`/clients?siteId=${id}`);
             addSection(box, 'Clients', clients, c => {
                 const cid = val(c,'ClientID');
                 const name = val(c,'ClientName');
                 return pillLink(`/details.html?type=client&id=${encodeURIComponent(cid)}`, null, cid, name);
-            });
+            }, { entity: 'WorkingPosition', label: 'Client', params: { accountId, projectId, siteId: id } });
 
             const radios = await fetchJson(`/radios?siteId=${id}`);
             addSection(box, 'Radios', radios, r => {
                 const rid = val(r,'RadioID');
                 const brand = val(r,'RadioBrand');
                 return pillLink(`/details.html?type=radio&id=${encodeURIComponent(rid)}`, null, rid, brand);
-            });
+            }, { entity: 'Radio', label: 'Radio', params: { accountId, projectId, siteId: id } });
 
             const contracts = await loadServiceContracts('SiteID', id);
             addSection(box, 'Service Contracts', contracts, sc => {
@@ -476,7 +539,7 @@
                 const meta = formatDateRange(val(sc,'StartDate'), val(sc,'EndDate'));
                 const desc = [status, meta].filter(Boolean).join(' · ');
                 return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
-            });
+            }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId, projectId, siteId: id } });
         }
         else if(type==='Client'){
             const aud = await fetchJson(`/audio?clientId=${id}`);
@@ -484,14 +547,14 @@
                 const aid = val(a,'AudioDeviceID');
                 const brand = val(a,'AudioDeviceBrand');
                 return pillLink(`/details.html?type=audio&id=${encodeURIComponent(aid)}`, null, aid, brand);
-            });
+            }, { entity: 'AudioDevice', label: 'AudioDevice', params: { clientId: id, siteId: val(row,'SiteID') } });
 
             const ph = await fetchJson(`/phones?clientId=${id}`);
             addSection(box, 'Phone Integrations', ph, p => {
                 const pid = val(p,'PhoneIntegrationID');
                 const brand = val(p,'PhoneBrand');
                 return pillLink(`/details.html?type=phone&id=${encodeURIComponent(pid)}`, null, pid, brand);
-            });
+            }, { entity: 'PhoneIntegration', label: 'PhoneIntegration', params: { clientId: id, siteId: val(row,'SiteID') } });
         }
         else if(type==='Software'){
             const installedRows = await fetchJson(`/table/installedsoftware?limit=200`);
@@ -557,7 +620,7 @@
             const typeKey = (table==='Clients') ? 'Client' : table; // geändert
 
             await loadParents(typeKey, id, row);
-            await loadChildren(typeKey, id);
+            await loadChildren(typeKey, id, row);
 
         }catch(e){
             box.textContent = 'Fehler: ' + e;
