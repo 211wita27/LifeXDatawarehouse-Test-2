@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Datensatz anlegen</title>
+    <title>Create record</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
@@ -18,23 +18,23 @@
     </style>
 </head>
 <body>
-<a href="#main" class="skip-link">Zum Inhalt springen</a>
+<a href="#main" class="skip-link">Skip to content</a>
 
 <header>
     <img src="/img/LifeXDatawarehouseLogo.png" alt="">
-    <nav aria-label="Hauptnavigation">
+    <nav aria-label="Main navigation">
         <a href="/index.html">Dashboard</a>
-        <a href="/create.html" aria-current="page">Daten anlegen</a>
+        <a href="/create.html" aria-current="page">Create data</a>
         <a href="/reports.html">Reports</a>
     </nav>
 </header>
 
 <main id="main" class="container" aria-live="polite">
-    <h1>Datensatz anlegen</h1>
+    <h1>Create record</h1>
 
-    <!-- Schritt 1 -->
+    <!-- Step 1 -->
     <fieldset id="step1">
-        <label for="entity">Welche Entität möchtest du anlegen?</label>
+        <label for="entity">Which entity would you like to create?</label>
         <select id="entity">
             <option value="Account">Account</option>
             <option value="Address">Address</option>
@@ -53,10 +53,10 @@
             <option value="UpgradePlan">UpgradePlan</option>
             <option value="WorkingPosition">Client (WorkingPosition)</option>
         </select>
-        <button onclick="next()">Weiter</button>
+        <button onclick="next()">Next</button>
     </fieldset>
 
-    <!-- Schritt 2 -->
+    <!-- Step 2 -->
     <section id="entityContext" class="entity-context hidden" aria-live="assertive" aria-atomic="true" aria-hidden="true">
         <p id="entityHint" class="entity-hint"></p>
     </section>
@@ -149,7 +149,7 @@
     const addSel=(id,lbl,choices,opts=true)=>{
         const config=(opts&&typeof opts==='object'&&!Array.isArray(opts))?{...opts}:{required:opts};
         if(config.required===undefined) config.required=true;
-        const placeholder=config.placeholder??'Bitte auswählen';
+        const placeholder=config.placeholder??'Please select';
         const values=Array.isArray(choices)?toChoices(choices):toChoices([]);
         const selectedValue=config.value??'';
         const selectAttrs=renderAttributes({id,name:config.name||id,required:config.required!==false});
@@ -234,7 +234,7 @@
 
     function showEntityMessage(entityKey, context={}){
         if(!window.entityHint || !window.entityContext) return;
-        const base=formConfig.getMessage(entityKey)||`Du legst gerade einen Datensatz der Entität ${entityKey} an.`;
+        const base=formConfig.getMessage(entityKey)||`You are currently creating a record for the ${entityKey} entity.`;
         const parts=[];
         if(context.accountId) parts.push(`Account ${shortContextId(context.accountId)}`);
         if(context.projectId) parts.push(`Project ${shortContextId(context.projectId)}`);
@@ -243,7 +243,7 @@
         let message=base;
         if(parts.length){
             const trimmed=base.endsWith('.')?base.slice(0,-1):base;
-            message=`${trimmed} für ${parts.join(' und ')} an.`;
+            message=`${trimmed} for ${parts.join(' and ')}.`;
         }
         entityHint.textContent=message;
         entityContext.classList.remove('hidden');
@@ -251,11 +251,11 @@
     }
 
     function renderAsyncSelect(id,label,sourceKey,options={}){
-        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null, name=null, value=null} = options;
+        const {required=true, allowManual=true, placeholder='Please select', dependsOn=null, emptyText='No entries available', filter=null, name=null, value=null} = options;
         asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
-        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
+        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter manually</button>` : '';
         const manualValue = value ?? '';
-        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="Enter UUID" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
         const hiddenName = name ? ` name="${escapeAttr(name)}"` : '';
         const hiddenValue = value!=null ? ` value="${escapeAttr(value)}"` : '';
         return `<label class="async-label">${label}
@@ -283,7 +283,7 @@
     }
 
     function populateOptions(select,entries,options={}){
-        const {placeholder='Bitte auswählen', allowEmpty=false}=options;
+        const {placeholder='Please select', allowEmpty=false}=options;
         const currentValue = select.value;
         select.innerHTML='';
         if(placeholder!==null){
@@ -340,7 +340,7 @@
             if(select) select.disabled=true;
             manual.classList.remove('hidden');
             if(required) manual.setAttribute('required',''); else manual.removeAttribute('required');
-            if(toggle) toggle.textContent='Aus Liste wählen';
+            if(toggle) toggle.textContent='Choose from list';
             container.dataset.mode='manual';
             updateValueProxy(id,manual.value?.trim()||'');
         }else{
@@ -352,7 +352,7 @@
                 if(required) select.setAttribute('required','');
                 select.disabled = select.options.length===0;
             }
-            if(toggle) toggle.textContent='Freitext eingeben';
+            if(toggle) toggle.textContent='Enter manually';
             container.dataset.mode='select';
             updateValueProxy(id,select?select.value:'');
         }
@@ -370,7 +370,7 @@
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
             select.innerHTML='';
-            populateOptions(select,[],{placeholder:'Bitte zuerst die abhängige Auswahl treffen',allowEmpty:true});
+            populateOptions(select,[],{placeholder:'Please choose the dependent option first',allowEmpty:true});
             select.disabled=true;
             if(manual){
                 manual.value='';
@@ -392,7 +392,7 @@
         }
 
         select.disabled=true;
-        select.innerHTML=`<option value="">Lade Daten…</option>`;
+        select.innerHTML=`<option value="">Loading data…</option>`;
         try{
             const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
             const data=await fetchJson(url);
@@ -424,7 +424,7 @@
             config.initialValue=undefined;
         }catch(err){
             console.error(err);
-            populateOptions(select,[],{placeholder:'Fehler beim Laden'});
+            populateOptions(select,[],{placeholder:'Error while loading'});
             select.disabled=true;
             if(config.allowManual!==false){
                 setManualMode(id,'manual');
@@ -568,9 +568,9 @@
             h+= renderFieldFromConfig(field, overrides);
         });
         if(!fields.length){
-            h+= `<p class="form-hint">Für ${escapeAttr(t)} liegt keine Feldkonfiguration vor.</p>`;
+            h+= `<p class="form-hint">No field configuration is available for ${escapeAttr(t)}.</p>`;
         }
-        h+= `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
+        h+= `<button>Save</button> <button type="button" onclick="back()">Back</button>`;
         f.innerHTML = h;
         initializeAsyncSelects(f);
         applyInputEnhancements(f);
@@ -714,7 +714,7 @@
                 const tenantRaw=v('tenant');
                 const tenantCount=tenantRaw ? Number(tenantRaw) : null;
                 if(tenantRaw && Number.isNaN(tenantCount)){
-                    fail('TenantCount muss eine Zahl sein.');
+                    fail('Tenant count must be a number.');
                     return;
                 }
                 p={
@@ -802,7 +802,7 @@
                 url='/row/country';
                 const countryCode=(v('countryCode')||'').toUpperCase();
                 if(countryCode.length!==2){
-                    fail('Country Code muss genau 2 Zeichen haben.');
+                    fail('Country code must be exactly 2 characters.');
                     return;
                 }
                 p={
@@ -816,7 +816,7 @@
                 const cityId=(v('cityId')||'').toUpperCase();
                 const country=v('countryCode');
                 if(!country){
-                    fail('Bitte ein Land auswählen.');
+                    fail('Please select a country.');
                     return;
                 }
                 p={
@@ -853,7 +853,7 @@
                 const plannedStart=v('plannedStart');
                 const plannedEnd=v('plannedEnd');
                 if(plannedStart && plannedEnd && plannedStart>plannedEnd){
-                    fail('Das geplante Ende muss nach dem Start liegen.');
+                    fail('The planned end must be after the start.');
                     return;
                 }
                 p={
@@ -872,7 +872,7 @@
                 const startDate=v('startDate');
                 const endDate=v('endDate');
                 if(startDate && endDate && startDate>endDate){
-                    fail('Enddatum darf nicht vor dem Startdatum liegen.');
+                    fail('End date cannot be before the start date.');
                     return;
                 }
                 p={
@@ -888,14 +888,14 @@
         }
 
         if(!url){
-            fail('Unbekannte Entität oder fehlende URL.');
+            fail('Unknown entity or missing endpoint.');
             return;
         }
 
         try{
             const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
             if(r.ok){
-                result.innerHTML=`<p class="success">✔ ${t} angelegt.</p>`;
+                result.innerHTML=`<p class="success">✔ ${t} created.</p>`;
                 e.target.reset();
                 const ids=Object.keys(asyncSelectConfigs);
                 for(const id of ids){
@@ -904,7 +904,7 @@
             }
             else   {result.innerHTML=`<p class="error" role="alert">${await r.text()}</p>`;}
         }catch{
-            result.innerHTML=`<p class="error" role="alert">Netzwerkfehler.</p>`;
+            result.innerHTML=`<p class="error" role="alert">Network error.</p>`;
         }finally{
             result.removeAttribute('aria-busy');
         }
