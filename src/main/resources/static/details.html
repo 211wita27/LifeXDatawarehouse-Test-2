@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Detailansicht</title>
+    <title>Detail View</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         .section{margin-top:1.2rem}
@@ -27,25 +27,25 @@
 </head>
 <body>
 
-<a href="#main" class="skip-link">Zum Inhalt springen</a>
+<a href="#main" class="skip-link">Skip to content</a>
 
 <header>
     <img src="/img/LifeXDatawarehouseLogo.png" alt="">
-    <nav aria-label="Hauptnavigation">
+    <nav aria-label="Main navigation">
         <a href="/index.html">Dashboard</a>
-        <a href="/create.html">Daten anlegen</a>
+        <a href="/create.html">Create Data</a>
         <a href="/reports.html">Reports</a>
     </nav>
 </header>
 
 <main id="main" style="max-width:1000px;margin:2rem auto">
-    <a id="back" href="index.html">← zurück</a>
-    <div id="view" class="card" role="region" aria-live="polite" aria-busy="true">lade …</div>
+    <a id="back" href="index.html">← Back</a>
+    <div id="view" class="card" role="region" aria-live="polite" aria-busy="true">loading …</div>
 
-    <!-- NEU: Eltern-Beziehungen -->
+    <!-- NEW: Parent relationships -->
     <div id="parents"></div>
 
-    <!-- Kinder-Listen -->
+    <!-- Child lists -->
     <div id="children"></div>
 </main>
 
@@ -86,7 +86,7 @@
     let detailBodyEl;
     let detailStatusEl;
     let editButtonEl;
-    const defaultDocumentTitle = document.title || 'Detailansicht';
+    const defaultDocumentTitle = document.title || 'Detail View';
 
     function escapeHtml(value){
         const map = {
@@ -125,7 +125,7 @@
             case 'project': return 'Project';
             case 'site': return 'Site';
             case 'server': return 'Server';
-            case 'client': return 'Clients'; // geändert von WorkingPosition
+            case 'client': return 'Clients'; // changed from WorkingPosition
             case 'radio': return 'Radio';
             case 'audio': return 'AudioDevice';
             case 'phone': return 'PhoneIntegration';
@@ -162,7 +162,7 @@
         if (!str) return '';
         const ts = Date.parse(str);
         if (!Number.isNaN(ts)) {
-            return new Date(ts).toLocaleDateString('de-AT', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            return new Date(ts).toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
         }
         return str;
     }
@@ -234,7 +234,7 @@
     const renderSelectField = (id,label,choices,opts={}) => {
         const config = {...opts};
         if(config.required === undefined) config.required = true;
-        const placeholder = config.placeholder ?? 'Bitte auswählen';
+        const placeholder = config.placeholder ?? 'Please select';
         const selectedValue = config.value ?? '';
         const values = toChoices(choices);
         const selectAttrs = renderAttributes({id, name: config.name || id, required: config.required!==false, 'data-value-type': config.valueType || undefined});
@@ -243,11 +243,11 @@
     };
 
     function renderDetailAsyncSelect(id,label,sourceKey,options={}){
-        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null, name=null, value=null} = options;
+        const {required=true, allowManual=true, placeholder='Please select', dependsOn=null, emptyText='No entries available', filter=null, name=null, value=null} = options;
         detailAsyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
-        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
+        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter manual value</button>` : '';
         const manualValue = value ?? '';
-        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="Enter UUID" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
         const hiddenName = name ? ` name="${escapeAttr(name)}"` : '';
         const hiddenValue = value!=null ? ` value="${escapeAttr(value)}"` : '';
         const valueTypeAttr = ` data-value-type="${escapeAttr(options.valueType || 'text')}"`;
@@ -315,7 +315,7 @@
     }
 
     function detailPopulateOptions(select,entries,options={}){
-        const {placeholder='Bitte auswählen', allowEmpty=false}=options;
+        const {placeholder='Please select', allowEmpty=false}=options;
         const currentValue = select.value;
         select.innerHTML='';
         if(placeholder!==null){
@@ -374,7 +374,7 @@
             if(select) select.disabled=true;
             manual.classList.remove('hidden');
             if(required) manual.setAttribute('required',''); else manual.removeAttribute('required');
-            if(toggle) toggle.textContent='Aus Liste wählen';
+            if(toggle) toggle.textContent='Choose from list';
             container.dataset.mode='manual';
             detailUpdateValueProxy(id,manual.value?.trim()||'');
         }else{
@@ -386,7 +386,7 @@
                 if(required) select.setAttribute('required','');
                 select.disabled = select.options.length===0;
             }
-            if(toggle) toggle.textContent='Freitext eingeben';
+            if(toggle) toggle.textContent='Enter manual value';
             container.dataset.mode='select';
             detailUpdateValueProxy(id,select?select.value:'');
         }
@@ -404,7 +404,7 @@
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
             select.innerHTML='';
-            detailPopulateOptions(select,[],{placeholder:'Bitte zuerst die abhängige Auswahl treffen',allowEmpty:true});
+            detailPopulateOptions(select,[],{placeholder:'Please select the dependent value first',allowEmpty:true});
             select.disabled=true;
             if(manual){
                 manual.value='';
@@ -426,7 +426,7 @@
         }
 
         select.disabled=true;
-        select.innerHTML=`<option value="">Lade Daten…</option>`;
+        select.innerHTML=`<option value="">Loading data…</option>`;
         try{
             const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
             const data=await fetchJson(url);
@@ -458,7 +458,7 @@
             config.initialValue=undefined;
         }catch(err){
             console.error(err);
-            detailPopulateOptions(select,[],{placeholder:'Fehler beim Laden'});
+            detailPopulateOptions(select,[],{placeholder:'Error loading data'});
             select.disabled=true;
             if(config.allowManual!==false){
                 detailSetManualMode(id,'manual');
@@ -605,9 +605,9 @@
         if(ctx.siteId) contextParts.push(`Site ${shortId(ctx.siteId).replace(/^##/, '#')}`);
         if(ctx.clientId) contextParts.push(`Client ${shortId(ctx.clientId).replace(/^##/, '#')}`);
         if(contextParts.length){
-            return `Neuen ${label} für ${contextParts.join(' und ')} anlegen`;
+            return `Create new ${label} for ${contextParts.join(' and ')}`;
         }
-        return `Neuen ${label} anlegen`;
+        return `Create new ${label}`;
     }
     function addSection(container, title, items, toLink, createMeta){
         const list = Array.isArray(items) ? items : [];
@@ -632,7 +632,7 @@
         if(!list.length){
             const empty = document.createElement('div');
             empty.className = 'empty';
-            empty.textContent = '(keine Einträge)';
+            empty.textContent = '(no entries)';
             sec.appendChild(empty);
             container.appendChild(sec);
             return;
@@ -681,7 +681,7 @@
         editButtonEl = document.createElement('button');
         editButtonEl.type = 'button';
         editButtonEl.className = 'detail-edit-button';
-        editButtonEl.setAttribute('aria-label', 'Eintrag bearbeiten');
+        editButtonEl.setAttribute('aria-label', 'Edit entry');
         editButtonEl.innerHTML = '<svg class="detail-edit-icon" aria-hidden="true" focusable="false" viewBox="0 0 20 20"><path d="M2.5 13.79 2 17l3.21-.5 9.06-9.06-2.71-2.71-9.06 9.06ZM15.85 3.86c.39-.39.39-1.03 0-1.42l-1.29-1.29a1 1 0 0 0-1.42 0l-1.6 1.59 2.71 2.71 1.6-1.59Z"/></svg>';
         editButtonEl.addEventListener('click', () => {
             if(!currentRow) return;
@@ -725,7 +725,7 @@
         editButtonEl.disabled = !currentRow;
         editButtonEl.setAttribute('aria-pressed', isEditing ? 'true' : 'false');
         editButtonEl.classList.toggle('is-active', !!isEditing);
-        editButtonEl.title = isEditing ? 'Bearbeitung aktiv' : 'Eintrag bearbeiten';
+        editButtonEl.title = isEditing ? 'Editing active' : 'Edit entry';
     }
 
     function setStatus(message, variant){
@@ -749,7 +749,7 @@
         ensureDetailLayout();
         if(!detailTitleEl) return { baseLabel: '', captionText: '' };
         const typeLabelRaw = currentRawType || currentTable || '';
-        const typeLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Eintrag';
+        const typeLabel = typeLabelRaw ? typeLabelRaw.charAt(0).toUpperCase() + typeLabelRaw.slice(1) : 'Entry';
         const normalizedType = tableForType(typeLabelRaw || currentTable || '') || '';
         const explicitLabel = (labelFor(currentRawType, currentRow) ?? '').toString().trim();
         const baseLabel = explicitLabel || typeLabel;
@@ -838,7 +838,7 @@
             return `<tr><th scope="row" class="key">${escapeHtml(k)}</th><td>${cellValue}</td></tr>`;
         }).join('');
         detailBodyEl.innerHTML = `<table id="kv">
-  <caption class="visually-hidden">Felder von ${escapeHtml(captionText)}</caption>
+  <caption class="visually-hidden">Fields for ${escapeHtml(captionText)}</caption>
   ${kvRows}
 </table>`;
     }
@@ -854,7 +854,7 @@
 
         const form = document.createElement('form');
         form.className = 'detail-edit-form';
-        form.setAttribute('aria-label', 'Eintrag bearbeiten');
+        form.setAttribute('aria-label', 'Edit entry');
 
         const grid = document.createElement('div');
         grid.className = 'detail-form-grid';
@@ -919,7 +919,7 @@
 
                 const emptyOption = document.createElement('option');
                 emptyOption.value = '';
-                emptyOption.textContent = 'Nicht gesetzt';
+                emptyOption.textContent = 'Not set';
                 select.appendChild(emptyOption);
 
                 const trueOption = document.createElement('option');
@@ -1082,13 +1082,13 @@
             if(payload.CountryCode !== undefined && payload.CountryCode !== null){
                 const code = String(payload.CountryCode).trim().toUpperCase();
                 if(code.length !== 2){
-                    if(fail('Country Code muss genau 2 Zeichen haben.')) return;
+                if(fail('Country code must be exactly 2 characters.')) return;
                 }
                 payload.CountryCode = code;
             }
         }else if(entityKey === 'City'){
             if(payload.CountryCode === undefined || payload.CountryCode === null || payload.CountryCode === ''){
-                if(fail('Bitte ein Land auswählen.')) return;
+                if(fail('Please select a country.')) return;
             }else{
                 payload.CountryCode = String(payload.CountryCode).trim().toUpperCase();
             }
@@ -1099,7 +1099,7 @@
             if(Object.prototype.hasOwnProperty.call(payload,'TenantCount') && payload.TenantCount !== null){
                 const num = Number(payload.TenantCount);
                 if(Number.isNaN(num)){
-                    if(fail('TenantCount muss eine Zahl sein.')) return;
+                    if(fail('TenantCount must be a number.')) return;
                 }
                 payload.TenantCount = num;
             }
@@ -1107,17 +1107,17 @@
             const start = payload.PlannedWindowStart;
             const end = payload.PlannedWindowEnd;
             if(start && end && start > end){
-                if(fail('Das geplante Ende muss nach dem Start liegen.')) return;
+                if(fail('The planned end must be after the start.')) return;
             }
         }else if(entityKey === 'ServiceContract'){
             const start = payload.StartDate;
             const end = payload.EndDate;
             if(start && end && start > end){
-                if(fail('Enddatum darf nicht vor dem Startdatum liegen.')) return;
+                if(fail('End date cannot be before the start date.')) return;
             }
         }
 
-        setStatus('Änderungen werden gespeichert …', 'info');
+        setStatus('Saving changes …', 'info');
         saveButton.disabled = true;
         if(editButtonEl) editButtonEl.disabled = true;
 
@@ -1131,11 +1131,11 @@
                 const text = await res.text();
                 throw new Error(text || res.statusText);
             }
-            setStatus('Änderungen gespeichert.', 'success');
+            setStatus('Changes saved.', 'success');
             isEditing = false;
             await loadData({ preserveStatus: true });
         }catch(err){
-            setStatus(`Fehler beim Speichern: ${err.message}`, 'error');
+            setStatus(`Error saving: ${err.message}`, 'error');
         }finally{
             saveButton.disabled = false;
             if(editButtonEl) editButtonEl.disabled = false;
@@ -1152,9 +1152,9 @@
             if(!res.ok){
                 resetDetailRefs();
                 if(res.status === 404){
-                    detailBox.textContent = 'Eintrag nicht gefunden.';
+                    detailBox.textContent = 'Entry not found.';
                 }else{
-                    detailBox.textContent = 'Fehler beim Laden.';
+                    detailBox.textContent = 'Error loading data.';
                 }
                 return;
             }
@@ -1168,22 +1168,22 @@
             await loadChildren(typeKey, currentId, row);
         }catch(e){
             resetDetailRefs();
-            detailBox.textContent = 'Fehler: ' + e;
+            detailBox.textContent = 'Error: ' + e;
         }finally{
             detailBox.removeAttribute('aria-busy');
         }
     }
 
-    /* -------------------- Eltern laden -------------------- */
+    /* -------------------- Load parents -------------------- */
     async function loadParents(type, id, row){
         const box = parentsBox;
         box.innerHTML = '';
 
-        // Hilfsfunktionen für Row-Fetches
+        // Helper functions for row fetches
         const rowAccount = async (accountId) => await fetchJson(`/row/Account/${accountId}`);
         const rowProject = async (projectId) => await fetchJson(`/row/Project/${projectId}`);
         const rowSite    = async (siteId)    => await fetchJson(`/row/Site/${siteId}`);
-        const rowClient  = async (clientId)  => await fetchJson(`/row/Clients/${clientId}`); // geändert
+        const rowClient  = async (clientId)  => await fetchJson(`/row/Clients/${clientId}`); // changed
 
         const sections = [];
 
@@ -1192,7 +1192,7 @@
             if (accId != null) {
                 const acc = await rowAccount(accId);
                 if (acc) sections.push({
-                    title: 'Gehört zu',
+                    title: 'Belongs to',
                     pills: [ pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)) ]
                 });
             }
@@ -1209,7 +1209,7 @@
                         if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
                     }
                 }
-                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+                if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
         } else if (type === 'Server') {
             const siteId = val(row,'SiteID');
@@ -1231,7 +1231,7 @@
                         }
                     }
                 }
-                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+                if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
         } else if (type === 'Client') {
             const siteId = val(row,'SiteID');
@@ -1253,7 +1253,7 @@
                         }
                     }
                 }
-                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+                if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
         } else if (type === 'City') {
             const countryCode = val(row, 'CountryCode');
@@ -1266,7 +1266,7 @@
                         countryCode,
                         labelFor('country', country)
                     );
-                    sections.push({ title: 'Gehört zu', pills: [pill] });
+                    sections.push({ title: 'Belongs to', pills: [pill] });
                 }
             }
         } else if (type === 'Radio') {
@@ -1295,7 +1295,7 @@
                 const client = await rowClient(clientId);
                 if (client) pills.push(pillLink(`/details.html?type=client&id=${clientId}`, 'Client', clientId, labelFor('client', client)));
             }
-            if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            if (pills.length) sections.push({ title: 'Belongs to', pills });
         } else if (type === 'Audio') {
             const clientId = val(row,'ClientID');
             if (clientId != null) {
@@ -1323,7 +1323,7 @@
                         }
                     }
                 }
-                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+                if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
         } else if (type === 'Phone') {
             const clientId = val(row,'ClientID');
@@ -1352,7 +1352,7 @@
                         }
                     }
                 }
-                if (pills.length) sections.push({ title: 'Gehört zu', pills });
+                if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
         } else if (type === 'ServiceContract') {
             const pills = [];
@@ -1371,7 +1371,7 @@
                 const site = await rowSite(siteId);
                 if (site) pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
             }
-            if (pills.length) sections.push({ title: 'Gehört zu', pills });
+            if (pills.length) sections.push({ title: 'Belongs to', pills });
         }
 
         // Rendern
@@ -1388,7 +1388,7 @@
         }
     }
 
-    /* -------------------- Kinder laden -------------------- */
+    /* -------------------- Load children -------------------- */
     async function loadChildren(type, id, row){
         row = row || {};
         const box = childrenBox;
@@ -1496,7 +1496,7 @@
             const installed = Array.isArray(installedRows)
                 ? installedRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
                 : [];
-            addSection(box, 'Installationen', installed, isw => {
+            addSection(box, 'Installations', installed, isw => {
                 const installId = val(isw,'InstalledSoftwareID');
                 const label = labelFor('installedsoftware', isw);
                 const siteId = val(isw,'SiteID');
@@ -1511,7 +1511,7 @@
             const plans = Array.isArray(planRows)
                 ? planRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
                 : [];
-            addSection(box, 'Upgrade-Pläne', plans, plan => {
+            addSection(box, 'Upgrade Plans', plans, plan => {
                 const planId = val(plan,'UpgradePlanID');
                 const label = labelFor('upgradeplan', plan);
                 const status = val(plan,'Status');
@@ -1529,7 +1529,7 @@
         const idParam = params.get('id');
 
         if(!currentRawType || !idParam){
-            detailBox.textContent = 'Parameter fehlen.';
+            detailBox.textContent = 'Missing parameters.';
             detailBox.removeAttribute('aria-busy');
             return;
         }
