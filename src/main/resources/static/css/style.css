@@ -112,36 +112,40 @@ table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
     display:inline-flex;
     align-items:center;
     gap:.25rem;
-    border:1px solid #cfe0ff;
-    background:#eef4ff;
-    border-radius:999px;
-    padding:.1rem .55rem;
+    border:none;
+    background:none;
+    padding:0;
     font:inherit;
     line-height:1.2;
-    color:#003a70;
+    color:#111;
     cursor:pointer;
     text-decoration:none;
     appearance:none;
     white-space:nowrap;
+    border-bottom:1px solid transparent;
 }
-.table-quick-filter .id-chip{
-    background:transparent;
-    border:none;
-    padding:0;
-    font:inherit;
+.table-quick-filter:hover{
+    border-bottom-color:currentColor;
+}
+.table-quick-filter:focus-visible{
+    outline:2px solid currentColor;
+    outline-offset:2px;
+    border-bottom-color:currentColor;
+}
+.table-id-link{
+    display:inline-flex;
+    align-items:center;
+    gap:.25rem;
+    text-decoration:none;
     color:inherit;
 }
-.table-quick-filter:hover,
-.table-quick-filter:focus-visible{
-    background:#dbe8ff;
-    border-color:#9cbcff;
-    box-shadow:0 0 0 2px rgba(0,103,194,.25);
-    outline:none;
+.table-id-link:focus-visible{
+    outline:2px solid #003a70;
+    outline-offset:2px;
+    border-radius:6px;
 }
-.table-quick-filter:focus-visible .id-chip,
-.table-quick-filter:hover .id-chip{
-    background:transparent;
-    border:none;
+.table-id-link:hover .id-chip{
+    box-shadow:0 0 0 1px rgba(0,58,112,.35) inset;
 }
 
 /* ===============  Details-Ansicht  =============== */

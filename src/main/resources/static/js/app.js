@@ -45,7 +45,6 @@ if (resultArea) {
             searchInput.value = query;
             if (typeof searchInput.focus === 'function') searchInput.focus();
         }
-        runSearch(query);
     });
 }
 
@@ -241,19 +240,49 @@ function buildUserQuery(raw){
 }
 
 /* ===================== Ergebnis-Vorschau (Anreicherung) ===================== */
+function normalizeTypeKey(value) {
+    if (value === undefined || value === null) return '';
+    return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+}
+
+const ENTITY_TYPE_MAP = {
+    account: { detailType: 'account', typeToken: 'type:account', table: 'Account', aliases: ['account', 'accounts'] },
+    project: { detailType: 'project', typeToken: 'type:project', table: 'Project', aliases: ['project', 'projects'] },
+    site:    { detailType: 'site',    typeToken: 'type:site',    table: 'Site',    aliases: ['site', 'sites'] },
+    server:  { detailType: 'server',  typeToken: 'type:server',  table: 'Server',  aliases: ['server', 'servers'] },
+    client:  { detailType: 'client',  typeToken: 'type:client',  table: 'WorkingPosition', aliases: ['client', 'clients', 'workingposition'] },
+    radio:   { detailType: 'radio',   typeToken: 'type:radio',   table: 'Radio',   aliases: ['radio', 'radios'] },
+    audio:   { detailType: 'audio',   typeToken: 'type:audio',   table: 'AudioDevice', aliases: ['audio', 'audiodevice', 'audiodevices'] },
+    phone:   { detailType: 'phone',   typeToken: 'type:phone',   table: 'PhoneIntegration', aliases: ['phone', 'phoneintegration', 'phoneintegrations'] },
+};
+
+const TABLE_NAME_LOOKUP = {};
+Object.entries(ENTITY_TYPE_MAP).forEach(([key, info]) => {
+    const aliases = new Set([key, info.table, info.detailType, ...(info.aliases || [])]);
+    aliases.forEach(alias => {
+        const normalized = normalizeTypeKey(alias);
+        if (normalized) TABLE_NAME_LOOKUP[normalized] = info;
+    });
+});
+
 function tableForType(t){
-    const s=(t||'').toLowerCase();
-    switch(s){
-        case 'account': return 'Account';
-        case 'project': return 'Project';
-        case 'site':    return 'Site';
-        case 'server':  return 'Server';
-        case 'client':  return 'WorkingPosition'; // Sonderfall
-        case 'radio':   return 'Radio';
-        case 'audio':   return 'AudioDevice';
-        case 'phone':   return 'PhoneIntegration';
-        default:        return t;
+    const key = normalizeTypeKey(t);
+    const info = ENTITY_TYPE_MAP[key];
+    if (info && info.table) return info.table;
+    return t;
+}
+
+function getTableTypeInfo(tableName) {
+    const key = normalizeTypeKey(tableName);
+    if (!key) {
+        return { detailType: null, typeToken: null };
     }
+    const info = TABLE_NAME_LOOKUP[key];
+    if (info) {
+        return { detailType: info.detailType, typeToken: info.typeToken };
+    }
+    const detailType = key || null;
+    return { detailType, typeToken: detailType ? `type:${detailType}` : null };
 }
 function val(row, ...keys){
     for(const k of keys){
@@ -569,41 +598,46 @@ function tableQuickFilterQuery(tableName, columnKey, rawValue) {
     const raw = (rawValue === undefined || rawValue === null) ? '' : String(rawValue).trim();
     if (!column || !raw) return null;
 
+    const { typeToken } = getTableTypeInfo(tableName);
+    const typeFilter = typeToken || '';
+
     const isIdColumn = /(id|guid)$/i.test(column);
     if (isIdColumn) {
         const escaped = raw.replace(/"/g, '\\"');
-        return `id:"${escaped}"`;
+        const idQuery = `id:"${escaped}"`;
+        return typeFilter ? `${typeFilter} AND ${idQuery}` : idQuery;
     }
-
-    const table = (tableName === undefined || tableName === null) ? '' : String(tableName).trim().toLowerCase();
-    const typeToken = table ? `type:${table}` : '';
 
     if (/^stillactive$/i.test(column)) {
         const active = parseBool(rawValue);
         const statusToken = active ? 'statusactive' : 'statusinactive';
-        return typeToken ? `${typeToken} AND ${statusToken}` : statusToken;
+        return typeFilter ? `${typeFilter} AND ${statusToken}` : statusToken;
     }
 
     const prepared = buildUserQuery(raw);
     if (!prepared) return null;
-    return typeToken ? `${typeToken} AND ${prepared}` : prepared;
+    return typeFilter ? `${typeFilter} AND ${prepared}` : prepared;
 }
 
 function renderTableCell(tableName, columnName, value) {
     const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
     const raw = (value === undefined || value === null) ? '' : String(value);
-    const query = tableQuickFilterQuery(tableName, key, value);
-    const queryAttr = query ? escapeHtml(query) : '';
     const isIdColumn = /(id|guid)$/i.test(key);
 
     if (isIdColumn && raw) {
         const rendered = renderIdDisplay(value);
         const titleAttr = escapeHtml(rendered.title);
-        if (query) {
-            return `<td title="${titleAttr}"><button type="button" class="table-quick-filter" data-query="${queryAttr}">${rendered.inner}</button></td>`;
+        const { detailType } = getTableTypeInfo(tableName);
+        if (detailType) {
+            const href = `/details.html?type=${encodeURIComponent(detailType)}&id=${encodeURIComponent(raw)}`;
+            const hrefAttr = escapeHtml(href);
+            return `<td title="${titleAttr}"><a class="table-id-link" href="${hrefAttr}">${rendered.inner}</a></td>`;
         }
         return `<td title="${titleAttr}">${rendered.inner}</td>`;
     }
+
+    const query = tableQuickFilterQuery(tableName, key, value);
+    const queryAttr = query ? escapeHtml(query) : '';
 
     if (query && raw) {
         return `<td><button type="button" class="table-quick-filter" data-query="${queryAttr}">${escapeHtml(raw)}</button></td>`;
@@ -620,11 +654,17 @@ async function showTable(name) {
         if (!Array.isArray(rows) || !rows.length) { resultArea.textContent = '(leer)'; return; }
 
         const cols = Object.keys(rows[0]);
-        const hdr  = cols.map(c => `<th>${c}</th>`).join('');
+        const hdr  = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('');
         const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
+        const { typeToken } = getTableTypeInfo(name);
+        const safeName = escapeHtml(name);
+        const titleQuery = typeToken ? escapeHtml(typeToken) : null;
+        const titleControl = titleQuery
+            ? `<button type="button" class="table-quick-filter" data-query="${titleQuery}">${safeName}</button>`
+            : safeName;
 
         resultArea.innerHTML =
-            `<h2>${name}</h2>
+            `<h2>${titleControl}</h2>
        <div class="table-scroll">
          <table>
            <tr>${hdr}</tr>${body}
