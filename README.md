@@ -28,7 +28,7 @@ Neu: Die globale Suche unterstützt jetzt **Lucene-Syntax oder normale Eingaben*
 - **UI**
   - Rein statisches HTML / CSS / JS (kein Build-Tool erforderlich)
   - Shortcut-Buttons direkt editierbar (Name + Query)
-  - Fortschrittsanzeige für laufenden Index-Build (noch nicht umgesetzt)
+  - Fortschrittsanzeige für laufenden Index-Build mit Live-Daten aus `/api/index-progress`
   - Generischer Tabellen-Viewer (100 Zeilen Vorschau)
 - **Automation** – Apache Camel 4 Timer-Routes (Sync, Full-Reindex, Einzel-Index)
 - **Dev-Ergonomie** – Spring Boot DevTools, LiveReload, H2-Console, Lombok
@@ -131,6 +131,7 @@ Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
   - Tabellen-Explorer
   - Ergebnisliste mit zusätzlicher Info-Spalte
   - Reindex-Button und Fortschrittsbalken für Indexaufbau
+  - Dashboard fragt den Fortschritt regelmäßig über `/api/index-progress` ab; der Backend-Indexlauf liefert hierzu Statuswerte
 
 - **`create.html` – Datensatz-Erstellung**
   - Schritt-für-Schritt-Wizard zur Anlage neuer Datensätze (inkl. Country, City, Address, Software, InstalledSoftware, UpgradePlan und ServiceContract)
