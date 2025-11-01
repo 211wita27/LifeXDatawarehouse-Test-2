@@ -115,7 +115,7 @@ INSERT INTO Address (AddressID, Street, CityID) VALUES
 
 -- Account
 INSERT INTO Account (AccountID, AccountName, ContactName, ContactEmail, ContactPhone, VATNumber, Country) VALUES
-    ('bfacb3aa-2756-4c62-9f92-040000000001', 'Guardian Network 01', 'Anna Dubois', 'anna.dubois@guardiannetwork.example', '+30 131130', 'AT10000000', 'Austria'),
+    ('bfacb3aa-2756-4c62-9f92-040000000001', 'Acme Integration', 'Ingrid Novak', 'ingrid.novak@acme-integration.example', '+43 720000', 'AT19999999', 'Austria'),
     ('79481711-f879-4692-b08f-040000000002', 'Resilience Network 02', 'Markus Larsson', 'markus.larsson@resiliencenetwork.example', '+31 692763', 'DE10000001', 'Germany'),
     ('093a3223-339c-4718-8cbb-040000000003', 'Aurora Network 03', 'Lena Nielsen', 'lena.nielsen@auroranetwork.example', '+32 111248', 'CH10000002', 'Switzerland'),
     ('75fc7752-d81c-4398-aa1f-040000000004', 'Sentinel Network 04', 'Sven Meier', 'sven.meier@sentinelnetwork.example', '+33 648884', 'SE10000003', 'Sweden'),
