@@ -133,9 +133,9 @@ Weitere Endpunkte für `Project`, `Site`, `Server` usw. analog.
   - Reindex-Button und Fortschrittsbalken für Indexaufbau
 
 - **`create.html` – Datensatz-Erstellung**
-  - Schritt-für-Schritt-Wizard zur Anlage neuer Datensätze
-  - Dynamische Formularfelder je Entitätstyp
-  - Direkte Validierung der Eingaben im Browser
+  - Schritt-für-Schritt-Wizard zur Anlage neuer Datensätze (inkl. Country, City, Address, Software, InstalledSoftware, UpgradePlan und ServiceContract)
+  - Dynamische Formularfelder je Entitätstyp mit abhängigen Dropdowns und asynchronen Datenquellen
+  - Direkte Validierung der Eingaben im Browser (Pflichtfelder, Datentypen, Datumslogik)
   - Abschließende Übersicht vor dem Speichern
 
 - **`details.html` – Detailansicht**

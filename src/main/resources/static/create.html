@@ -36,9 +36,22 @@
     <fieldset id="step1">
         <label for="entity">Welche Entität möchtest du anlegen?</label>
         <select id="entity">
-            <option>Account</option><option>Project</option><option>Site</option>
-            <option>Server</option><option>WorkingPosition</option><option>Radio</option>
-            <option>AudioDevice</option><option>PhoneIntegration</option><option>DeploymentVariant</option>
+            <option value="Account">Account</option>
+            <option value="Address">Address</option>
+            <option value="AudioDevice">AudioDevice</option>
+            <option value="City">City</option>
+            <option value="Country">Country</option>
+            <option value="DeploymentVariant">DeploymentVariant</option>
+            <option value="InstalledSoftware">InstalledSoftware</option>
+            <option value="PhoneIntegration">PhoneIntegration</option>
+            <option value="Project">Project</option>
+            <option value="Radio">Radio</option>
+            <option value="Server">Server</option>
+            <option value="ServiceContract">ServiceContract</option>
+            <option value="Site">Site</option>
+            <option value="Software">Software</option>
+            <option value="UpgradePlan">UpgradePlan</option>
+            <option value="WorkingPosition">Client (WorkingPosition)</option>
         </select>
         <button onclick="next()">Weiter</button>
     </fieldset>
@@ -69,12 +82,77 @@
         dynamicForm.classList.remove('hidden');
     }
 
-    const add=(id,lbl,req=true)=>`<label for="${id}">${lbl}<input id="${id}" ${req?'required':''}></label>`;
-    const addSel=(id,lbl,opts,req=true)=>{
-        const empty = req ? '' : `<option value=""></option>`;
-        return `<label for="${id}">${lbl}<select id="${id}" ${req?'required':''}>${empty}
-      ${opts.map(o=>`<option value="${o}">${o}</option>`).join('')}
-    </select></label>`;
+    const escapeAttr=value=>String(value)
+        .replace(/&/g,'&amp;')
+        .replace(/"/g,'&quot;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+
+    const renderAttributes=attrs=>Object.entries(attrs)
+        .map(([key,value])=>{
+            if(value===undefined||value===null||value===false) return '';
+            if(value===true) return ` ${key}`;
+            return ` ${key}="${escapeAttr(value)}"`;
+        }).join('');
+
+    const add=(id,lbl,opts=true)=>{
+        let config;
+        if(typeof opts==='boolean'){
+            config={required:opts};
+        }else{
+            config={...opts};
+            if(config.required===undefined) config.required=true;
+        }
+
+        const attributes={
+            id,
+            name:config?.name||id,
+            type:config?.type||'text'
+        };
+
+        const optionalKeys=['placeholder','pattern','maxlength','minlength','min','max','step','autocomplete','inputmode','list'];
+        optionalKeys.forEach(key=>{
+            if(config&&config[key]!==undefined&&config[key]!==null){
+                attributes[key]=config[key];
+            }
+        });
+
+        if(config&&config.disabled) attributes.disabled=true;
+        if(config&&config.readonly) attributes.readonly=true;
+        if(config&&config.className) attributes.class=config.className;
+        if(config&&config.class) attributes.class=config.class;
+        if(config&&config.value!==undefined&&config.value!==null) attributes.value=config.value;
+        if(config&&config.dataset){
+            Object.entries(config.dataset).forEach(([key,value])=>{
+                if(value!==undefined&&value!==null){
+                    attributes[`data-${key}`]=value;
+                }
+            });
+        }
+        if(!config||config.required!==false) attributes.required=true;
+
+        const extra=config&&config.attrs?` ${config.attrs.trim()}`:'';
+        return `<label for="${id}">${lbl}<input${renderAttributes(attributes)}${extra}></label>`;
+    };
+
+    const toChoices=choices=>{
+        if(!Array.isArray(choices)) return [];
+        return choices.map(choice=>{
+            if(choice&&typeof choice==='object'){
+                return {value:choice.value, label:choice.label??choice.value};
+            }
+            return {value:choice, label:choice};
+        });
+    };
+
+    const addSel=(id,lbl,choices,opts=true)=>{
+        const config=(opts&&typeof opts==='object'&&!Array.isArray(opts))?{...opts}:{required:opts};
+        if(config.required===undefined) config.required=true;
+        const placeholder=config.placeholder??'Bitte auswählen';
+        const values=Array.isArray(choices)?toChoices(choices):toChoices([]);
+        const selectAttrs=renderAttributes({id,name:id,required:config.required!==false});
+        const optionsHtml=values.map(o=>`<option value="${escapeAttr(o.value)}">${escapeAttr(o.label)}</option>`).join('');
+        return `<label for="${id}">${lbl}<select${selectAttrs}><option value="">${escapeAttr(placeholder)}</option>${optionsHtml}</select></label>`;
     };
 
     const pick = (obj,...keys)=>{
@@ -107,23 +185,25 @@
                 const street = pick(item,'street','Street');
                 const city = pick(item,'cityID','CityID');
                 const label = street || city ? `${[street,city].filter(Boolean).join(', ')} (${String(value).split('-')[0]})` : value;
-                return value ? {value, label} : null;
+                return value ? {value, label, cityID: pick(item,'cityID','CityID')} : null;
             }
         },
         projects:{
-            url:'/projects',
+            url:accountId=>accountId?`/projects?accountId=${encodeURIComponent(accountId)}`:'/projects',
             map:item=>{
                 const value = pick(item,'projectID','projectId','ProjectID');
                 const name = pick(item,'projectName','ProjectName');
-                return value ? {value, label: formatLabel(name,value)} : null;
+                const account = pick(item,'accountID','AccountID');
+                return value ? {value, label: formatLabel(name,value), accountID: account} : null;
             }
         },
         sites:{
-            url:'/sites',
+            url:projectId=>projectId?`/sites?projectId=${encodeURIComponent(projectId)}`:'/sites',
             map:item=>{
                 const value = pick(item,'siteID','siteId','SiteID');
                 const name = pick(item,'siteName','SiteName');
-                return value ? {value, label: formatLabel(name,value)} : null;
+                const project = pick(item,'projectID','ProjectID');
+                return value ? {value, label: formatLabel(name,value), projectID: project} : null;
             }
         },
         clients:{
@@ -131,7 +211,57 @@
             map:item=>{
                 const value = pick(item,'clientID','clientId','ClientID');
                 const name = pick(item,'clientName','ClientName');
-                return value ? {value, label: formatLabel(name,value)} : null;
+                return value ? {value, label: formatLabel(name,value), siteID: pick(item,'siteID','SiteID')} : null;
+            }
+        },
+        countries:{
+            url:'/table/country',
+            map:item=>{
+                const raw = pick(item,'countryCode','CountryCode','COUNTRYCODE');
+                if(!raw) return null;
+                const value=String(raw).toUpperCase();
+                const name = pick(item,'countryName','CountryName','COUNTRYNAME');
+                const label = name ? `${name} (${value})` : value;
+                return {value, label};
+            }
+        },
+        cities:{
+            url:'/table/city',
+            map:item=>{
+                const value = pick(item,'cityID','CityID','CITYID');
+                if(!value) return null;
+                const name = pick(item,'cityName','CityName','CITYNAME');
+                const country = pick(item,'countryCode','CountryCode','COUNTRYCODE');
+                const countryCode = country ? String(country).toUpperCase() : undefined;
+                const labelParts = [name, countryCode].filter(Boolean);
+                const short = String(value).split('-')[0];
+                const label = labelParts.length>0 ? `${labelParts.join(' • ')} (${short})` : String(value);
+                return {value, label, countryCode};
+            }
+        },
+        software:{
+            url:'/table/software',
+            map:item=>{
+                const value = pick(item,'softwareID','SoftwareID','SOFTWAREID');
+                if(!value) return null;
+                const name = pick(item,'name','Name');
+                const release = pick(item,'release','Release');
+                const labelParts = [name, release].filter(Boolean).join(' • ');
+                const short = String(value).split('-')[0];
+                const label = labelParts ? `${labelParts} (${short})` : String(value);
+                return {value, label};
+            }
+        },
+        deploymentVariants:{
+            url:'/deployment-variants',
+            map:item=>{
+                const value = pick(item,'variantID','variantId','VariantID');
+                if(!value) return null;
+                const code = pick(item,'variantCode','VariantCode');
+                const name = pick(item,'variantName','VariantName');
+                const parts = [code, name].filter(Boolean);
+                const label = parts.length>0 ? parts.join(' – ') : String(value);
+                return {value, label};
             }
         }
     };
@@ -140,19 +270,26 @@
 
     const entityMessages = {
         Account: 'Du legst gerade einen Account an.',
-        Project: 'Du legst gerade ein Projekt an.',
-        Site: 'Du legst gerade einen Standort (Site) an.',
-        Server: 'Du legst gerade einen Server an.',
-        WorkingPosition: 'Du legst gerade eine Arbeitsstation an.',
-        Radio: 'Du legst gerade ein Funkgerät an.',
+        Address: 'Du legst gerade eine Adresse an.',
         AudioDevice: 'Du legst gerade ein Audiogerät an.',
+        City: 'Du legst gerade eine Stadt an.',
+        Country: 'Du legst gerade ein Land an.',
+        DeploymentVariant: 'Du legst gerade eine Deployment-Variante an.',
+        InstalledSoftware: 'Du legst gerade eine Software-Installation an.',
         PhoneIntegration: 'Du legst gerade eine Telefonintegration an.',
-        DeploymentVariant: 'Du legst gerade eine Deployment-Variante an.'
+        Project: 'Du legst gerade ein Projekt an.',
+        Radio: 'Du legst gerade ein Funkgerät an.',
+        Server: 'Du legst gerade einen Server an.',
+        ServiceContract: 'Du legst gerade einen Servicevertrag an.',
+        Site: 'Du legst gerade einen Standort (Site) an.',
+        Software: 'Du legst gerade einen Software-Datensatz an.',
+        UpgradePlan: 'Du planst gerade ein Software-Upgrade.',
+        WorkingPosition: 'Du legst gerade eine Arbeitsstation (Client) an.'
     };
 
     function renderAsyncSelect(id,label,sourceKey,options={}){
-        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden'} = options;
-        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText};
+        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null} = options;
+        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
         const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" ${required?'required':''}>` : '';
         return `<label class="async-label">${label}
@@ -267,7 +404,7 @@
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
             select.innerHTML='';
-            populateOptions(select,[],{placeholder:'Bitte zuerst eine Site wählen',allowEmpty:true});
+            populateOptions(select,[],{placeholder:'Bitte zuerst die abhängige Auswahl treffen',allowEmpty:true});
             select.disabled=true;
             if(manual){
                 manual.value='';
@@ -293,7 +430,10 @@
         try{
             const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
             const data=await fetchJson(url);
-            const entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
+            let entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
+            if(typeof config.filter==='function'){
+                entries=entries.filter(entry=>config.filter(entry, dependencyValue));
+            }
             const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : config.placeholder;
             populateOptions(select,entries,{placeholder:placeholderText,allowEmpty:!config.required});
             select.disabled=entries.length===0;
@@ -365,6 +505,22 @@
         });
     }
 
+    function applyInputEnhancements(form){
+        form.querySelectorAll('input[data-uppercase="true"]').forEach(input=>{
+            input.addEventListener('input',()=>{
+                const start=input.selectionStart;
+                const end=input.selectionEnd;
+                const upper=input.value.toUpperCase();
+                if(input.value!==upper){
+                    input.value=upper;
+                    if(start!==null && end!==null){
+                        input.setSelectionRange(start,end);
+                    }
+                }
+            });
+        });
+    }
+
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
         asyncSelectConfigs = {};
@@ -384,21 +540,66 @@
                     + add('country','Land');
                 break;
 
-            case 'Project':
-                h+= add('sap','SAP-ID')
-                    + add('pname','Projektname')
-                    + add('variantId','DeploymentVariantID (UUID)')
-                    + add('bundle','Bundle-Type',false)
-                    + renderAsyncSelect('accId','Account auswählen','accounts')
-                    + renderAsyncSelect('addrId','Adresse auswählen','addresses');
+            case 'Address':
+                h+= add('street','Straße')
+                    + renderAsyncSelect('cityID','City auswählen','cities',{allowManual:false, placeholder:'City auswählen'});
                 break;
 
-            case 'Site':
-                h+= renderAsyncSelect('pId','Project auswählen','projects')
-                    + add('name','Site-Name')
-                    + renderAsyncSelect('addrId','Adresse auswählen','addresses')
-                    + add('zone','FireZone')
-                    + add('tenant','TenantCount');
+            case 'AudioDevice':
+                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
+                    + add('brand','Marke')
+                    + add('serial','Serien-Nr.')
+                    + add('fw','Firmware')
+                    + addSel('dtype','DeviceType',['HEADSET','SPEAKER','MIC']);
+                break;
+
+            case 'City':
+                h+= add('cityId','CityID',{dataset:{uppercase:true}})
+                    + add('cityName','City Name')
+                    + renderAsyncSelect('countryCode','Country auswählen','countries',{allowManual:false, placeholder:'Land auswählen'});
+                break;
+
+            case 'Country':
+                h+= add('countryCode','Country Code',{pattern:'[A-Za-z]{2}', maxlength:2, dataset:{uppercase:true}, autocomplete:'off'})
+                    + add('countryName','Country Name');
+                break;
+
+            case 'DeploymentVariant':
+                h+= add('variantCode','VariantCode')
+                    + add('variantName','VariantName')
+                    + add('description','Description',{required:false})
+                    + addSel('active','IsActive',['true','false']);
+                break;
+
+            case 'InstalledSoftware':
+                h+= renderAsyncSelect('siteID','Site auswählen','sites',{placeholder:'Site auswählen', allowManual:false})
+                    + renderAsyncSelect('softwareID','Software auswählen','software',{placeholder:'Software auswählen', allowManual:false});
+                break;
+
+            case 'PhoneIntegration':
+                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
+                    + addSel('type','PhoneType',['Emergency','NonEmergency','Both'])
+                    + add('brand','Marke')
+                    + add('serial','Serien-Nr.')
+                    + add('fw','Firmware');
+                break;
+
+            case 'Project':
+                h+= add('sap','SAP-ID',{required:false})
+                    + add('pname','Projektname')
+                    + renderAsyncSelect('variantId','Deployment-Variante auswählen','deploymentVariants',{placeholder:'Deployment-Variante auswählen'})
+                    + add('bundle','Bundle-Type',{required:false})
+                    + renderAsyncSelect('accId','Account auswählen','accounts')
+                    + renderAsyncSelect('addrId','Adresse auswählen','addresses',{allowManual:false, placeholder:'Adresse auswählen'});
+                break;
+
+            case 'Radio':
+                h+= renderAsyncSelect('siteId','Site auswählen','sites')
+                    + add('brand','Marke')
+                    + add('serial','Serien-Nr.')
+                    + addSel('mode','Mode',['Analog','Digital'])
+                    + addSel('standard','Digital-Standard',['Airbus','Motorola','ESN','P25','Polycom','Teltronics'],{required:false})
+                    + renderAsyncSelect('client','AssignedClientID (UUID)','clients',{required:false, placeholder:'Client auswählen (optional)', dependsOn:'siteId'});
                 break;
 
             case 'Server':
@@ -409,8 +610,47 @@
                     + add('os','Betriebssystem')
                     + add('patch','Patch-Level')
                     + addSel('vplat','Virtual-Platform',['BareMetal','HyperV','vSphere'])
-                    + add('vver','Virtual-Version',false)
+                    + add('vver','Virtual-Version',{required:false})
                     + addSel('ha','HighAvailability',['true','false']);
+                break;
+
+            case 'ServiceContract':
+                h+= renderAsyncSelect('accountID','Account auswählen','accounts',{placeholder:'Account auswählen', allowManual:false})
+                    + renderAsyncSelect('projectID','Projekt auswählen','projects',{placeholder:'Projekt auswählen', allowManual:false, dependsOn:'accountID'})
+                    + renderAsyncSelect('siteID','Site auswählen','sites',{placeholder:'Site auswählen', allowManual:false, dependsOn:'projectID', emptyText:'Keine Sites für die Auswahl'})
+                    + add('contractNumber','Vertragsnummer')
+                    + addSel('status','Status',['Planned','Approved','InProgress','Done','Canceled'])
+                    + add('startDate','Startdatum',{type:'date'})
+                    + add('endDate','Enddatum',{type:'date'});
+                break;
+
+            case 'Site':
+                h+= renderAsyncSelect('pId','Project auswählen','projects')
+                    + add('name','Site-Name')
+                    + renderAsyncSelect('addrId','Adresse auswählen','addresses',{allowManual:false, placeholder:'Adresse auswählen'})
+                    + add('zone','FireZone',{required:false})
+                    + add('tenant','TenantCount',{type:'number', min:'0', step:'1', required:false});
+                break;
+
+            case 'Software':
+                h+= add('swName','Name')
+                    + add('swRelease','Release')
+                    + add('swRevision','Revision')
+                    + addSel('swPhase','SupportPhase',['Preview','Production','EoL'])
+                    + add('swLicense','License Model',{required:false})
+                    + add('swEos','End of Sales',{required:false,type:'date'})
+                    + add('swSupportStart','Support Start',{required:false,type:'date'})
+                    + add('swSupportEnd','Support End',{required:false,type:'date'});
+                break;
+
+            case 'UpgradePlan':
+                h+= renderAsyncSelect('siteID','Site auswählen','sites',{placeholder:'Site auswählen', allowManual:false})
+                    + renderAsyncSelect('softwareID','Software auswählen','software',{placeholder:'Software auswählen', allowManual:false})
+                    + add('plannedStart','Geplanter Start',{type:'date'})
+                    + add('plannedEnd','Geplantes Ende',{type:'date'})
+                    + addSel('status','Status',['Planned','Approved','InProgress','Done','Canceled'])
+                    + add('createdAt','Erstellt am',{type:'date', value:new Date().toISOString().split('T')[0]})
+                    + add('createdBy','Erstellt von');
                 break;
 
             case 'WorkingPosition':
@@ -422,41 +662,10 @@
                     + add('patch','Patch-Level')
                     + addSel('install','InstallType',['LOCAL','BROWSER']);
                 break;
-
-            case 'Radio':
-                h+= renderAsyncSelect('siteId','Site auswählen','sites')
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + addSel('mode','Mode',['Analog','Digital'])
-                    + addSel('standard','Digital-Standard',['Airbus','Motorola','ESN','P25','Polycom','Teltronics'],false)
-                    + renderAsyncSelect('client','AssignedClientID (UUID)','clients',{required:false, placeholder:'Client auswählen (optional)', dependsOn:'siteId'});
-                break;
-
-            case 'AudioDevice':
-                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + add('fw','Firmware')
-                    + addSel('dtype','DeviceType',['HEADSET','SPEAKER','MIC']);
-                break;
-
-            case 'PhoneIntegration':
-                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
-                    + addSel('type','PhoneType',['Emergency','NonEmergency','Both'])
-                    + add('brand','Marke')
-                    + add('serial','Serien-Nr.')
-                    + add('fw','Firmware');
-                break;
-
-            case 'DeploymentVariant':
-                h+= add('variantCode','VariantCode')
-                    + add('variantName','VariantName')
-                    + add('description','Description',false)
-                    + addSel('active','IsActive',['true','false']);
-                break;
         }
         f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
         initializeAsyncSelects(f);
+        applyInputEnhancements(f);
         if(t==='Radio') wireRadioLogic();
     }
 
@@ -474,9 +683,15 @@
     }
 
     const v=id=>document.getElementById(id)?.value?.trim();
+    const toNull=value=>value && value.length>0 ? value : null;
     async function submitForm(e){
         e.preventDefault();
         const t=e.target.dataset.type; result.textContent=''; result.setAttribute('aria-busy','true');
+        const fail=msg=>{
+            result.innerHTML=`<p class="error" role="alert">${msg}</p>`;
+            result.removeAttribute('aria-busy');
+            return true;
+        };
         let url='',p={};
 
         switch(t){
@@ -484,21 +699,29 @@
                 url='/accounts';
                 p={
                     accountName: v('name'),
-                    contactName: v('contact'),
-                    contactEmail: v('email'),
-                    contactPhone: v('phone'),
-                    vatNumber: v('vat'),
-                    country: v('country')
+                    contactName: toNull(v('contact')),
+                    contactEmail: toNull(v('email')),
+                    contactPhone: toNull(v('phone')),
+                    vatNumber: toNull(v('vat')),
+                    country: toNull(v('country'))
+                };
+                break;
+
+            case 'Address':
+                url='/addresses';
+                p={
+                    street: v('street'),
+                    cityID: v('cityID')
                 };
                 break;
 
             case 'Project':
                 url='/projects';
                 p={
-                    projectSAPID: v('sap'),
+                    projectSAPID: toNull(v('sap')),
                     projectName: v('pname'),
                     deploymentVariantID: v('variantId'),
-                    bundleType: v('bundle') || null,
+                    bundleType: toNull(v('bundle')),
                     accountID: v('accId'),
                     addressID: v('addrId')
                 };
@@ -506,12 +729,18 @@
 
             case 'Site':
                 url='/sites';
+                const tenantRaw=v('tenant');
+                const tenantCount=tenantRaw ? Number(tenantRaw) : null;
+                if(tenantRaw && Number.isNaN(tenantCount)){
+                    fail('TenantCount muss eine Zahl sein.');
+                    return;
+                }
                 p={
                     projectID: v('pId'),
                     siteName: v('name'),
                     addressID: v('addrId'),
-                    fireZone: v('zone'),
-                    tenantCount: v('tenant') ? Number(v('tenant')) : null
+                    fireZone: toNull(v('zone')),
+                    tenantCount
                 };
                 break;
 
@@ -520,12 +749,12 @@
                 p={
                     siteID: v('siteId'),
                     serverName: v('name'),
-                    serverBrand: v('brand'),
-                    serverSerialNr: v('serial'),
-                    serverOS: v('os'),
-                    patchLevel: v('patch'),
+                    serverBrand: toNull(v('brand')),
+                    serverSerialNr: toNull(v('serial')),
+                    serverOS: toNull(v('os')),
+                    patchLevel: toNull(v('patch')),
                     virtualPlatform: v('vplat'),
-                    virtualVersion: v('vver') || null,
+                    virtualVersion: toNull(v('vver')),
                     highAvailability: v('ha') === 'true'
                 };
                 break;
@@ -535,10 +764,10 @@
                 p={
                     siteID: v('siteId'),
                     clientName: v('name'),
-                    clientBrand: v('brand'),
-                    clientSerialNr: v('serial'),
-                    clientOS: v('os'),
-                    patchLevel: v('patch'),
+                    clientBrand: toNull(v('brand')),
+                    clientSerialNr: toNull(v('serial')),
+                    clientOS: toNull(v('os')),
+                    patchLevel: toNull(v('patch')),
                     installType: v('install')
                 };
                 break;
@@ -547,11 +776,11 @@
                 url='/radios';
                 p={
                     siteID: v('siteId'),
-                    radioBrand: v('brand'),
-                    radioSerialNr: v('serial'),
+                    radioBrand: toNull(v('brand')),
+                    radioSerialNr: toNull(v('serial')),
                     mode: v('mode'),
-                    digitalStandard: v('standard') || null,
-                    assignedClientID: v('client') || null
+                    digitalStandard: toNull(v('standard')),
+                    assignedClientID: toNull(v('client'))
                 };
                 break;
 
@@ -559,9 +788,9 @@
                 url='/audio';
                 p={
                     clientID: v('client'),
-                    audioDeviceBrand: v('brand'),
-                    deviceSerialNr: v('serial'),
-                    audioDeviceFirmware: v('fw'),
+                    audioDeviceBrand: toNull(v('brand')),
+                    deviceSerialNr: toNull(v('serial')),
+                    audioDeviceFirmware: toNull(v('fw')),
                     deviceType: v('dtype')
                 };
                 break;
@@ -571,9 +800,9 @@
                 p={
                     clientID: v('client'),
                     phoneType: v('type'),
-                    phoneBrand: v('brand'),
-                    phoneSerialNr: v('serial'),
-                    phoneFirmware: v('fw')
+                    phoneBrand: toNull(v('brand')),
+                    phoneSerialNr: toNull(v('serial')),
+                    phoneFirmware: toNull(v('fw'))
                 };
                 break;
 
@@ -582,15 +811,115 @@
                 p={
                     variantCode: v('variantCode'),
                     variantName: v('variantName'),
-                    description: v('description') || null,
+                    description: toNull(v('description')),
                     active: v('active') === 'true'
+                };
+                break;
+
+            case 'Country':
+                url='/row/country';
+                const countryCode=(v('countryCode')||'').toUpperCase();
+                if(countryCode.length!==2){
+                    fail('Country Code muss genau 2 Zeichen haben.');
+                    return;
+                }
+                p={
+                    CountryCode: countryCode,
+                    CountryName: v('countryName')
+                };
+                break;
+
+            case 'City':
+                url='/row/city';
+                const cityId=(v('cityId')||'').toUpperCase();
+                const country=v('countryCode');
+                if(!country){
+                    fail('Bitte ein Land auswählen.');
+                    return;
+                }
+                p={
+                    CityID: cityId,
+                    CityName: v('cityName'),
+                    CountryCode: country
+                };
+                break;
+
+            case 'InstalledSoftware':
+                url='/row/installedsoftware';
+                p={
+                    SiteID: v('siteID'),
+                    SoftwareID: v('softwareID')
+                };
+                break;
+
+            case 'Software':
+                url='/row/software';
+                p={
+                    Name: v('swName'),
+                    Release: v('swRelease'),
+                    Revision: v('swRevision'),
+                    SupportPhase: v('swPhase'),
+                    LicenseModel: toNull(v('swLicense')),
+                    EndOfSalesDate: toNull(v('swEos')),
+                    SupportStartDate: toNull(v('swSupportStart')),
+                    SupportEndDate: toNull(v('swSupportEnd'))
+                };
+                break;
+
+            case 'UpgradePlan':
+                url='/row/upgradeplan';
+                const plannedStart=v('plannedStart');
+                const plannedEnd=v('plannedEnd');
+                if(plannedStart && plannedEnd && plannedStart>plannedEnd){
+                    fail('Das geplante Ende muss nach dem Start liegen.');
+                    return;
+                }
+                p={
+                    SiteID: v('siteID'),
+                    SoftwareID: v('softwareID'),
+                    PlannedWindowStart: plannedStart,
+                    PlannedWindowEnd: plannedEnd,
+                    Status: v('status'),
+                    CreatedAt: v('createdAt'),
+                    CreatedBy: v('createdBy')
+                };
+                break;
+
+            case 'ServiceContract':
+                url='/row/servicecontract';
+                const startDate=v('startDate');
+                const endDate=v('endDate');
+                if(startDate && endDate && startDate>endDate){
+                    fail('Enddatum darf nicht vor dem Startdatum liegen.');
+                    return;
+                }
+                p={
+                    AccountID: v('accountID'),
+                    ProjectID: v('projectID'),
+                    SiteID: v('siteID'),
+                    ContractNumber: v('contractNumber'),
+                    Status: v('status'),
+                    StartDate: startDate,
+                    EndDate: endDate
                 };
                 break;
         }
 
+        if(!url){
+            fail('Unbekannte Entität oder fehlende URL.');
+            return;
+        }
+
         try{
             const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
-            if(r.ok){result.innerHTML=`<p class="success">✔ ${t} angelegt.</p>`;e.target.reset();}
+            if(r.ok){
+                result.innerHTML=`<p class="success">✔ ${t} angelegt.</p>`;
+                e.target.reset();
+                const ids=Object.keys(asyncSelectConfigs);
+                for(const id of ids){
+                    await loadOptionsForField(id);
+                }
+            }
             else   {result.innerHTML=`<p class="error" role="alert">${await r.text()}</p>`;}
         }catch{
             result.innerHTML=`<p class="error" role="alert">Netzwerkfehler.</p>`;
