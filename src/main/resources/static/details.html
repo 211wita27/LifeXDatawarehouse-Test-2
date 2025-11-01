@@ -924,12 +924,12 @@
 
                 const trueOption = document.createElement('option');
                 trueOption.value = 'true';
-                trueOption.textContent = 'Ja';
+                trueOption.textContent = 'Yes';
                 select.appendChild(trueOption);
 
                 const falseOption = document.createElement('option');
                 falseOption.value = 'false';
-                falseOption.textContent = 'Nein';
+                falseOption.textContent = 'No';
                 select.appendChild(falseOption);
 
                 select.value = formattedValue || '';
@@ -978,12 +978,12 @@
         const saveButton = document.createElement('button');
         saveButton.type = 'submit';
         saveButton.className = 'btn-primary';
-        saveButton.textContent = 'Speichern';
+        saveButton.textContent = 'Save';
 
         const cancelButton = document.createElement('button');
         cancelButton.type = 'button';
         cancelButton.className = 'btn-secondary';
-        cancelButton.textContent = 'Abbrechen';
+        cancelButton.textContent = 'Cancel';
         cancelButton.addEventListener('click', () => {
             exitEditMode();
         });
@@ -1046,7 +1046,7 @@
                 }else{
                     const num = Number(el.value);
                     if(Number.isNaN(num)){
-                        setStatus(`Feld ${el.name} muss eine Zahl sein.`, 'error');
+                        setStatus(`Field ${el.name} must be a number.`, 'error');
                         return;
                     }
                     payload[el.name] = num;
@@ -1063,7 +1063,7 @@
                     }else if(normalized === 'false' || normalized === '0'){
                         payload[el.name] = false;
                     }else{
-                        setStatus(`Feld ${el.name} erwartet einen Wahr/Falsch-Wert.`, 'error');
+                        setStatus(`Field ${el.name} expects a true/false value.`, 'error');
                         return;
                     }
                 }
