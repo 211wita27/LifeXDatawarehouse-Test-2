@@ -1,18 +1,18 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>LifeX – Reports</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<a href="#main" class="skip-link">Zum Inhalt springen</a>
+<a href="#main" class="skip-link">Skip to main content</a>
 
 <header>
     <img src="/img/LifeXDatawarehouseLogo.png" alt="">
-    <nav aria-label="Hauptnavigation">
+    <nav aria-label="Primary navigation">
         <a href="/index.html">Dashboard</a>
-        <a href="/create.html">Daten anlegen</a>
+        <a href="/create.html">Create Data</a>
         <a href="/reports.html" aria-current="page">Reports</a>
     </nav>
 </header>
@@ -20,16 +20,16 @@
 <div class="layout">
     <aside class="sidebar">
         <section>
-            <h2>Report-Typen</h2>
+            <h2>Report Types</h2>
             <ul id="type-list" class="report-type-list" role="list"></ul>
         </section>
 
         <section class="tables">
-            <h2>Quick-Links</h2>
+            <h2>Quick Links</h2>
             <ul>
-                <li><button class="quick-link" data-type="DIFFERENCE" data-period="last30">Abweichungen (30 Tage)</button></li>
-                <li><button class="quick-link" data-type="MAINTENANCE" data-period="quarter">Wartung aktuelles Quartal</button></li>
-                <li><button class="quick-link" data-type="INVENTORY" data-period="quarter">Bestandsübersicht</button></li>
+                <li><button class="quick-link" data-type="DIFFERENCE" data-period="last30">Variances (30 days)</button></li>
+                <li><button class="quick-link" data-type="MAINTENANCE" data-period="quarter">Maintenance current quarter</button></li>
+                <li><button class="quick-link" data-type="INVENTORY" data-period="quarter">Inventory overview</button></li>
             </ul>
         </section>
     </aside>
@@ -38,42 +38,42 @@
         <h1>Reports</h1>
 
         <section class="filters" aria-labelledby="filters-title">
-            <h2 id="filters-title">Filter</h2>
+            <h2 id="filters-title">Filters</h2>
             <form id="filter-form">
                 <div class="field">
-                    <label for="period">Zeitraum</label>
+                    <label for="period">Period</label>
                     <select id="period" name="period"></select>
                 </div>
                 <div class="field">
-                    <label for="query">Projekt / Site</label>
-                    <input id="query" name="query" placeholder="z. B. Projektname, SAP-ID oder Site">
+                    <label for="query">Project / Site</label>
+                    <input id="query" name="query" placeholder="e.g. project name, SAP ID or site">
                 </div>
                 <div class="field">
-                    <label for="variant">Deployment-Variante</label>
+                    <label for="variant">Deployment variant</label>
                     <select id="variant" name="variant">
-                        <option value="">Alle</option>
+                        <option value="">All</option>
                     </select>
                 </div>
                 <div class="field field--custom" id="custom-range" hidden>
-                    <label for="from">Von</label>
+                    <label for="from">From</label>
                     <input type="date" id="from" name="from">
-                    <label for="to">Bis</label>
+                    <label for="to">To</label>
                     <input type="date" id="to" name="to">
                 </div>
                 <div class="filter-actions">
-                    <button type="submit" class="btn-primary">Anwenden</button>
-                    <button type="button" id="reset-filter">Zurücksetzen</button>
+                    <button type="submit" class="btn-primary">Apply</button>
+                    <button type="button" id="reset-filter">Reset</button>
                 </div>
             </form>
             <div id="filter-info" class="filter-info" role="status" aria-live="polite"></div>
         </section>
 
         <section aria-labelledby="kpi-title" id="kpi-section">
-            <h2 id="kpi-title" class="visually-hidden">Kennzahlen</h2>
+            <h2 id="kpi-title" class="visually-hidden">Key metrics</h2>
             <div id="kpi-grid" class="kpi-grid"></div>
         </section>
 
-        <div class="tabnav" role="tablist" aria-label="Report-Ansichten" id="tabbar"></div>
+        <div class="tabnav" role="tablist" aria-label="Report views" id="tabbar"></div>
 
         <section id="report-panel" class="report-panel" role="tabpanel" aria-labelledby="" aria-busy="false">
             <div id="chart" class="report-chart" aria-live="polite"></div>
@@ -91,18 +91,18 @@
     </main>
 
     <aside class="help">
-        <h2>Hinweise</h2>
+        <h2>Guidance</h2>
         <ul id="help-hints">
-            <li>Filter anwenden, um Datenquellen auf den relevanten Zeitraum einzuschränken.</li>
-            <li>Exports liefern die aktuell gefilterte Sicht als CSV.</li>
-            <li>Konfigurationsabweichungen frühzeitig bearbeiten, um Servicefenster zu reduzieren.</li>
+            <li>Apply filters to restrict data sources to the relevant period.</li>
+            <li>Exports provide the currently filtered view as CSV.</li>
+            <li>Address configuration variances early to reduce service windows.</li>
         </ul>
         <hr>
-        <h3>Nächste Schritte</h3>
+        <h3>Next steps</h3>
         <ol>
-            <li>Regelmäßig Wartungspläne prüfen und bestätigen.</li>
-            <li>Inventarübersicht für Audits exportieren.</li>
-            <li>Abweichungen mit hoher Priorität eskalieren.</li>
+            <li>Review and confirm maintenance plans regularly.</li>
+            <li>Export the inventory overview for audits.</li>
+            <li>Escalate high-priority variances.</li>
         </ol>
         <p id="refresh-info" class="help-note"></p>
     </aside>
