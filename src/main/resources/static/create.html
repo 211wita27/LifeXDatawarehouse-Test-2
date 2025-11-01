@@ -36,7 +36,7 @@
         <select id="entity">
             <option>Account</option><option>Project</option><option>Site</option>
             <option>Server</option><option>WorkingPosition</option><option>Radio</option>
-            <option>AudioDevice</option><option>PhoneIntegration</option>
+            <option>AudioDevice</option><option>PhoneIntegration</option><option>DeploymentVariant</option>
         </select>
         <button onclick="next()">Weiter</button>
     </fieldset>
@@ -417,6 +417,13 @@
                     + add('serial','Serien-Nr.')
                     + add('fw','Firmware');
                 break;
+
+            case 'DeploymentVariant':
+                h+= add('variantCode','VariantCode')
+                    + add('variantName','VariantName')
+                    + add('description','Description',false)
+                    + addSel('active','IsActive',['true','false']);
+                break;
         }
         f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
         initializeAsyncSelects(f);
@@ -537,6 +544,16 @@
                     phoneBrand: v('brand'),
                     phoneSerialNr: v('serial'),
                     phoneFirmware: v('fw')
+                };
+                break;
+
+            case 'DeploymentVariant':
+                url='/deployment-variants';
+                p={
+                    variantCode: v('variantCode'),
+                    variantName: v('variantName'),
+                    description: v('description') || null,
+                    active: v('active') === 'true'
                 };
                 break;
         }
