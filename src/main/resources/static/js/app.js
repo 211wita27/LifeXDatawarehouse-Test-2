@@ -7,30 +7,6 @@ const API = {
     table:    '/table',                // GET /table/{name}
 };
 
-const TABLE_SEARCH_HINTS = {
-    Account: {
-        AccountNumber: 'type:account AND accountnumber:"<Nummer>"',
-        Country: 'type:account AND country:"<Land>"',
-    },
-    Project: {
-        StillActive: 'type:project AND statusactive',
-        ProjectName: 'type:project AND name:"<Projektname>"',
-        DeploymentVariantID: 'type:project AND deploymentvariantid:"<UUID>"',
-    },
-    Site: {
-        FireZone: 'type:site AND zonebravo',
-        ProjectID: 'type:site AND projectid:"<UUID>"',
-    },
-    Server: {
-        Manufacturer: 'type:server AND manufacturer:"Lenovo"',
-        SerialNumber: 'type:server AND serialnumber:"<Seriennummer>"',
-    },
-    ServiceContract: {
-        Status: 'type:servicecontract AND statusinprogress',
-        ContractNumber: 'type:servicecontract AND contractnumber:"<Nummer>"',
-    },
-};
-
 /* ===================== DOM-Referenzen ===================== */
 const resultArea  = document.getElementById('resultArea');
 const searchInput = document.getElementById('search-input');
@@ -42,9 +18,6 @@ const idxText = document.getElementById('idx-text');
 const idxBtnSide = document.getElementById('idx-reindex-side');
 
 const sugList = document.getElementById('sug');
-const searchHintsBox = document.getElementById('search-hints');
-
-const DEFAULT_SEARCH_HINT_MESSAGE = '<p class="hint-empty">Wähle eine Tabelle, um passende Suchhinweise zu sehen.</p>';
 
 /* ===================== Utils ===================== */
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -364,9 +337,6 @@ function wireEvents() {
 
     // Shortcuts initialisieren inkl. ARIA
     setupShortcuts();
-
-    // Standardtext für die Suchhinweise anzeigen
-    renderSearchHints();
 }
 document.addEventListener('DOMContentLoaded', wireEvents);
 
@@ -586,49 +556,15 @@ function renderTableCell(columnName, value) {
     return `<td>${escapeHtml(raw)}</td>`;
 }
 
-function getTableHints(tableName) {
-    return TABLE_SEARCH_HINTS[tableName] || null;
-}
-
-function getColumnHint(tableName, columnName) {
-    const hints = getTableHints(tableName);
-    if (!hints) return null;
-    return hints[columnName] || null;
-}
-
-function renderTableHeaderCell(tableName, columnName) {
-    const hint = getColumnHint(tableName, columnName);
-    const label = escapeHtml(columnName);
-    if (!hint) {
-        return `<th>${label}</th>`;
-    }
-    const hintEscaped = escapeHtml(hint);
-    return `<th>${label} <span class="hint-icon" role="img" aria-label="Suchhinweis zu ${label}: ${hintEscaped}" title="${hintEscaped}">ℹ️</span></th>`;
-}
-
-function renderSearchHints(tableName) {
-    if (!searchHintsBox) return;
-    const hints = tableName ? getTableHints(tableName) : null;
-    if (!hints || !Object.keys(hints).length) {
-        searchHintsBox.innerHTML = DEFAULT_SEARCH_HINT_MESSAGE;
-        return;
-    }
-    const items = Object.entries(hints)
-        .map(([column, hint]) => `<li><strong>${escapeHtml(column)}:</strong> <code>${escapeHtml(hint)}</code></li>`)
-        .join('');
-    searchHintsBox.innerHTML = `<ul class="hint-list">${items}</ul>`;
-}
-
 async function showTable(name) {
     try {
         setBusy(resultArea, true);
         const res  = await fetch(`${API.table}/${encodeURIComponent(name)}`);
         const rows = await res.json();
-        renderSearchHints(name);
         if (!Array.isArray(rows) || !rows.length) { resultArea.textContent = '(leer)'; return; }
 
         const cols = Object.keys(rows[0]);
-        const hdr  = cols.map(c => renderTableHeaderCell(name, c)).join('');
+        const hdr  = cols.map(c => `<th>${c}</th>`).join('');
         const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(c, r[c])).join('')}</tr>`).join('');
 
         resultArea.innerHTML =
@@ -640,7 +576,6 @@ async function showTable(name) {
        </div>`;
     } catch (e) {
         resultArea.innerHTML = `<p id="error" role="alert">Fehler: ${e}</p>`;
-        renderSearchHints(name);
     } finally {
         setBusy(resultArea, false);
     }
