@@ -159,6 +159,30 @@ table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
 .id-chip{display:inline-flex;align-items:center;font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace;font-size:.85em;
     color:#334155;background:#eef2ff;border:1px solid #d6dcff;border-radius:999px;padding:.1rem .4rem;line-height:1.2;vertical-align:middle}
 .id-chip:not(:first-child){margin-left:.35rem}
+.detail-header{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.detail-header-actions{margin-left:auto;display:flex;align-items:center;gap:.5rem}
+.detail-edit-button{display:inline-flex;align-items:center;justify-content:center;width:2.2rem;height:2.2rem;border-radius:999px;border:1px solid #2c64b5;background:#fff;color:#2c64b5;cursor:pointer;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
+.detail-edit-button:hover,.detail-edit-button:focus-visible{background:#2c64b5;color:#fff}
+.detail-edit-button:focus-visible{outline:2px solid #2c64b5;outline-offset:2px}
+.detail-edit-button.is-active{background:#2c64b5;color:#fff}
+.detail-edit-icon{width:1.1rem;height:1.1rem;fill:currentColor}
+.detail-status{margin-bottom:1rem;padding:.6rem .75rem;border-radius:6px;background:#f4f6fb;color:#1f2a44;border:1px solid #d0defc;display:none}
+.detail-status.is-visible{display:block}
+.detail-status--success{background:#ecfdf3;color:#166534;border-color:#bbf7d0}
+.detail-status--error{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.detail-status--info{background:#f4f6fb;color:#1f2a44;border-color:#d0defc}
+.detail-body{display:flex;flex-direction:column;gap:1rem}
+.detail-edit-form{display:flex;flex-direction:column;gap:1rem}
+.detail-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.9rem}
+.detail-field{display:flex;flex-direction:column;gap:.35rem;font-weight:600;color:#1f2a44}
+.detail-field-label{font-size:.95rem}
+.detail-input{padding:.45rem;border:1px solid #cbd5e1;border-radius:6px;font-size:1rem;font-weight:400;color:#0f172a}
+.detail-input:focus-visible{outline:2px solid #2c64b5;outline-offset:2px;border-color:#2c64b5}
+.detail-input-readonly{background:#f8fafc;color:#475569}
+.detail-form-actions{display:flex;gap:.6rem;flex-wrap:wrap}
+.btn-secondary{background:#eef2ff;border:1px solid #c7d2fe;color:#1e3a8a;border-radius:6px;padding:.45rem .9rem;cursor:pointer;font-weight:600}
+.btn-secondary:hover,.btn-secondary:focus-visible{background:#e0e7ff}
+.btn-secondary:focus-visible{outline:2px solid #1e3a8a;outline-offset:2px}
 
 /* =============== Reports Page =============== */
 .filters{background:#f7f9ff;border:1px solid #cfe0ff;border-radius:8px;padding:1rem;margin-bottom:1rem}
