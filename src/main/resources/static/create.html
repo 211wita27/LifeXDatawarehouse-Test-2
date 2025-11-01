@@ -287,6 +287,39 @@
         WorkingPosition: 'Du legst gerade eine Arbeitsstation (Client) an.'
     };
 
+    function shortContextId(value){
+        if(value===undefined || value===null) return '';
+        const str=String(value).trim();
+        if(!str) return '';
+        const uuidPattern=/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+        if(uuidPattern.test(str)){
+            const idx=str.lastIndexOf('-');
+            if(idx!==-1 && idx<str.length-1){
+                const last=str.slice(idx+1).replace(/^0+/,'');
+                return `#${last||'0'}`;
+            }
+        }
+        return str.startsWith('#')?str:`#${str}`;
+    }
+
+    function showEntityMessage(entityKey, context={}){
+        if(!window.entityHint || !window.entityContext) return;
+        const base=entityMessages[entityKey]||`Du legst gerade einen Datensatz der Entität ${entityKey} an.`;
+        const parts=[];
+        if(context.accountId) parts.push(`Account ${shortContextId(context.accountId)}`);
+        if(context.projectId) parts.push(`Project ${shortContextId(context.projectId)}`);
+        if(context.siteId) parts.push(`Site ${shortContextId(context.siteId)}`);
+        if(context.clientId) parts.push(`Client ${shortContextId(context.clientId)}`);
+        let message=base;
+        if(parts.length){
+            const trimmed=base.endsWith('.')?base.slice(0,-1):base;
+            message=`${trimmed} für ${parts.join(' und ')} an.`;
+        }
+        entityHint.textContent=message;
+        entityContext.classList.remove('hidden');
+        entityContext.removeAttribute('aria-hidden');
+    }
+
     function renderAsyncSelect(id,label,sourceKey,options={}){
         const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null} = options;
         asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter};
@@ -505,6 +538,63 @@
         });
     }
 
+    async function ensureAsyncValue(fieldId,value,options={}){
+        if(value===undefined || value===null) return;
+        const normalized=String(value);
+        if(!normalized) return;
+        const container=getAsyncContainer(fieldId);
+        if(container){
+            if(container.dataset.mode==='manual'){
+                setManualMode(fieldId,'select');
+            }
+            const select=container.querySelector('select');
+            const manual=container.querySelector(`#${fieldId}-manual`);
+            const toggle=container.querySelector('.toggle-manual');
+            await loadOptionsForField(fieldId);
+            let applied=false;
+            if(select){
+                const match=Array.from(select.options||[]).find(opt=>opt.value===normalized);
+                if(match){
+                    select.value=normalized;
+                    select.dispatchEvent(new Event('change',{bubbles:true}));
+                    applied=true;
+                }
+            }
+            if(!applied && manual){
+                setManualMode(fieldId,'manual');
+                manual.value=normalized;
+                manual.dispatchEvent(new Event('input',{bubbles:true}));
+                applied=true;
+            }
+            if(!applied){
+                updateValueProxy(fieldId,normalized);
+            }
+            if(options.lock){
+                if(select){
+                    select.disabled=true;
+                    select.setAttribute('aria-disabled','true');
+                }
+                if(manual){
+                    manual.disabled=true;
+                    manual.setAttribute('aria-disabled','true');
+                }
+                if(toggle){
+                    toggle.disabled=true;
+                    toggle.setAttribute('aria-disabled','true');
+                    toggle.setAttribute('tabindex','-1');
+                }
+            }
+            return;
+        }
+        const input=document.getElementById(fieldId);
+        if(!input) return;
+        input.value=normalized;
+        if(options.lock){
+            input.readOnly=true;
+            input.setAttribute('aria-readonly','true');
+        }
+    }
+
     function applyInputEnhancements(form){
         form.querySelectorAll('input[data-uppercase="true"]').forEach(input=>{
             input.addEventListener('input',()=>{
@@ -524,12 +614,7 @@
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
         asyncSelectConfigs = {};
-        const message = entityMessages[t] || `Du legst gerade einen Datensatz der Entität ${t} an.`;
-        if(window.entityHint && window.entityContext){
-            entityHint.textContent = message;
-            entityContext.classList.remove('hidden');
-            entityContext.removeAttribute('aria-hidden');
-        }
+        showEntityMessage(t, {});
         switch(t){
             case 'Account':
                 h+= add('name','Name')
@@ -684,6 +769,79 @@
 
     const v=id=>document.getElementById(id)?.value?.trim();
     const toNull=value=>value && value.length>0 ? value : null;
+
+    async function initializeFromQuery(){
+        const params=new URLSearchParams(window.location.search);
+        const rawEntity=params.get('entity');
+        if(!rawEntity) return;
+        const entitySelect=document.getElementById('entity');
+        if(!entitySelect) return;
+        const option=Array.from(entitySelect.options).find(opt=>opt.value.toLowerCase()===rawEntity.toLowerCase());
+        if(!option) return;
+        entitySelect.value=option.value;
+        buildForm(option.value);
+        step1.classList.add('hidden');
+        dynamicForm.classList.remove('hidden');
+
+        const context={};
+        const accountId=params.get('accountId');
+        const projectId=params.get('projectId');
+        const siteId=params.get('siteId');
+        const clientId=params.get('clientId');
+
+        switch(option.value){
+            case 'Project':
+                if(accountId){
+                    await ensureAsyncValue('accId', accountId, {lock:true});
+                    context.accountId=accountId;
+                }
+                break;
+            case 'Site':
+                if(accountId) context.accountId=accountId;
+                if(projectId){
+                    await ensureAsyncValue('pId', projectId, {lock:true});
+                    context.projectId=projectId;
+                }
+                break;
+            case 'Server':
+            case 'WorkingPosition':
+            case 'Radio':
+                if(accountId) context.accountId=accountId;
+                if(projectId) context.projectId=projectId;
+                if(siteId){
+                    await ensureAsyncValue('siteId', siteId, {lock:true});
+                    context.siteId=siteId;
+                }
+                break;
+            case 'AudioDevice':
+            case 'PhoneIntegration':
+                if(accountId) context.accountId=accountId;
+                if(projectId) context.projectId=projectId;
+                if(siteId) context.siteId=siteId;
+                if(clientId){
+                    await ensureAsyncValue('client', clientId, {lock:true});
+                    context.clientId=clientId;
+                }
+                break;
+            case 'ServiceContract':
+                if(accountId){
+                    await ensureAsyncValue('accountID', accountId, {lock:true});
+                    context.accountId=accountId;
+                }
+                if(projectId){
+                    await ensureAsyncValue('projectID', projectId, {lock:true});
+                    context.projectId=projectId;
+                }
+                if(siteId){
+                    await ensureAsyncValue('siteID', siteId, {lock:true});
+                    context.siteId=siteId;
+                }
+                break;
+        }
+
+        showEntityMessage(option.value, context);
+    }
+
     async function submitForm(e){
         e.preventDefault();
         const t=e.target.dataset.type; result.textContent=''; result.setAttribute('aria-busy','true');
@@ -927,6 +1085,8 @@
             result.removeAttribute('aria-busy');
         }
     }
+
+    initializeFromQuery().catch(err=>console.error(err));
 </script>
 </body>
 </html>
