@@ -493,19 +493,33 @@
                 return pillLink(`/details.html?type=phone&id=${encodeURIComponent(pid)}`, null, pid, brand);
             });
         }
-        else if(type==='City'){
-            const rows = await fetchJson(`/table/address?limit=200`);
-            const matches = Array.isArray(rows)
-                ? rows.filter(r => (val(r, 'CityID') ?? '').toString() === id.toString())
+        else if(type==='Software'){
+            const installedRows = await fetchJson(`/table/installedsoftware?limit=200`);
+            const installed = Array.isArray(installedRows)
+                ? installedRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
                 : [];
-            addSection(box, 'Addresses', matches, addr => {
-                const addressId = val(addr, 'AddressID');
-                return pillLink(
-                    `/details.html?type=address&id=${encodeURIComponent(addressId)}`,
-                    labelFor('address', addr),
-                    addressId,
-                    val(addr, 'PostalCode')
-                );
+            addSection(box, 'Installationen', installed, isw => {
+                const installId = val(isw,'InstalledSoftwareID');
+                const label = labelFor('installedsoftware', isw);
+                const siteId = val(isw,'SiteID');
+                const descParts = [];
+                if(siteId){
+                    descParts.push(`Site ${shortId(siteId)}`);
+                }
+                return pillLink(`/details.html?type=installedsoftware&id=${encodeURIComponent(installId)}`, label, installId, descParts.join(' · '));
+            });
+
+            const planRows = await fetchJson(`/table/upgradeplan?limit=200`);
+            const plans = Array.isArray(planRows)
+                ? planRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
+                : [];
+            addSection(box, 'Upgrade-Pläne', plans, plan => {
+                const planId = val(plan,'UpgradePlanID');
+                const label = labelFor('upgradeplan', plan);
+                const status = val(plan,'Status');
+                const window = formatDateRange(val(plan,'PlannedWindowStart'), val(plan,'PlannedWindowEnd'));
+                const descParts = [status, window].filter(Boolean);
+                return pillLink(`/details.html?type=upgradeplan&id=${encodeURIComponent(planId)}`, label, planId, descParts.join(' · '));
             });
         }
     }
