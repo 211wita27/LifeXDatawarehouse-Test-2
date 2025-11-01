@@ -13,6 +13,8 @@
         button{cursor:pointer;margin-top:1.2rem}
         .success{color:green}.error{color:red}
         .hidden{display:none}
+        .entity-context{margin-top:1.5rem;padding:1rem;background:#e8f1ff;border-left:4px solid #2c64b5;border-radius:4px}
+        .entity-hint{margin:0;font-weight:600;color:#1f3d7a}
     </style>
 </head>
 <body>
@@ -42,6 +44,9 @@
     </fieldset>
 
     <!-- Schritt 2 -->
+    <section id="entityContext" class="entity-context hidden" aria-live="assertive" aria-atomic="true" aria-hidden="true">
+        <p id="entityHint" class="entity-hint"></p>
+    </section>
     <form id="dynamicForm" class="hidden" onsubmit="submitForm(event)"></form>
 
     <div id="result" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -51,6 +56,13 @@
     function back(){
         dynamicForm.classList.add('hidden'); step1.classList.remove('hidden');
         dynamicForm.innerHTML=''; result.textContent='';
+        if(window.entityContext){
+            entityContext.classList.add('hidden');
+            entityContext.setAttribute('aria-hidden','true');
+        }
+        if(window.entityHint){
+            entityHint.textContent='';
+        }
     }
     function next(){
         buildForm(entity.value); step1.classList.add('hidden');
@@ -125,6 +137,18 @@
     };
 
     let asyncSelectConfigs = {};
+
+    const entityMessages = {
+        Account: 'Du legst gerade einen Account an.',
+        Project: 'Du legst gerade ein Projekt an.',
+        Site: 'Du legst gerade einen Standort (Site) an.',
+        Server: 'Du legst gerade einen Server an.',
+        WorkingPosition: 'Du legst gerade eine Arbeitsstation an.',
+        Radio: 'Du legst gerade ein Funkgerät an.',
+        AudioDevice: 'Du legst gerade ein Audiogerät an.',
+        PhoneIntegration: 'Du legst gerade eine Telefonintegration an.',
+        DeploymentVariant: 'Du legst gerade eine Deployment-Variante an.'
+    };
 
     function renderAsyncSelect(id,label,sourceKey,options={}){
         const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden'} = options;
@@ -344,6 +368,12 @@
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
         asyncSelectConfigs = {};
+        const message = entityMessages[t] || `Du legst gerade einen Datensatz der Entität ${t} an.`;
+        if(window.entityHint && window.entityContext){
+            entityHint.textContent = message;
+            entityContext.classList.remove('hidden');
+            entityContext.removeAttribute('aria-hidden');
+        }
         switch(t){
             case 'Account':
                 h+= add('name','Name')
