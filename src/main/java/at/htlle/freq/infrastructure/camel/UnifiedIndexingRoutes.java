@@ -3,6 +3,7 @@ package at.htlle.freq.infrastructure.camel;
 
 import at.htlle.freq.domain.*;
 import org.apache.camel.builder.RouteBuilder;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
  *  (ein Consumer, serialisiert).
  */
 @Component("UnifiedIndexingRoutes")
+@ConditionalOnProperty(value = "lifex.lucene.camel.enabled", havingValue = "true", matchIfMissing = true)
 public class UnifiedIndexingRoutes extends RouteBuilder {
 
     // --- Repositories: alle als Dependencies einsammeln ---
