@@ -65,8 +65,285 @@
     </select></label>`;
     };
 
+    const pick = (obj,...keys)=>{
+        for(const key of keys){
+            if(obj && obj[key]!==undefined && obj[key]!==null) return obj[key];
+        }
+        return undefined;
+    };
+
+    const formatLabel = (name,value)=>{
+        if(!value) return '';
+        if(!name) return value;
+        const short = String(value).split('-')[0];
+        return `${name} (${short})`;
+    };
+
+    const asyncSources = {
+        accounts:{
+            url:'/accounts',
+            map:item=>{
+                const value = pick(item,'accountID','accountId','AccountID');
+                const name = pick(item,'accountName','AccountName');
+                return value ? {value, label: formatLabel(name,value)} : null;
+            }
+        },
+        addresses:{
+            url:'/addresses',
+            map:item=>{
+                const value = pick(item,'addressID','addressId','AddressID');
+                const street = pick(item,'street','Street');
+                const city = pick(item,'cityID','CityID');
+                const label = street || city ? `${[street,city].filter(Boolean).join(', ')} (${String(value).split('-')[0]})` : value;
+                return value ? {value, label} : null;
+            }
+        },
+        projects:{
+            url:'/projects',
+            map:item=>{
+                const value = pick(item,'projectID','projectId','ProjectID');
+                const name = pick(item,'projectName','ProjectName');
+                return value ? {value, label: formatLabel(name,value)} : null;
+            }
+        },
+        sites:{
+            url:'/sites',
+            map:item=>{
+                const value = pick(item,'siteID','siteId','SiteID');
+                const name = pick(item,'siteName','SiteName');
+                return value ? {value, label: formatLabel(name,value)} : null;
+            }
+        },
+        clients:{
+            url:siteId=>siteId?`/clients?siteId=${encodeURIComponent(siteId)}`:null,
+            map:item=>{
+                const value = pick(item,'clientID','clientId','ClientID');
+                const name = pick(item,'clientName','ClientName');
+                return value ? {value, label: formatLabel(name,value)} : null;
+            }
+        }
+    };
+
+    let asyncSelectConfigs = {};
+
+    function renderAsyncSelect(id,label,sourceKey,options={}){
+        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden'} = options;
+        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText};
+        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" ${required?'required':''}>` : '';
+        return `<label class="async-label">${label}
+            <div class="async-select" data-field="${id}" data-source="${sourceKey}" data-required="${required}"${dependsOn?` data-depends-on="${dependsOn}"`:''}>
+                <select id="${id}-select" ${required?'required':''}>
+                    <option value="">${placeholder}</option>
+                </select>
+                ${manualInput}
+                <input type="hidden" id="${id}">
+                ${manualToggle}
+            </div>
+        </label>`;
+    }
+
+    async function fetchJson(url){
+        if(!url) return [];
+        const res = await fetch(url);
+        if(res.status===204) return [];
+        if(!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+        try{
+            return await res.json();
+        }catch{
+            return [];
+        }
+    }
+
+    function populateOptions(select,entries,options={}){
+        const {placeholder='Bitte auswählen', allowEmpty=false}=options;
+        const currentValue = select.value;
+        select.innerHTML='';
+        if(placeholder!==null){
+            const opt=document.createElement('option');
+            opt.value='';
+            opt.textContent=placeholder;
+            select.appendChild(opt);
+        }
+        entries.filter(Boolean).forEach(entry=>{
+            const opt=document.createElement('option');
+            opt.value=entry.value;
+            opt.textContent=entry.label || entry.value;
+            select.appendChild(opt);
+        });
+        if(entries.length>0 && entries.some(e=>e && e.value===currentValue)){
+            select.value=currentValue;
+        }else if(allowEmpty){
+            select.value='';
+        }else{
+            select.value='';
+        }
+    }
+
+    function updateValueProxy(id,value){
+        const hidden=document.getElementById(id);
+        if(!hidden) return;
+        const newValue=value??'';
+        if(hidden.value===newValue) return;
+        hidden.value=newValue;
+        hidden.dispatchEvent(new CustomEvent('value-changed',{bubbles:true,detail:{value:newValue}}));
+    }
+
+    function getAsyncContainer(id){
+        return dynamicForm.querySelector(`.async-select[data-field="${id}"]`);
+    }
+
+    function setManualMode(id,mode){
+        const container=getAsyncContainer(id);
+        if(!container) return;
+        const select=container.querySelector('select');
+        const manual=container.querySelector(`#${id}-manual`);
+        const toggle=container.querySelector('.toggle-manual');
+        const required=container.dataset.required==='true';
+        if(!manual){
+            container.dataset.mode='select';
+            select?.classList.remove('hidden');
+            if(select && required) select.setAttribute('required','');
+            return;
+        }
+        if(mode==='manual'){
+            select?.classList.add('hidden');
+            if(select) select.removeAttribute('required');
+            select?.setAttribute('aria-hidden','true');
+            if(select) select.disabled=true;
+            manual.classList.remove('hidden');
+            if(required) manual.setAttribute('required',''); else manual.removeAttribute('required');
+            if(toggle) toggle.textContent='Aus Liste wählen';
+            container.dataset.mode='manual';
+            updateValueProxy(id,manual.value?.trim()||'');
+        }else{
+            manual.classList.add('hidden');
+            manual.removeAttribute('required');
+            select?.classList.remove('hidden');
+            if(select) {
+                select.removeAttribute('aria-hidden');
+                if(required) select.setAttribute('required','');
+                select.disabled = select.options.length===0;
+            }
+            if(toggle) toggle.textContent='Freitext eingeben';
+            container.dataset.mode='select';
+            updateValueProxy(id,select?select.value:'');
+        }
+    }
+
+    async function loadOptionsForField(id){
+        const config=asyncSelectConfigs[id];
+        if(!config) return;
+        const container=getAsyncContainer(id);
+        if(!container) return;
+        const select=container.querySelector('select');
+        const manual=container.querySelector(`#${id}-manual`);
+        if(!select) return;
+        const dependencyId=config.dependsOn;
+        const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
+        if(dependencyId && !dependencyValue){
+            select.innerHTML='';
+            populateOptions(select,[],{placeholder:'Bitte zuerst eine Site wählen',allowEmpty:true});
+            select.disabled=true;
+            if(manual){
+                manual.value='';
+                if(container.dataset.mode!=='manual') updateValueProxy(id,'');
+            }
+            return;
+        }
+
+        const source=asyncSources[config.sourceKey];
+        if(!source){
+            select.innerHTML='';
+            select.disabled=true;
+            if(manual){
+                manual.value='';
+                if(container.dataset.mode!=='manual') updateValueProxy(id,'');
+                if(config.allowManual!==false) setManualMode(id,'manual');
+            }
+            return;
+        }
+
+        select.disabled=true;
+        select.innerHTML=`<option value="">Lade Daten…</option>`;
+        try{
+            const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
+            const data=await fetchJson(url);
+            const entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
+            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : config.placeholder;
+            populateOptions(select,entries,{placeholder:placeholderText,allowEmpty:!config.required});
+            select.disabled=entries.length===0;
+            if(container.dataset.mode!=='manual'){
+                select.value='';
+                updateValueProxy(id,'');
+            }
+            if(entries.length===0 && config.allowManual!==false){
+                if(manual){
+                    manual.value='';
+                    setManualMode(id,'manual');
+                }
+            }else if(container.dataset.mode!=='manual'){
+                setManualMode(id,'select');
+            }
+        }catch(err){
+            console.error(err);
+            populateOptions(select,[],{placeholder:'Fehler beim Laden'});
+            select.disabled=true;
+            if(config.allowManual!==false){
+                setManualMode(id,'manual');
+            }
+        }
+    }
+
+    function initializeAsyncSelects(form){
+        Object.keys(asyncSelectConfigs).forEach(id=>{
+            const container=form.querySelector(`.async-select[data-field="${id}"]`);
+            if(!container) return;
+            const select=container.querySelector('select');
+            const manual=container.querySelector(`#${id}-manual`);
+            const toggle=container.querySelector('.toggle-manual');
+            const hidden=form.querySelector(`#${id}`);
+            if(hidden) hidden.value='';
+            container.dataset.mode='select';
+            if(select){
+                select.addEventListener('change',()=>{
+                    if(container.dataset.mode!=='manual'){
+                        updateValueProxy(id,select.value);
+                    }
+                });
+            }
+            if(manual){
+                manual.addEventListener('input',()=>{
+                    if(container.dataset.mode==='manual'){
+                        updateValueProxy(id,manual.value.trim());
+                    }
+                });
+            }
+            if(toggle){
+                toggle.addEventListener('click',()=>{
+                    setManualMode(id,container.dataset.mode==='manual'?'select':'manual');
+                });
+            }
+            if(manual && container.dataset.required==='true'){
+                manual.removeAttribute('required');
+            }
+            setManualMode(id,'select');
+        });
+
+        Object.entries(asyncSelectConfigs).forEach(([id,config])=>{
+            if(config.dependsOn){
+                const dep=document.getElementById(config.dependsOn);
+                if(dep){
+                    dep.addEventListener('value-changed',()=>loadOptionsForField(id));
+                }
+            }
+            loadOptionsForField(id);
+        });
+    }
+
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
+        asyncSelectConfigs = {};
         switch(t){
             case 'Account':
                 h+= add('name','Name')
@@ -82,20 +359,20 @@
                     + add('pname','Projektname')
                     + add('variantId','DeploymentVariantID (UUID)')
                     + add('bundle','Bundle-Type',false)
-                    + add('accId','Account-ID (UUID)')
-                    + add('addrId','Address-ID (UUID)');
+                    + renderAsyncSelect('accId','Account auswählen','accounts')
+                    + renderAsyncSelect('addrId','Adresse auswählen','addresses');
                 break;
 
             case 'Site':
-                h+= add('pId','Project-ID (UUID)')
+                h+= renderAsyncSelect('pId','Project auswählen','projects')
                     + add('name','Site-Name')
-                    + add('addr','Address-ID (UUID)')
+                    + renderAsyncSelect('addrId','Adresse auswählen','addresses')
                     + add('zone','FireZone')
                     + add('tenant','TenantCount');
                 break;
 
             case 'Server':
-                h+= add('siteId','Site-ID (UUID)')
+                h+= renderAsyncSelect('siteId','Site auswählen','sites')
                     + add('name','Servername')
                     + add('brand','Marke')
                     + add('serial','Serien-Nr.')
@@ -107,7 +384,7 @@
                 break;
 
             case 'WorkingPosition':
-                h+= add('siteId','Site-ID (UUID)')
+                h+= renderAsyncSelect('siteId','Site auswählen','sites')
                     + add('name','Client-Name')
                     + add('brand','Marke')
                     + add('serial','Serien-Nr.')
@@ -117,16 +394,16 @@
                 break;
 
             case 'Radio':
-                h+= add('siteId','Site-ID (UUID)')
+                h+= renderAsyncSelect('siteId','Site auswählen','sites')
                     + add('brand','Marke')
                     + add('serial','Serien-Nr.')
                     + addSel('mode','Mode',['Analog','Digital'])
                     + addSel('standard','Digital-Standard',['Airbus','Motorola','ESN','P25','Polycom','Teltronics'],false)
-                    + add('client','AssignedClientID (UUID)',false);
+                    + renderAsyncSelect('client','AssignedClientID (UUID)','clients',{required:false, placeholder:'Client auswählen (optional)', dependsOn:'siteId'});
                 break;
 
             case 'AudioDevice':
-                h+= add('client','Client-ID (UUID)')
+                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
                     + add('brand','Marke')
                     + add('serial','Serien-Nr.')
                     + add('fw','Firmware')
@@ -134,7 +411,7 @@
                 break;
 
             case 'PhoneIntegration':
-                h+= add('client','Client-ID (UUID)')
+                h+= renderAsyncSelect('client','Client auswählen','clients',{placeholder:'Client auswählen'})
                     + addSel('type','PhoneType',['Emergency','NonEmergency','Both'])
                     + add('brand','Marke')
                     + add('serial','Serien-Nr.')
@@ -142,6 +419,7 @@
                 break;
         }
         f.innerHTML = h + `<button>Speichern</button> <button type="button" onclick="back()">Zurück</button>`;
+        initializeAsyncSelects(f);
         if(t==='Radio') wireRadioLogic();
     }
 
@@ -194,7 +472,7 @@
                 p={
                     projectID: v('pId'),
                     siteName: v('name'),
-                    addressID: v('addr'),
+                    addressID: v('addrId'),
                     fireZone: v('zone'),
                     tenantCount: v('tenant') ? Number(v('tenant')) : null
                 };
