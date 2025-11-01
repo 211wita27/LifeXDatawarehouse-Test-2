@@ -156,8 +156,13 @@
     };
 
     const pick = (obj,...keys)=>{
+        if(!obj) return undefined;
+        const entries = Object.keys(obj);
         for(const key of keys){
-            if(obj && obj[key]!==undefined && obj[key]!==null) return obj[key];
+            if(key==null) continue;
+            if(obj[key]!==undefined && obj[key]!==null) return obj[key];
+            const match = entries.find(k=>k.toLowerCase()===String(key).toLowerCase());
+            if(match && obj[match]!==undefined && obj[match]!==null) return obj[match];
         }
         return undefined;
     };
