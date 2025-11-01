@@ -121,7 +121,8 @@ public class ReportController {
                 int quarter = (today.getMonthValue() - 1) / 3;
                 int startMonth = quarter * 3 + 1;
                 LocalDate start = LocalDate.of(today.getYear(), startMonth, 1);
-                yield new DateRange(start, today);
+                LocalDate end = start.plusMonths(3).minusDays(1);
+                yield new DateRange(start, end);
             }
             case "custom" -> {
                 if (fromStr == null || toStr == null) {
