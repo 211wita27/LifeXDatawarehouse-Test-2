@@ -49,8 +49,11 @@ public class LoggingContextFilter extends OncePerRequestFilter {
 
     private String resolveUser(HttpServletRequest request) {
         Principal principal = request.getUserPrincipal();
-        if (principal != null && principal.getName() != null) {
-            return principal.getName();
+        if (principal != null) {
+            String principalName = principal.getName();
+            if (principalName != null && !principalName.isBlank()) {
+                return principalName;
+            }
         }
         String headerUser = request.getHeader("X-User-Id");
         if (headerUser != null && !headerUser.isBlank()) {
