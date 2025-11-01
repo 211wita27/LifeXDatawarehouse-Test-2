@@ -49,6 +49,7 @@
     <div id="children"></div>
 </main>
 
+<script src="/js/form-config.js"></script>
 <script>
     /* -------------------- Helpers -------------------- */
     const PKS = {
@@ -137,6 +138,12 @@
             default: return t;
         }
     }
+    function configKeyForTable(table){
+        const normalized = tableForType(table);
+        if(!normalized) return null;
+        if(normalized === 'Clients') return 'WorkingPosition';
+        return normalized;
+    }
     function val(row, ...keys){
         for(const k of keys){
             if (row[k] !== undefined) return row[k];
@@ -163,6 +170,367 @@
         if (from && to) return `${from} → ${to}`;
         return from || to || '';
     }
+    const formConfig = window.FormConfig || {getFields:()=>[], asyncSources:{}};
+    let detailAsyncSelectConfigs = {};
+    let detailFormRef = null;
+
+    const escapeAttr = value => String(value ?? '')
+        .replace(/&/g,'&amp;')
+        .replace(/"/g,'&quot;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;');
+
+    const renderAttributes = attrs => Object.entries(attrs)
+        .map(([key,value])=>{
+            if(value===undefined||value===null||value===false) return '';
+            if(value===true) return ` ${key}`;
+            return ` ${key}="${escapeAttr(value)}"`;
+        }).join('');
+
+    const toChoices = choices => {
+        if(!Array.isArray(choices)) return [];
+        return choices.map(choice => {
+            if(choice && typeof choice === 'object'){
+                return {value: choice.value, label: choice.label ?? choice.value};
+            }
+            return {value: choice, label: choice};
+        });
+    };
+
+    const renderInputField = (id,label,opts={}) => {
+        const config = {...opts};
+        if(config.required === undefined) config.required = true;
+        const attributes = {
+            id,
+            name: config.name || id,
+            type: config.type || 'text',
+            placeholder: config.placeholder,
+            pattern: config.pattern,
+            maxlength: config.maxlength,
+            minlength: config.minlength,
+            min: config.min,
+            max: config.max,
+            step: config.step,
+            autocomplete: config.autocomplete,
+            inputmode: config.inputmode,
+            value: config.value,
+            'data-value-type': config.valueType || undefined,
+        };
+        if(config.required === false) delete attributes.required; else attributes.required = true;
+        if(config.dataset){
+            Object.entries(config.dataset).forEach(([key,value])=>{
+                if(value!==undefined && value!==null){
+                    attributes[`data-${key}`]=value;
+                }
+            });
+        }
+        if(config.className) attributes.class=config.className;
+        const attrs = renderAttributes(attributes);
+        return `<label for="${id}" class="detail-field"><span class="detail-field-label">${escapeHtml(label)}</span><input class="detail-input"${attrs}></label>`;
+    };
+
+    const renderSelectField = (id,label,choices,opts={}) => {
+        const config = {...opts};
+        if(config.required === undefined) config.required = true;
+        const placeholder = config.placeholder ?? 'Bitte auswählen';
+        const selectedValue = config.value ?? '';
+        const values = toChoices(choices);
+        const selectAttrs = renderAttributes({id, name: config.name || id, required: config.required!==false, 'data-value-type': config.valueType || undefined});
+        const optionsHtml = values.map(option=>`<option value="${escapeAttr(option.value)}"${String(option.value)===String(selectedValue)?' selected':''}>${escapeAttr(option.label)}</option>`).join('');
+        return `<label for="${id}" class="detail-field"><span class="detail-field-label">${escapeHtml(label)}</span><select class="detail-input"${selectAttrs}><option value="">${escapeAttr(placeholder)}</option>${optionsHtml}</select></label>`;
+    };
+
+    function renderDetailAsyncSelect(id,label,sourceKey,options={}){
+        const {required=true, allowManual=true, placeholder='Bitte auswählen', dependsOn=null, emptyText='Keine Einträge vorhanden', filter=null, name=null, value=null} = options;
+        detailAsyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
+        const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Freitext eingeben</button>` : '';
+        const manualValue = value ?? '';
+        const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="hidden" placeholder="UUID eingeben" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
+        const hiddenName = name ? ` name="${escapeAttr(name)}"` : '';
+        const hiddenValue = value!=null ? ` value="${escapeAttr(value)}"` : '';
+        const valueTypeAttr = ` data-value-type="${escapeAttr(options.valueType || 'text')}"`;
+        return `<label class="detail-field"><span class="detail-field-label">${escapeHtml(label)}</span>
+            <div class="async-select" data-field="${id}" data-source="${sourceKey}" data-required="${required}"${dependsOn?` data-depends-on="${dependsOn}"`:''}>
+                <select id="${id}-select" class="detail-input" ${required?'required':''}>
+                    <option value="">${escapeAttr(placeholder)}</option>
+                </select>
+                ${manualInput}
+                <input type="hidden" id="${id}"${hiddenName}${hiddenValue}${valueTypeAttr}>
+                ${manualToggle}
+            </div>
+        </label>`;
+    }
+
+    function renderFieldForDetails(field, overrides={}){
+        if(!field) return '';
+        const config={...field,...overrides};
+        const component=(config.component||'input').toLowerCase();
+        if(component==='select'){
+            if(!config.valueType) config.valueType='text';
+        }else if(component==='asyncselect'){
+            if(!config.valueType) config.valueType='text';
+        }else{
+            const hint=(config.inputType||config.type||'').toLowerCase();
+            if(!config.valueType){
+                if(hint==='number') config.valueType='number';
+                else if(hint==='date') config.valueType='date';
+                else config.valueType='text';
+            }
+        }
+        if(component==='select'){
+            return renderSelectField(config.id, config.label, config.options||[], config);
+        }
+        if(component==='asyncselect'){
+            return renderDetailAsyncSelect(config.id, config.label, config.source, {
+                required: config.required!==false,
+                allowManual: config.allowManual!==false,
+                placeholder: config.placeholder,
+                dependsOn: config.dependsOn||null,
+                emptyText: config.emptyText,
+                name: config.name,
+                value: config.value,
+                valueType: config.valueType
+            });
+        }
+        const inputConfig={
+            required: config.required!==false,
+            type: config.inputType||config.type||'text',
+            placeholder: config.placeholder,
+            pattern: config.pattern,
+            maxlength: config.maxlength,
+            minlength: config.minlength,
+            min: config.min,
+            max: config.max,
+            step: config.step,
+            autocomplete: config.autocomplete,
+            inputmode: config.inputmode,
+            dataset: config.dataset,
+            name: config.name,
+            value: config.value,
+            valueType: config.valueType
+        };
+        return renderInputField(config.id, config.label, inputConfig);
+    }
+
+    function detailPopulateOptions(select,entries,options={}){
+        const {placeholder='Bitte auswählen', allowEmpty=false}=options;
+        const currentValue = select.value;
+        select.innerHTML='';
+        if(placeholder!==null){
+            const opt=document.createElement('option');
+            opt.value='';
+            opt.textContent=placeholder;
+            select.appendChild(opt);
+        }
+        entries.filter(Boolean).forEach(entry=>{
+            const opt=document.createElement('option');
+            opt.value=entry.value;
+            opt.textContent=entry.label || entry.value;
+            select.appendChild(opt);
+        });
+        if(entries.length>0 && entries.some(e=>e && e.value===currentValue)){
+            select.value=currentValue;
+        }else if(allowEmpty){
+            select.value='';
+        }else{
+            select.value='';
+        }
+    }
+
+    function detailUpdateValueProxy(id,value){
+        const hidden=document.getElementById(id);
+        if(!hidden) return;
+        const newValue=value??'';
+        if(hidden.value===newValue) return;
+        hidden.value=newValue;
+        hidden.dispatchEvent(new CustomEvent('value-changed',{bubbles:true,detail:{value:newValue}}));
+    }
+
+    function detailGetAsyncContainer(id){
+        const form = detailFormRef;
+        if(!form) return null;
+        return form.querySelector(`.async-select[data-field="${id}"]`);
+    }
+
+    function detailSetManualMode(id,mode){
+        const container=detailGetAsyncContainer(id);
+        if(!container) return;
+        const select=container.querySelector('select');
+        const manual=container.querySelector(`#${id}-manual`);
+        const toggle=container.querySelector('.toggle-manual');
+        const required=container.dataset.required==='true';
+        if(!manual){
+            container.dataset.mode='select';
+            select?.classList.remove('hidden');
+            if(select && required) select.setAttribute('required','');
+            return;
+        }
+        if(mode==='manual'){
+            select?.classList.add('hidden');
+            if(select) select.removeAttribute('required');
+            select?.setAttribute('aria-hidden','true');
+            if(select) select.disabled=true;
+            manual.classList.remove('hidden');
+            if(required) manual.setAttribute('required',''); else manual.removeAttribute('required');
+            if(toggle) toggle.textContent='Aus Liste wählen';
+            container.dataset.mode='manual';
+            detailUpdateValueProxy(id,manual.value?.trim()||'');
+        }else{
+            manual.classList.add('hidden');
+            manual.removeAttribute('required');
+            select?.classList.remove('hidden');
+            if(select){
+                select.removeAttribute('aria-hidden');
+                if(required) select.setAttribute('required','');
+                select.disabled = select.options.length===0;
+            }
+            if(toggle) toggle.textContent='Freitext eingeben';
+            container.dataset.mode='select';
+            detailUpdateValueProxy(id,select?select.value:'');
+        }
+    }
+
+    async function detailLoadOptionsForField(id){
+        const config=detailAsyncSelectConfigs[id];
+        if(!config) return;
+        const container=detailGetAsyncContainer(id);
+        if(!container) return;
+        const select=container.querySelector('select');
+        const manual=container.querySelector(`#${id}-manual`);
+        if(!select) return;
+        const dependencyId=config.dependsOn;
+        const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
+        if(dependencyId && !dependencyValue){
+            select.innerHTML='';
+            detailPopulateOptions(select,[],{placeholder:'Bitte zuerst die abhängige Auswahl treffen',allowEmpty:true});
+            select.disabled=true;
+            if(manual){
+                manual.value='';
+                if(container.dataset.mode!=='manual') detailUpdateValueProxy(id,'');
+            }
+            return;
+        }
+
+        const source=formConfig.asyncSources[config.sourceKey];
+        if(!source){
+            select.innerHTML='';
+            select.disabled=true;
+            if(manual){
+                manual.value='';
+                if(container.dataset.mode!=='manual') detailUpdateValueProxy(id,'');
+                if(config.allowManual!==false) detailSetManualMode(id,'manual');
+            }
+            return;
+        }
+
+        select.disabled=true;
+        select.innerHTML=`<option value="">Lade Daten…</option>`;
+        try{
+            const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
+            const data=await fetchJson(url);
+            let entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
+            if(typeof config.filter==='function'){
+                entries=entries.filter(entry=>config.filter(entry, dependencyValue));
+            }
+            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : config.placeholder;
+            detailPopulateOptions(select,entries,{placeholder:placeholderText,allowEmpty:!config.required});
+            select.disabled=entries.length===0;
+            const initialValue=config.initialValue;
+            if(container.dataset.mode!=='manual'){
+                if(initialValue!=null && entries.some(entry=>entry && String(entry.value)===String(initialValue))){
+                    select.value=initialValue;
+                    detailUpdateValueProxy(id,initialValue);
+                }else{
+                    select.value='';
+                    detailUpdateValueProxy(id,'');
+                }
+            }
+            if(entries.length===0 && config.allowManual!==false){
+                if(manual){
+                    manual.value=initialValue??'';
+                    detailSetManualMode(id,'manual');
+                }
+            }else if(container.dataset.mode!=='manual'){
+                detailSetManualMode(id,'select');
+            }
+            config.initialValue=undefined;
+        }catch(err){
+            console.error(err);
+            detailPopulateOptions(select,[],{placeholder:'Fehler beim Laden'});
+            select.disabled=true;
+            if(config.allowManual!==false){
+                detailSetManualMode(id,'manual');
+            }
+        }
+    }
+
+    function detailInitializeAsyncSelects(form){
+        detailFormRef = form;
+        Object.keys(detailAsyncSelectConfigs).forEach(id=>{
+            const container=form.querySelector(`.async-select[data-field="${id}"]`);
+            if(!container) return;
+            const select=container.querySelector('select');
+            const manual=container.querySelector(`#${id}-manual`);
+            const toggle=container.querySelector('.toggle-manual');
+            const hidden=form.querySelector(`#${id}`);
+            const cfg=detailAsyncSelectConfigs[id]||{};
+            if(hidden) hidden.value=cfg.initialValue??'';
+            if(manual && cfg.initialValue!=null){
+                manual.value=cfg.initialValue;
+            }
+            container.dataset.mode='select';
+            if(select){
+                select.addEventListener('change',()=>{
+                    if(container.dataset.mode!=='manual'){
+                        detailUpdateValueProxy(id,select.value);
+                    }
+                });
+            }
+            if(manual){
+                manual.addEventListener('input',()=>{
+                    if(container.dataset.mode==='manual'){
+                        detailUpdateValueProxy(id,manual.value.trim());
+                    }
+                });
+            }
+            if(toggle){
+                toggle.addEventListener('click',()=>{
+                    detailSetManualMode(id,container.dataset.mode==='manual'?'select':'manual');
+                });
+            }
+            if(manual && container.dataset.required==='true'){
+                manual.removeAttribute('required');
+            }
+            detailSetManualMode(id,'select');
+        });
+
+        Object.entries(detailAsyncSelectConfigs).forEach(([id,config])=>{
+            if(config.dependsOn){
+                const dep=document.getElementById(config.dependsOn);
+                if(dep){
+                    dep.addEventListener('value-changed',()=>detailLoadOptionsForField(id));
+                }
+            }
+            detailLoadOptionsForField(id);
+        });
+    }
+
+    function detailApplyInputEnhancements(form){
+        form.querySelectorAll('input[data-uppercase="true"]').forEach(input=>{
+            input.addEventListener('input',()=>{
+                const start=input.selectionStart;
+                const end=input.selectionEnd;
+                const upper=input.value.toUpperCase();
+                if(input.value!==upper){
+                    input.value=upper;
+                    if(start!==null && end!==null){
+                        input.setSelectionRange(start,end);
+                    }
+                }
+            });
+        });
+    }
+
     function labelFor(type, row){
         switch((type||'').toLowerCase()){
             case 'account': return `${val(row,'AccountName') ?? 'Account'}`;
@@ -432,6 +800,7 @@
         updateEditButton();
         updateHeading();
 
+        detailAsyncSelectConfigs = {};
         detailBodyEl.innerHTML = '';
 
         const form = document.createElement('form');
@@ -442,7 +811,43 @@
         grid.className = 'detail-form-grid';
         const pkName = currentTable ? PKS[currentTable] : null;
 
+        const configKey = configKeyForTable(currentTable);
+        const configFields = formConfig.getFields(configKey) || [];
+        const usedKeys = new Set();
+        let html = '';
+
+        configFields.forEach(field => {
+            const rowKey = field.name || field.rowKey || field.id;
+            if(rowKey) usedKeys.add(rowKey.toLowerCase());
+            const rawValue = rowKey ? val(row, rowKey) : undefined;
+            const overrides = { name: rowKey };
+            if(field.dataset) overrides.dataset = field.dataset;
+            if(rawValue !== undefined && rawValue !== null){
+                const hint = (field.inputType || field.type || '').toLowerCase();
+                let valueType;
+                if(field.component && field.component.toLowerCase()==='select'){
+                    valueType=field.valueType || 'text';
+                }else if(field.component && field.component.toLowerCase()==='asyncselect'){
+                    valueType=field.valueType || 'text';
+                }else if(hint==='number'){
+                    valueType='number';
+                }else if(hint==='date'){
+                    valueType='date';
+                }else{
+                    valueType=inferValueType(rawValue);
+                }
+                overrides.valueType = valueType;
+                overrides.value = formatInputValue(rawValue, valueType);
+            }else if(field.component && field.component.toLowerCase()==='asyncselect'){
+                overrides.valueType = field.valueType || 'text';
+            }
+            html += renderFieldForDetails(field, overrides);
+        });
+
+        grid.innerHTML = html;
+
         Object.entries(row || {}).forEach(([key, value]) => {
+            if(usedKeys.has(key.toLowerCase())) return;
             const inputId = `field-${key}`;
             const label = document.createElement('label');
             label.className = 'detail-field';
@@ -510,7 +915,10 @@
 
         detailBodyEl.appendChild(form);
 
-        const focusTarget = form.querySelector('input:not([readonly])');
+        detailInitializeAsyncSelects(form);
+        detailApplyInputEnhancements(form);
+
+        const focusTarget = form.querySelector('input:not([readonly]), select, textarea');
         if(focusTarget){
             focusTarget.focus();
         }
@@ -544,17 +952,79 @@
         if(!currentTable || !currentId) return;
 
         const payload = {};
-        form.querySelectorAll('input').forEach(input => {
-            if(!input.name) return;
-            const type = input.dataset.valueType;
+        const elements = Array.from(form.querySelectorAll('input, select, textarea'));
+        for(const el of elements){
+            if(!el.name || el.disabled) continue;
+            const type = el.dataset.valueType;
             if(type === 'number'){
-                payload[input.name] = input.value === '' ? null : Number(input.value);
+                if(el.value === ''){
+                    payload[el.name] = null;
+                }else{
+                    const num = Number(el.value);
+                    if(Number.isNaN(num)){
+                        setStatus(`Feld ${el.name} muss eine Zahl sein.`, 'error');
+                        return;
+                    }
+                    payload[el.name] = num;
+                }
             }else if(type === 'date'){
-                payload[input.name] = input.value === '' ? null : input.value;
+                payload[el.name] = el.value === '' ? null : el.value;
+            }else if(type === 'boolean'){
+                if(el.value === ''){
+                    payload[el.name] = null;
+                }else{
+                    const normalized = String(el.value).toLowerCase();
+                    payload[el.name] = normalized === 'true' || normalized === '1';
+                }
             }else{
-                payload[input.name] = input.value;
+                payload[el.name] = el.value;
             }
-        });
+        }
+
+        const entityKey = configKeyForTable(currentTable);
+        const fail = msg => {
+            setStatus(msg, 'error');
+            return true;
+        };
+
+        if(entityKey === 'Country'){
+            if(payload.CountryCode !== undefined && payload.CountryCode !== null){
+                const code = String(payload.CountryCode).trim().toUpperCase();
+                if(code.length !== 2){
+                    if(fail('Country Code muss genau 2 Zeichen haben.')) return;
+                }
+                payload.CountryCode = code;
+            }
+        }else if(entityKey === 'City'){
+            if(payload.CountryCode === undefined || payload.CountryCode === null || payload.CountryCode === ''){
+                if(fail('Bitte ein Land auswählen.')) return;
+            }else{
+                payload.CountryCode = String(payload.CountryCode).trim().toUpperCase();
+            }
+            if(payload.CityID !== undefined && payload.CityID !== null){
+                payload.CityID = String(payload.CityID).trim().toUpperCase();
+            }
+        }else if(entityKey === 'Site'){
+            if(Object.prototype.hasOwnProperty.call(payload,'TenantCount') && payload.TenantCount !== null){
+                const num = Number(payload.TenantCount);
+                if(Number.isNaN(num)){
+                    if(fail('TenantCount muss eine Zahl sein.')) return;
+                }
+                payload.TenantCount = num;
+            }
+        }else if(entityKey === 'UpgradePlan'){
+            const start = payload.PlannedWindowStart;
+            const end = payload.PlannedWindowEnd;
+            if(start && end && start > end){
+                if(fail('Das geplante Ende muss nach dem Start liegen.')) return;
+            }
+        }else if(entityKey === 'ServiceContract'){
+            const start = payload.StartDate;
+            const end = payload.EndDate;
+            if(start && end && start > end){
+                if(fail('Enddatum darf nicht vor dem Startdatum liegen.')) return;
+            }
+        }
 
         setStatus('Änderungen werden gespeichert …', 'info');
         saveButton.disabled = true;
