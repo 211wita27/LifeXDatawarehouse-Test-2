@@ -265,6 +265,20 @@
                 }
                 if (pills.length) sections.push({ title: 'Gehört zu', pills });
             }
+        } else if (type === 'City') {
+            const countryCode = val(row, 'CountryCode');
+            if (countryCode != null) {
+                const country = await fetchJson(`/row/Country/${countryCode}`);
+                if (country) {
+                    const pill = pillLink(
+                        `/details.html?type=country&id=${encodeURIComponent(countryCode)}`,
+                        'Country',
+                        countryCode,
+                        labelFor('country', country)
+                    );
+                    sections.push({ title: 'Gehört zu', pills: [pill] });
+                }
+            }
         } else if (type === 'Radio') {
             const pills = [];
             const siteId = val(row,'SiteID');
@@ -477,6 +491,21 @@
                 const pid = val(p,'PhoneIntegrationID');
                 const brand = val(p,'PhoneBrand');
                 return pillLink(`/details.html?type=phone&id=${encodeURIComponent(pid)}`, null, pid, brand);
+            });
+        }
+        else if(type==='City'){
+            const rows = await fetchJson(`/table/address?limit=200`);
+            const matches = Array.isArray(rows)
+                ? rows.filter(r => (val(r, 'CityID') ?? '').toString() === id.toString())
+                : [];
+            addSection(box, 'Addresses', matches, addr => {
+                const addressId = val(addr, 'AddressID');
+                return pillLink(
+                    `/details.html?type=address&id=${encodeURIComponent(addressId)}`,
+                    labelFor('address', addr),
+                    addressId,
+                    val(addr, 'PostalCode')
+                );
             });
         }
     }
