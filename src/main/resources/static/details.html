@@ -1180,10 +1180,12 @@
         box.innerHTML = '';
 
         // Helper functions for row fetches
-        const rowAccount = async (accountId) => await fetchJson(`/row/Account/${accountId}`);
-        const rowProject = async (projectId) => await fetchJson(`/row/Project/${projectId}`);
-        const rowSite    = async (siteId)    => await fetchJson(`/row/Site/${siteId}`);
-        const rowClient  = async (clientId)  => await fetchJson(`/row/Clients/${clientId}`); // changed
+        const rowAccount  = async (accountId)  => await fetchJson(`/row/Account/${accountId}`);
+        const rowProject  = async (projectId)  => await fetchJson(`/row/Project/${projectId}`);
+        const rowSite     = async (siteId)     => await fetchJson(`/row/Site/${siteId}`);
+        const rowClient   = async (clientId)   => await fetchJson(`/row/Clients/${clientId}`); // changed
+        const rowCity     = async (cityId)     => await fetchJson(`/row/City/${encodeURIComponent(cityId)}`);
+        const rowSoftware = async (softwareId) => await fetchJson(`/row/Software/${encodeURIComponent(softwareId)}`);
 
         const sections = [];
 
@@ -1269,6 +1271,23 @@
                     sections.push({ title: 'Belongs to', pills: [pill] });
                 }
             }
+        } else if (type === 'Address') {
+            const cityId = val(row, 'CityID');
+            const pills = [];
+            if (cityId != null) {
+                const city = await rowCity(cityId);
+                if (city) {
+                    pills.push(pillLink(`/details.html?type=city&id=${encodeURIComponent(cityId)}`, 'City', cityId, labelFor('city', city)));
+                    const countryCode = val(city, 'CountryCode') ?? val(row, 'CountryCode');
+                    if (countryCode != null) {
+                        const country = await fetchJson(`/row/Country/${encodeURIComponent(countryCode)}`);
+                        if (country) {
+                            pills.push(pillLink(`/details.html?type=country&id=${encodeURIComponent(countryCode)}`, 'Country', countryCode, labelFor('country', country)));
+                        }
+                    }
+                }
+            }
+            if (pills.length) sections.push({ title: 'Belongs to', pills });
         } else if (type === 'Radio') {
             const pills = [];
             const siteId = val(row,'SiteID');
@@ -1371,6 +1390,50 @@
                 const site = await rowSite(siteId);
                 if (site) pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
             }
+            if (pills.length) sections.push({ title: 'Belongs to', pills });
+        } else if (type === 'InstalledSoftware' || type === 'UpgradePlan') {
+            const pills = [];
+
+            const siteId = val(row,'SiteID');
+            let site = null;
+            if (siteId != null) {
+                site = await rowSite(siteId);
+                if (site) {
+                    pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
+                }
+            }
+
+            let proj = null;
+            let projId = val(row,'ProjectID');
+            if (!projId && site) {
+                projId = val(site,'ProjectID');
+            }
+            if (projId != null) {
+                proj = await rowProject(projId);
+                if (proj) {
+                    pills.push(pillLink(`/details.html?type=project&id=${projId}`, 'Project', projId, labelFor('project',proj)));
+                }
+            }
+
+            let accId = val(row,'AccountID');
+            if (!accId && proj) {
+                accId = val(proj,'AccountID');
+            }
+            if (accId != null) {
+                const acc = await rowAccount(accId);
+                if (acc) {
+                    pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
+                }
+            }
+
+            const softwareId = val(row,'SoftwareID');
+            if (softwareId != null) {
+                const software = await rowSoftware(softwareId);
+                if (software) {
+                    pills.push(pillLink(`/details.html?type=software&id=${encodeURIComponent(softwareId)}`, 'Software', softwareId, labelFor('software', software)));
+                }
+            }
+
             if (pills.length) sections.push({ title: 'Belongs to', pills });
         }
 
