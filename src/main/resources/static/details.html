@@ -757,10 +757,15 @@
 
     function inferValueType(value){
         if(value === null || value === undefined) return 'text';
+        if(typeof value === 'boolean') return 'boolean';
         if(typeof value === 'number') return 'number';
         if(typeof value === 'string'){
             const trimmed = value.trim();
             if(!trimmed) return 'text';
+            const lowered = trimmed.toLowerCase();
+            if(lowered === 'true' || lowered === 'false' || lowered === '1' || lowered === '0'){
+                return 'boolean';
+            }
             const datePattern = /^\d{4}-\d{2}-\d{2}$/;
             const dateTimePattern = /^\d{4}-\d{2}-\d{2}[T\s]/;
             if((datePattern.test(trimmed) || dateTimePattern.test(trimmed)) && !Number.isNaN(Date.parse(trimmed))){
@@ -772,6 +777,13 @@
 
     function formatInputValue(value, type){
         if(value === null || value === undefined) return '';
+        if(type === 'boolean'){
+            if(typeof value === 'boolean') return value ? 'true' : 'false';
+            const normalized = String(value).trim().toLowerCase();
+            if(normalized === 'true' || normalized === '1') return 'true';
+            if(normalized === 'false' || normalized === '0') return 'false';
+            return '';
+        }
         if(type === 'date'){
             const str = String(value).trim();
             const pureDate = /^\d{4}-\d{2}-\d{2}$/;
@@ -868,27 +880,62 @@
             labelText.className = 'detail-field-label';
             labelText.textContent = key;
 
-            const input = document.createElement('input');
-            input.id = inputId;
-            input.name = key;
-            input.className = 'detail-input';
-
             const valueType = inferValueType(value);
-            input.dataset.valueType = valueType;
-            if(valueType === 'number'){
-                input.type = 'number';
-                input.step = 'any';
-            }else if(valueType === 'date'){
-                input.type = 'date';
+            const formattedValue = formatInputValue(value, valueType);
+            let input;
+
+            if(valueType === 'boolean'){
+                const select = document.createElement('select');
+                select.id = inputId;
+                select.name = key;
+                select.className = 'detail-input';
+                select.dataset.valueType = 'boolean';
+
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = 'Nicht gesetzt';
+                select.appendChild(emptyOption);
+
+                const trueOption = document.createElement('option');
+                trueOption.value = 'true';
+                trueOption.textContent = 'Ja';
+                select.appendChild(trueOption);
+
+                const falseOption = document.createElement('option');
+                falseOption.value = 'false';
+                falseOption.textContent = 'Nein';
+                select.appendChild(falseOption);
+
+                select.value = formattedValue || '';
+                input = select;
             }else{
-                input.type = 'text';
+                const textInput = document.createElement('input');
+                textInput.id = inputId;
+                textInput.name = key;
+                textInput.className = 'detail-input';
+                textInput.dataset.valueType = valueType;
+                if(valueType === 'number'){
+                    textInput.type = 'number';
+                    textInput.step = 'any';
+                }else if(valueType === 'date'){
+                    textInput.type = 'date';
+                }else{
+                    textInput.type = 'text';
+                }
+                textInput.value = formattedValue;
+                input = textInput;
             }
-            input.value = formatInputValue(value, valueType);
+
             input.required = false;
 
             if(pkName && pkName.toLowerCase() === key.toLowerCase()){
-                input.readOnly = true;
-                input.setAttribute('aria-readonly', 'true');
+                if(input.tagName === 'INPUT'){
+                    input.readOnly = true;
+                    input.setAttribute('aria-readonly', 'true');
+                }else{
+                    input.disabled = true;
+                    input.setAttribute('aria-disabled', 'true');
+                }
                 input.classList.add('detail-input-readonly');
             }
 
@@ -984,8 +1031,15 @@
                 if(el.value === ''){
                     payload[el.name] = null;
                 }else{
-                    const normalized = String(el.value).toLowerCase();
-                    payload[el.name] = normalized === 'true' || normalized === '1';
+                    const normalized = String(el.value).trim().toLowerCase();
+                    if(normalized === 'true' || normalized === '1'){
+                        payload[el.name] = true;
+                    }else if(normalized === 'false' || normalized === '0'){
+                        payload[el.name] = false;
+                    }else{
+                        setStatus(`Feld ${el.name} erwartet einen Wahr/Falsch-Wert.`, 'error');
+                        return;
+                    }
                 }
             }else{
                 payload[el.name] = el.value;
