@@ -684,6 +684,7 @@
         if(ctx.projectId) contextParts.push(`Project ${shortId(ctx.projectId).replace(/^##/, '#')}`);
         if(ctx.siteId) contextParts.push(`Site ${shortId(ctx.siteId).replace(/^##/, '#')}`);
         if(ctx.clientId) contextParts.push(`Client ${shortId(ctx.clientId).replace(/^##/, '#')}`);
+        if(ctx.cityId) contextParts.push(`City ${shortId(ctx.cityId).replace(/^##/, '#')}`);
         if(contextParts.length){
             return `Create new ${label} for ${contextParts.join(' and ')}`;
         }
@@ -1674,6 +1675,18 @@
                 const name = val(p,'ProjectName');
                 return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, null, pid, name);
             }, { entity: 'Project', label: 'Project', params: { deploymentVariantId: id } });
+        }
+        else if(type==='City'){
+            const addressRows = await fetchJson(`/table/address?limit=200`);
+            const addresses = Array.isArray(addressRows)
+                ? addressRows.filter(a => (val(a,'CityID') ?? '').toString() === (id ?? '').toString())
+                    .filter(a => val(a,'AddressID') != null)
+                : [];
+            addSection(box, 'Addresses', addresses, address => {
+                const addressId = val(address,'AddressID');
+                const label = labelFor('address', address);
+                return pillLink(`/details.html?type=address&id=${encodeURIComponent(addressId)}`, label, addressId, null);
+            }, { entity: 'Address', label: 'Address', params: { cityId: id } });
         }
         else if(type==='Site'){
             let projectId = val(row,'ProjectID');

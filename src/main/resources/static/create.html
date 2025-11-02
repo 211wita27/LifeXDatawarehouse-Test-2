@@ -688,6 +688,7 @@
         if(context.projectId) parts.push(`Project ${shortContextId(context.projectId)}`);
         if(context.siteId) parts.push(`Site ${shortContextId(context.siteId)}`);
         if(context.clientId) parts.push(`Client ${shortContextId(context.clientId)}`);
+        if(context.cityId) parts.push(`City ${shortContextId(context.cityId)}`);
         let message=base;
         if(parts.length){
             const trimmed=base.endsWith('.')?base.slice(0,-1):base;
@@ -1099,8 +1100,15 @@
         const projectId=params.get('projectId');
         const siteId=params.get('siteId');
         const clientId=params.get('clientId');
+        const cityId=params.get('cityId');
 
         switch(option.value){
+            case 'Address':
+                if(cityId){
+                    await ensureAsyncValue('cityID', cityId, {lock:true});
+                    context.cityId=cityId;
+                }
+                break;
             case 'Project':
                 if(accountId){
                     await ensureAsyncValue('accId', accountId, {lock:true});
