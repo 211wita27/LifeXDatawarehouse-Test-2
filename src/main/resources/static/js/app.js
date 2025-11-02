@@ -25,6 +25,18 @@ const debounce = (fn, ms=250) => { let t; return (...a)=>{clearTimeout(t); t=set
 const stGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
 const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function formatSnippet(snippet){
+    const text = (snippet === null || snippet === undefined) ? '' : String(snippet);
+    if (!text) return '';
+    const guidPattern = /\b(?:[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}|[0-9a-fA-F]{32})\b/g;
+    return text.replace(guidPattern, token => {
+        const compact = token.replace(/-/g, '');
+        if (compact.length <= 8) return token;
+        const start = compact.slice(0, 4);
+        const end = compact.slice(-4);
+        return `${start}…${end}`;
+    });
+}
 function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','true') : el.removeAttribute('aria-busy'); }
 
 const shortcutCache = new Map();
@@ -706,7 +718,7 @@ async function runLucene(q) {
         }
 
         const rows = hits.map((h, i) => {
-            const snippet = (h.snippet ?? '').trim();
+            const snippet = formatSnippet((h.snippet ?? '').trim());
             const snippetHtml = snippet ? `<div class="hit-snippet"><small>${escapeHtml(snippet)}</small></div>` : '';
             const typeArg = JSON.stringify(h.type ?? '');
             const idArg = JSON.stringify(h.id ?? '');
