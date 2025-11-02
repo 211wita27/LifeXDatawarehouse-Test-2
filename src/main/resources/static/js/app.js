@@ -357,6 +357,8 @@ const COLUMN_DETAIL_TYPE_OVERRIDE_SUFFIXES = [
     ['installedsoftwareid', 'installedsoftware'],
     ['softwareguid', 'software'],
     ['softwareid', 'software'],
+    ['countrycode', 'country'],
+    ['cityid', 'city'],
 ];
 
 function resolveColumnDetailType(columnName, fallbackDetailType) {
