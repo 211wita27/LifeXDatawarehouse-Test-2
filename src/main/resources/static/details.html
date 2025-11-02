@@ -1337,7 +1337,7 @@
                 }
                 if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
-        } else if (type === 'Client' || type === 'PhoneIntegration') {
+        } else if (type === 'Client') {
             const siteId = val(row,'SiteID');
             if (siteId != null) {
                 const site = await rowSite(siteId);
@@ -1359,6 +1359,35 @@
                 }
                 if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
+        } else if (type === 'PhoneIntegration') {
+            const pills = [];
+            const clientId = val(row,'ClientID');
+            if (clientId != null) {
+                const client = await rowClient(clientId);
+                if (client) {
+                    pills.push(pillLink(`/details.html?type=client&id=${clientId}`, 'Client', clientId, labelFor('client', client)));
+                    const siteId = val(client,'SiteID');
+                    if (siteId != null) {
+                        const site = await rowSite(siteId);
+                        if (site) {
+                            pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
+                            const projId = val(site,'ProjectID');
+                            if (projId != null) {
+                                const proj = await rowProject(projId);
+                                if (proj) {
+                                    pills.push(pillLink(`/details.html?type=project&id=${projId}`, 'Project', projId, labelFor('project', proj)));
+                                    const accId = val(proj,'AccountID');
+                                    if (accId != null) {
+                                        const acc = await rowAccount(accId);
+                                        if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (pills.length) sections.push({ title: 'Belongs to', pills });
         } else if (type === 'City') {
             const countryCode = val(row, 'CountryCode');
             if (countryCode != null) {
