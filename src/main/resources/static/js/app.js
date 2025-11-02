@@ -353,6 +353,8 @@ const COLUMN_DETAIL_TYPE_OVERRIDE_SUFFIXES = [
     ['assignedclientid', 'client'],
     ['clientguid', 'client'],
     ['clientid', 'client'],
+    ['installedsoftwareguid', 'installedsoftware'],
+    ['installedsoftwareid', 'installedsoftware'],
     ['softwareguid', 'software'],
     ['softwareid', 'software'],
 ];
