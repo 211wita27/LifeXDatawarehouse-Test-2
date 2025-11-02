@@ -1336,7 +1336,7 @@
                 }
                 if (pills.length) sections.push({ title: 'Belongs to', pills });
             }
-        } else if (type === 'Client') {
+        } else if (type === 'Client' || type === 'PhoneIntegration') {
             const siteId = val(row,'SiteID');
             if (siteId != null) {
                 const site = await rowSite(siteId);
