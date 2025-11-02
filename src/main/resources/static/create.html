@@ -957,6 +957,52 @@
         });
     }
 
+    function applyValidationMessages(form){
+        const relevantInputs=form.querySelectorAll('input');
+        relevantInputs.forEach(input=>{
+            const patternAttr=input.getAttribute('pattern');
+            let matchesCountryPattern=false;
+            if(patternAttr){
+                try{
+                    const tester=new RegExp(patternAttr);
+                    matchesCountryPattern=tester.test('AA') && !tester.test('AAA');
+                }catch(_){
+                    matchesCountryPattern=false;
+                }
+            }
+
+            const shouldHandle=(()=>{
+                if(['email','tel'].includes(input.type)) return true;
+                if(['email','phone','countryCode'].includes(input.id)) return true;
+                if(matchesCountryPattern) return true;
+                return false;
+            })();
+            if(!shouldHandle) return;
+
+            const getMessage=()=>{
+                const {validity}=input;
+                if(!validity) return '';
+                if((validity.typeMismatch||validity.patternMismatch)&& (input.type==='email'||input.id==='email')){
+                    return 'Please enter a valid email address.';
+                }
+                if((validity.typeMismatch||validity.patternMismatch) && (input.type==='tel'||input.id==='phone')){
+                    return 'Please enter a valid phone number (digits, spaces, and common separators are allowed).';
+                }
+                if(validity.patternMismatch && (input.id==='countryCode'||matchesCountryPattern)){
+                    return 'Please enter a two-letter country code.';
+                }
+                return '';
+            };
+
+            input.addEventListener('invalid',()=>{
+                input.setCustomValidity(getMessage());
+            });
+            input.addEventListener('input',()=>{
+                input.setCustomValidity('');
+            });
+        });
+    }
+
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
         asyncSelectConfigs = {};
@@ -977,6 +1023,7 @@
         initializeFilterableSelects(f);
         initializeAsyncSelects(f);
         applyInputEnhancements(f);
+        applyValidationMessages(f);
         showEntityMessage(t, {});
         if(t==='Radio') wireRadioLogic();
     }
