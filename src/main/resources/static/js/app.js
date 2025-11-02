@@ -740,6 +740,13 @@ async function runLucene(q) {
 }
 
 /* Tabellen-Viewer (100-Zeilen-Preview) */
+function isIdColumnName(columnKey) {
+    const normalized = normalizeTypeKey(columnKey);
+    if (!normalized) return false;
+    if (/(id|guid)$/.test(normalized)) return true;
+    return normalized === 'countrycode';
+}
+
 function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
     const column = (columnKey === undefined || columnKey === null) ? '' : String(columnKey);
     const raw = (rawValue === undefined || rawValue === null) ? '' : String(rawValue).trim();
@@ -747,7 +754,7 @@ function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
 
     const typeFilter = typeToken || '';
 
-    const isIdColumn = /(id|guid)$/i.test(column);
+    const isIdColumn = isIdColumnName(column);
     if (isIdColumn) {
         const escaped = raw.replace(/"/g, '\\"');
         const idQuery = `id:"${escaped}"`;
@@ -768,7 +775,7 @@ function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
 function renderTableCell(tableName, columnName, value) {
     const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
     const raw = (value === undefined || value === null) ? '' : String(value);
-    const isIdColumn = /(id|guid)$/i.test(key);
+    const isIdColumn = isIdColumnName(key);
     const tableTypeInfo = getTableTypeInfo(tableName);
     const columnDetailType = resolveColumnDetailType(key, tableTypeInfo.detailType);
     const columnTypeToken = columnDetailType === tableTypeInfo.detailType
