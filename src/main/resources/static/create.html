@@ -972,6 +972,7 @@
             }
 
             const shouldHandle=(()=>{
+                if(input.required) return true;
                 if(['email','tel'].includes(input.type)) return true;
                 if(['email','phone','countryCode'].includes(input.id)) return true;
                 if(matchesCountryPattern) return true;
@@ -982,6 +983,9 @@
             const getMessage=()=>{
                 const {validity}=input;
                 if(!validity) return '';
+                if(validity.valueMissing){
+                    return 'Please fill out this field.';
+                }
                 if((validity.typeMismatch||validity.patternMismatch)&& (input.type==='email'||input.id==='email')){
                     return 'Please enter a valid email address.';
                 }
