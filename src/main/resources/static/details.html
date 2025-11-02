@@ -23,6 +23,13 @@
         }
         .section h2 .add-link{margin-left:auto}
         .add-link:focus,.add-link:hover{background:#2c64b5;color:#fff;outline:2px solid transparent;outline-offset:2px;box-shadow:0 0 0 2px rgba(44,100,181,.35)}
+        .nav-buttons{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
+        .nav-buttons a{
+            display:inline-flex;align-items:center;gap:.4rem;padding:.45rem .95rem;border-radius:.55rem;
+            text-decoration:none;font-weight:600;font-size:.95rem;border:1px solid #2c64b5;color:#2c64b5;background:#fff;
+            transition:background .2s ease,color .2s ease,box-shadow .2s ease;
+        }
+        .nav-buttons a:focus,.nav-buttons a:hover{background:#2c64b5;color:#fff;outline:2px solid transparent;outline-offset:2px;box-shadow:0 0 0 2px rgba(44,100,181,.15)}
     </style>
 </head>
 <body>
@@ -39,7 +46,10 @@
 </header>
 
 <main id="main" style="max-width:1000px;margin:2rem auto">
-    <a id="back" href="index.html">← Back</a>
+    <div class="nav-buttons">
+        <a id="back-history" href="index.html">← Zurück</a>
+        <a id="back-dashboard" href="/index.html">Dashboard</a>
+    </div>
     <div id="view" class="card" role="region" aria-live="polite" aria-busy="true">loading …</div>
 
     <!-- NEW: Parent relationships -->
@@ -87,6 +97,66 @@
     let detailStatusEl;
     let editButtonEl;
     const defaultDocumentTitle = document.title || 'Detail View';
+    const defaultDashboardHref = 'index.html';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const historyButton = document.getElementById('back-history');
+        if(!historyButton) return;
+
+        const dashboardButton = document.getElementById('back-dashboard');
+        const fallbackHref = dashboardButton?.getAttribute('href') || defaultDashboardHref;
+        historyButton.setAttribute('href', fallbackHref);
+
+        const referrer = document.referrer;
+        let shouldUseHistory = false;
+
+        if(referrer){
+            try{
+                const refUrl = new URL(referrer, window.location.href);
+                const pathMatches = refUrl.pathname.endsWith('/details.html');
+                const searchParams = refUrl.searchParams;
+                if(pathMatches && searchParams.has('type') && searchParams.has('id')){
+                    shouldUseHistory = true;
+                    historyButton.setAttribute('href', refUrl.href);
+                }
+            }catch(err){
+                shouldUseHistory = false;
+            }
+        }
+
+        if(shouldUseHistory){
+            historyButton.addEventListener('click', event => {
+                if(!shouldUseHistory){
+                    historyButton.setAttribute('href', fallbackHref);
+                    return;
+                }
+                if(window.history.length <= 1){
+                    historyButton.setAttribute('href', fallbackHref);
+                    shouldUseHistory = false;
+                    return;
+                }
+
+                event.preventDefault();
+
+                let fallbackTimer;
+                const cleanup = () => {
+                    if(fallbackTimer !== undefined){
+                        window.clearTimeout(fallbackTimer);
+                    }
+                    window.removeEventListener('popstate', cleanup);
+                };
+
+                fallbackTimer = window.setTimeout(() => {
+                    cleanup();
+                    window.location.href = fallbackHref;
+                }, 600);
+
+                window.addEventListener('popstate', cleanup);
+
+                window.history.back();
+            });
+        }
+    });
 
     function escapeHtml(value){
         const map = {
