@@ -607,7 +607,7 @@
         if(component==='asyncselect'){
             return renderAsyncSelect(config.id, config.label, config.source, {
                 required: config.required!==false,
-                allowManual: config.allowManual!==false,
+                allowManual: config.allowManual===true,
                 placeholder: config.placeholder,
                 dependsOn: config.dependsOn||null,
                 emptyText: config.emptyText,
@@ -668,7 +668,7 @@
     }
 
     function renderAsyncSelect(id,label,sourceKey,options={}){
-        const {required=true, allowManual=true, placeholder='Please select', dependsOn=null, emptyText='No entries available', filter=null, name=null, value=null} = options;
+        const {required=true, allowManual=false, placeholder='Please select', dependsOn=null, emptyText='No entries available', filter=null, name=null, value=null} = options;
         asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter free text</button>` : '';
         const manualValue = value ?? '';
