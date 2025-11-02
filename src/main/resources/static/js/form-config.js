@@ -138,8 +138,8 @@
         Account: [
             { id: 'name', label: 'Name', component: 'input', name: 'AccountName' },
             { id: 'contact', label: 'Contact Person', component: 'input', name: 'ContactName', required: false },
-            { id: 'email', label: 'Email', component: 'input', name: 'ContactEmail', required: false },
-            { id: 'phone', label: 'Phone', component: 'input', name: 'ContactPhone', required: false },
+            { id: 'email', label: 'Email', component: 'input', name: 'ContactEmail', required: false, inputType: 'email', autocomplete: 'email', inputmode: 'email' },
+            { id: 'phone', label: 'Phone', component: 'input', name: 'ContactPhone', required: false, inputType: 'tel', pattern: '^[+0-9()\s-]{5,}$', inputmode: 'tel' },
             { id: 'vat', label: 'VAT ID', component: 'input', name: 'VatNumber', required: false },
             { id: 'country', label: 'Country', component: 'input', name: 'Country', required: false }
         ],
