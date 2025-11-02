@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Create Record</title>
+    <title>Create data entry</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4}
@@ -43,7 +43,7 @@
 </header>
 
 <main id="main" class="container" aria-live="polite">
-    <h1>Create Record</h1>
+    <h1 id="createHeading">Create data entry</h1>
 
     <!-- Schritt 1 -->
     <fieldset id="step1">
@@ -80,6 +80,36 @@
 
 <script src="/js/form-config.js"></script>
 <script>
+    const defaultCreateHeading='Create data entry';
+    const entityTitles={
+        Account:'Create account',
+        Address:'Create address',
+        AudioDevice:'Create audio device',
+        City:'Create city',
+        WorkingPosition:'Create client',
+        Country:'Create country',
+        DeploymentVariant:'Create deployment variant',
+        InstalledSoftware:'Create installed software',
+        PhoneIntegration:'Create phone integration',
+        Project:'Create project',
+        Radio:'Create radio',
+        Server:'Create server',
+        ServiceContract:'Create service contract',
+        Site:'Create site',
+        Software:'Create software',
+        UpgradePlan:'Create upgrade plan'
+    };
+
+    function updateCreateHeading(entityKey){
+        const heading=document.getElementById('createHeading');
+        if(!heading) return;
+        const normalized=entityKey?String(entityKey).trim():'';
+        const matchedTitle=normalized?entityTitles[normalized]||`Create ${normalized}`:defaultCreateHeading;
+        const titleValue=normalized?matchedTitle:defaultCreateHeading;
+        heading.textContent=titleValue;
+        document.title=titleValue;
+    }
+
     function back(){
         dynamicForm.classList.add('hidden'); step1.classList.remove('hidden');
         dynamicForm.innerHTML=''; result.textContent='';
@@ -90,6 +120,7 @@
         if(window.entityHint){
             entityHint.textContent='';
         }
+        updateCreateHeading();
     }
     function next(){
         buildForm(entity.value); step1.classList.add('hidden');
@@ -651,7 +682,7 @@
 
     function showEntityMessage(entityKey, context={}){
         if(!window.entityHint || !window.entityContext) return;
-        const base=formConfig.getMessage(entityKey)||`You are currently creating a record for entity ${entityKey}.`;
+        const base=formConfig.getMessage(entityKey)||`You are currently creating an entry for entity ${entityKey}.`;
         const parts=[];
         if(context.accountId) parts.push(`Account ${shortContextId(context.accountId)}`);
         if(context.projectId) parts.push(`Project ${shortContextId(context.projectId)}`);
@@ -1009,6 +1040,7 @@
 
     function buildForm(t){
         const f=dynamicForm; f.dataset.type=t; let h='';
+        updateCreateHeading(t);
         asyncSelectConfigs = {};
         const fields=formConfig.getFields(t) || [];
         fields.forEach(field=>{
@@ -1057,6 +1089,7 @@
         const option=Array.from(entitySelect.options).find(opt=>opt.value.toLowerCase()===rawEntity.toLowerCase());
         if(!option) return;
         entitySelect.value=option.value;
+        updateCreateHeading(option.value);
         buildForm(option.value);
         step1.classList.add('hidden');
         dynamicForm.classList.remove('hidden');
