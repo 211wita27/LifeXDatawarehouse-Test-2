@@ -147,11 +147,20 @@
         return normalized;
     }
     function val(row, ...keys){
+        if(!row || typeof row !== 'object') return undefined;
         for(const k of keys){
-            if (row[k] !== undefined) return row[k];
-            const u = k.toUpperCase(), l = k.toLowerCase();
-            for (const kk in row) {
-                if (kk === u || kk === l) return row[kk];
+            if(k === undefined || k === null) continue;
+            const keyStr = String(k);
+            if(keyStr && Object.prototype.hasOwnProperty.call(row, keyStr) && row[keyStr] !== undefined){
+                return row[keyStr];
+            }
+            const upper = keyStr.toUpperCase();
+            const lower = keyStr.toLowerCase();
+            for(const kk in row){
+                if(kk === keyStr || kk === upper || kk === lower || kk.toLowerCase() === lower){
+                    const value = row[kk];
+                    if(value !== undefined) return value;
+                }
             }
         }
         return undefined;
@@ -1550,9 +1559,9 @@
 
             const clients = await fetchJson(`/clients?siteId=${id}`);
             addSection(box, 'Clients', clients, c => {
-                const cid = val(c,'ClientID');
-                const name = val(c,'ClientName');
-                return pillLink(`/details.html?type=client&id=${encodeURIComponent(cid)}`, null, cid, name);
+                const cid = val(c,'ClientID','clientID','ClientId','WorkingPositionID');
+                const label = labelFor('client', c);
+                return pillLink(`/details.html?type=client&id=${encodeURIComponent(cid ?? '')}`, label, cid, null);
             }, { entity: 'WorkingPosition', label: 'Client', params: { accountId, projectId, siteId: id } });
 
             const radios = await fetchJson(`/radios?siteId=${id}`);
