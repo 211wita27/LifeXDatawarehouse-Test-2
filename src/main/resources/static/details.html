@@ -641,6 +641,59 @@
         });
     }
 
+    function detailApplyValidationMessages(form){
+        const inputs=form ? Array.from(form.querySelectorAll('input')) : [];
+        inputs.forEach(input=>{
+            if(!input) return;
+            if(input.type==='hidden') return;
+
+            const patternAttr=input.getAttribute('pattern');
+            let matchesCountryPattern=false;
+            if(patternAttr){
+                try{
+                    const tester=new RegExp(patternAttr);
+                    matchesCountryPattern=tester.test('AA') && !tester.test('AAA');
+                }catch(_){
+                    matchesCountryPattern=false;
+                }
+            }
+
+            const shouldHandle=(()=>{
+                if(input.required) return true;
+                if(['email','tel'].includes(input.type)) return true;
+                if(['email','phone','countryCode'].includes(input.id)) return true;
+                if(matchesCountryPattern) return true;
+                return false;
+            })();
+            if(!shouldHandle) return;
+
+            const getMessage=()=>{
+                const {validity}=input;
+                if(!validity) return '';
+                if(validity.valueMissing){
+                    return 'Please fill out this field.';
+                }
+                if((validity.typeMismatch||validity.patternMismatch)&&(input.type==='email'||input.id==='email')){
+                    return 'Please enter a valid email address.';
+                }
+                if((validity.typeMismatch||validity.patternMismatch)&&(input.type==='tel'||input.id==='phone')){
+                    return 'Please enter a valid phone number (digits, spaces, and common separators are allowed).';
+                }
+                if(validity.patternMismatch&&(input.id==='countryCode'||matchesCountryPattern)){
+                    return 'Please enter a two-letter country code.';
+                }
+                return '';
+            };
+
+            input.addEventListener('invalid',()=>{
+                input.setCustomValidity(getMessage());
+            });
+            input.addEventListener('input',()=>{
+                input.setCustomValidity('');
+            });
+        });
+    }
+
     function labelFor(type, row){
         switch((type||'').toLowerCase()){
             case 'account': return `${val(row,'AccountName') ?? 'Account'}`;
@@ -1117,6 +1170,7 @@
 
         detailInitializeAsyncSelects(form);
         detailApplyInputEnhancements(form);
+        detailApplyValidationMessages(form);
 
         const focusTarget = form.querySelector('input:not([readonly]), select, textarea');
         if(focusTarget){
