@@ -94,6 +94,8 @@
         RETIRED: { label: 'Retired', tone: 'retired' }
     };
 
+    const ALLOWED_AUDIO_DEVICE_TYPES = new Set(['HEADSET','SPEAKER','MIC']);
+
     function normalizeLifecycleStatus(value){
         return (value ?? '').toString().trim().toUpperCase();
     }
@@ -1284,6 +1286,19 @@
             const end = payload.EndDate;
             if(start && end && start > end){
                 if(fail('End date cannot be before the start date.')) return;
+            }
+        }else if(entityKey === 'AudioDevice'){
+            if(Object.prototype.hasOwnProperty.call(payload, 'DeviceType') || Object.prototype.hasOwnProperty.call(payload, 'deviceType')){
+                const raw = payload.DeviceType ?? payload.deviceType;
+                if(raw === null || raw === undefined || raw === ''){
+                    if(fail('DeviceType must be one of HEADSET, SPEAKER, MIC.')) return;
+                }else{
+                    const normalized = String(raw).trim().toUpperCase();
+                    if(!ALLOWED_AUDIO_DEVICE_TYPES.has(normalized)){
+                        if(fail('DeviceType must be one of HEADSET, SPEAKER, MIC.')) return;
+                    }
+                    payload.DeviceType = normalized;
+                }
             }
         }
 
