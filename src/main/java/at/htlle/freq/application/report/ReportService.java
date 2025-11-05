@@ -3,9 +3,9 @@ package at.htlle.freq.application.report;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +22,21 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Central reporting service that aggregates LifeX warehouse data and renders export artefacts.
+ * <p>
+ * The service queries the operational schema through {@link NamedParameterJdbcTemplate} – in
+ * particular the {@code Project}, {@code Site}, {@code DeploymentVariant}, {@code Software} and
+ * asset related tables such as {@code Server}, {@code Clients}, {@code Radio} or
+ * {@code UpgradePlan}. Based on the provided {@link ReportFilter} it assembles rich
+ * {@link ReportResponse} objects that are later rendered as CSV or PDF.
+ * </p>
+ * <p>
+ * Output artefacts follow the UX requirements of the reporting UI: CSV exports use semicolon
+ * delimiters compatible with central controlling tools and PDFs are sized for A4 portrait layout
+ * with condensed tables and KPI sections.
+ * </p>
+ */
 @Service
 public class ReportService {
 
@@ -34,6 +49,7 @@ public class ReportService {
 
     static {
         PERCENT_FMT = NumberFormat.getPercentInstance(Locale.GERMANY);
+        // Percentages appear with max. one decimal to match finance reporting rules.
         PERCENT_FMT.setMinimumFractionDigits(0);
         PERCENT_FMT.setMaximumFractionDigits(1);
     }
@@ -42,6 +58,13 @@ public class ReportService {
         this.jdbc = jdbc;
     }
 
+    /**
+     * Loads the selectable report filter options.
+     * <p>
+     * Reads variants from {@code DeploymentVariant} and augments them with {@link ReportType}
+     * definitions as well as {@link InstalledSoftwareStatus} values to drive the frontend UI.
+     * </p>
+     */
     public ReportOptions getOptions() {
         List<VariantOption> variants = jdbc.query(
                 "SELECT VariantCode, VariantName, IsActive FROM DeploymentVariant ORDER BY VariantName",
@@ -72,6 +95,14 @@ public class ReportService {
         return periods;
     }
 
+    /**
+     * Dispatches to a specialised builder based on the requested {@link ReportType}.
+     * <p>
+     * Each builder hits dedicated tables (e.g. {@code InstalledSoftware}, {@code UpgradePlan},
+     * {@code Server}/{@code Clients} or inventory aggregates) and applies the filter's optional
+     * query text, variant selection, status constraint and date range.
+     * </p>
+     */
     public ReportResponse getReport(ReportFilter filter) {
         return switch (filter.type()) {
             case DIFFERENCE -> buildDifferenceReport(filter);
@@ -81,6 +112,13 @@ public class ReportService {
         };
     }
 
+    /**
+     * Converts a {@link ReportResponse} table into the semicolon-separated CSV export.
+     * <p>
+     * Keeps the column layout defined by the builder and escapes values so that controlling can
+     * import the file into SAP/Excel without lossy conversions.
+     * </p>
+     */
     public String renderCsv(ReportResponse report) {
         StringBuilder sb = new StringBuilder();
         sb.append("Report;").append(report.type().label()).append('\n');
@@ -102,6 +140,13 @@ public class ReportService {
         return sb.toString();
     }
 
+    /**
+     * Renders the headline KPIs, table snippet and chart summary of a report into an A4 PDF.
+     * <p>
+     * The PDF writer enforces the reporting guideline that only the first 45 table rows should be
+     * shown; additional data is referenced via the CSV export hint.
+     * </p>
+     */
     public byte[] renderPdf(ReportResponse report) {
         try (PDDocument document = new PDDocument(); PdfPageWriter writer = new PdfPageWriter(document)) {
             writer.writeLine(PDType1Font.HELVETICA_BOLD, 16, "LifeX Report – " + report.type().label());
@@ -137,6 +182,7 @@ public class ReportService {
                     writer.writeLine(PDType1Font.HELVETICA, 10, rowLine);
                     printed++;
                     if (printed >= 45) {
+                        // Hard limit ensures the PDF stays within the 45-row specification for printouts.
                         writer.writeLine(PDType1Font.HELVETICA_OBLIQUE, 9, "… weitere Datensätze im CSV-Export …");
                         break;
                     }
@@ -161,6 +207,14 @@ public class ReportService {
         }
     }
 
+    /**
+     * Compiles the Soll-/Ist-Abgleich by comparing installed software with latest releases.
+     * <p>
+     * Joins {@code InstalledSoftware}, {@code Site}, {@code Project}, {@code DeploymentVariant},
+     * {@code Software} plus helper CTEs for planned upgrades and allows filtering by variant,
+     * install status, free-text query and {@code Project.CreateDateTime} range.
+     * </p>
+     */
     private ReportResponse buildDifferenceReport(ReportFilter filter) {
         LocalDate now = LocalDate.now();
         Map<String, Object> params = new LinkedHashMap<>();
@@ -341,6 +395,14 @@ public class ReportService {
         return row;
     }
 
+    /**
+     * Builds the Wartungsfenster & Upgrades view from maintenance planning tables.
+     * <p>
+     * Uses {@code UpgradePlan} joined with {@code Site}, {@code Project}, {@code DeploymentVariant}
+     * and {@code Software} to highlight overdue and upcoming tasks. Supports query, variant and
+     * {@code PlannedWindowStart} date filters.
+     * </p>
+     */
     private ReportResponse buildMaintenanceReport(ReportFilter filter) {
         LocalDate now = LocalDate.now();
         Map<String, Object> params = new LinkedHashMap<>();
@@ -461,6 +523,14 @@ public class ReportService {
                 DATE_TIME_FMT.format(LocalDateTime.now()));
     }
 
+    /**
+     * Aggregates configuration KPIs per site for the Konfigurationsübersicht.
+     * <p>
+     * Summarises {@code Server}, {@code Clients}, {@code Radio}, {@code AudioDevice} and
+     * {@code PhoneIntegration} counts alongside {@code Site}/{@code Project}/{@code DeploymentVariant}
+     * metadata while honouring the common variant, query and date filters.
+     * </p>
+     */
     private ReportResponse buildConfigurationReport(ReportFilter filter) {
         Map<String, Object> params = new LinkedHashMap<>();
 
@@ -608,6 +678,15 @@ public class ReportService {
                 DATE_TIME_FMT.format(LocalDateTime.now()));
     }
 
+    /**
+     * Creates the asset Bestandsübersicht across all filtered sites.
+     * <p>
+     * Resolves site IDs via {@code Site}, {@code Project} and {@code DeploymentVariant} joins before
+     * aggregating asset quantities from category tables ({@code Server}, {@code Clients},
+     * {@code Radio}, {@code AudioDevice}, {@code PhoneIntegration}, {@code InstalledSoftware}).
+     * Applies variant, status, query and optional date filters.
+     * </p>
+     */
     private ReportResponse buildInventoryReport(ReportFilter filter) {
         Map<String, Object> params = new LinkedHashMap<>();
         StringBuilder siteSql = new StringBuilder("""
