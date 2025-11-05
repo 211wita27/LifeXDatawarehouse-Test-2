@@ -393,7 +393,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                 indexInstalledSoftware(
                         toStringOrNull(item.getInstalledSoftwareID()),
                         toStringOrNull(item.getSiteID()),
-                        toStringOrNull(item.getSoftwareID())
+                        toStringOrNull(item.getSoftwareID()),
+                        item.getStatus()
                 );
             }
             for (PhoneIntegration integration : phoneIntegrations) {
@@ -730,8 +731,18 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId) {
-        indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE, siteId, softwareId);
+    public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status) {
+        InstalledSoftwareStatus resolved;
+        try {
+            resolved = InstalledSoftwareStatus.from(status);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Unknown installed software status '{}', defaulting to Active", status);
+            resolved = InstalledSoftwareStatus.ACTIVE;
+        }
+        String statusValue = resolved.dbValue();
+        String statusLabel = resolved.label();
+        String statusToken = tokenWithPrefix("status", statusValue);
+        indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE, statusValue, statusLabel, statusToken, siteId, softwareId);
     }
 
     @Override

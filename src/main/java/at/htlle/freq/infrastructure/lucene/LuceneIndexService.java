@@ -30,7 +30,7 @@ public interface LuceneIndexService {
     void indexCountry(String countryCode, String countryName);
     void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType);
     void indexDeploymentVariant(String variantId, String variantCode, String variantName, String description, boolean active);
-    void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId);
+    void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status);
     void indexPhoneIntegration(String phoneIntegrationId, String clientId, String phoneType, String phoneBrand, String phoneSerialNr, String phoneFirmware);
     void indexProject(String projectId, String projectSAPId, String projectName, String deploymentVariantId, String bundleType, String lifecycleStatus,
                       String accountId, String addressId);
