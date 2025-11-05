@@ -34,7 +34,7 @@ public class IndexAdminController {
      * <p>Request-Body: leer.</p>
      *
      * @param principal optionaler Security-Principal zur Protokollierung.
-     * @return 200 OK ohne Body; der Reindex wird im Hintergrund gestartet.
+     *                  Bei {@code null} wird lediglich die Request-ID protokolliert.
      */
     @PostMapping("/reindex")
     public void reindex(Principal principal) {

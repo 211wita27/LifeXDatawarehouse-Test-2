@@ -24,14 +24,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Thread-sicherer, sehr einfacher Fortschritt-Tracker für das Reindexing.
- * Nutzung:
- *   IndexProgress p = IndexProgress.get();
- *   p.start(totalsMap);  // Map<Tabelle, Gesamtanzahl>
- *   p.inc("Account");    // pro indexiertem Datensatz
- *   p.totalDone();       // Summe Done
- *   p.finish();          // Ende markieren
  *
- * Status kann als JSON via Controller ausgeliefert werden.
+ * <p>Nutzung:</p>
+ * <pre>{@code
+ * IndexProgress p = IndexProgress.get();
+ * p.start(totalsMap);  // Map<Tabelle, Gesamtanzahl>
+ * p.inc("Account");    // pro indexiertem Datensatz
+ * p.totalDone();       // Summe Done
+ * p.finish();          // Ende markieren
+ * }</pre>
+ *
+ * <p>Status kann als JSON via Controller ausgeliefert werden.</p>
  */
 public final class IndexProgress {
 
