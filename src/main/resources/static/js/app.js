@@ -779,6 +779,13 @@ function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
         return typeFilter ? `${typeFilter} AND ${statusToken}` : statusToken;
     }
 
+    if (/^status$/i.test(column)) {
+        const normalized = raw.replace(/[^a-z0-9]+/gi, '').toLowerCase();
+        if (!normalized) return null;
+        const statusToken = `status${normalized}`;
+        return typeFilter ? `${typeFilter} AND ${statusToken}` : statusToken;
+    }
+
     const prepared = buildUserQuery(raw);
     if (!prepared) return null;
     return typeFilter ? `${typeFilter} AND ${prepared}` : prepared;

@@ -1,5 +1,6 @@
 package at.htlle.freq.seed;
 
+import at.htlle.freq.domain.InstalledSoftwareStatus;
 import at.htlle.freq.domain.ProjectLifecycleStatus;
 
 import java.io.IOException;
@@ -462,13 +463,16 @@ public final class SeedDataGenerator {
 
     private List<InstalledSoftware> generateInstalledSoftware(List<Site> sites, List<Software> software) {
         List<InstalledSoftware> installs = new ArrayList<>();
+        InstalledSoftwareStatus[] statuses = InstalledSoftwareStatus.values();
         for (int i = 0; i < 55; i++) {
             Site site = sites.get(i % sites.size());
             Software soft = software.get(i % software.size());
+            InstalledSoftwareStatus status = statuses[i % statuses.length];
             installs.add(new InstalledSoftware(
                     generateId(EntityType.INSTALLED_SOFTWARE),
                     site.id(),
-                    soft.id()
+                    soft.id(),
+                    status.dbValue()
             ));
         }
         return installs;
@@ -677,11 +681,12 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "InstalledSoftware", List.of("InstalledSoftwareID", "SiteID", "SoftwareID"), installedSoftware.stream()
+        appendInsert(sb, "InstalledSoftware", List.of("InstalledSoftwareID", "SiteID", "SoftwareID", "Status"), installedSoftware.stream()
                 .map(install -> row(
                         str(install.id()),
                         str(install.siteId()),
-                        str(install.softwareId())
+                        str(install.softwareId()),
+                        str(install.status())
                 ))
                 .collect(Collectors.toList()));
 
@@ -818,7 +823,7 @@ public final class SeedDataGenerator {
     private record PhoneIntegration(String id, String clientId, String type, String brand, String serial, String firmware) {
     }
 
-    private record InstalledSoftware(String id, String siteId, String softwareId) {
+    private record InstalledSoftware(String id, String siteId, String softwareId, String status) {
     }
 
     private record UpgradePlan(String id, String siteId, String softwareId, int windowStartOffset, int windowEndOffset, String status, int createdOffset, String createdBy) {
