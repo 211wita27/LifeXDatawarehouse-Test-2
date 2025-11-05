@@ -413,7 +413,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         project.getProjectName(),
                         toStringOrNull(project.getDeploymentVariantID()),
                         project.getBundleType(),
-                        project.isStillActive(),
+                        project.getLifecycleStatus() != null ? project.getLifecycleStatus().name() : null,
                         toStringOrNull(project.getAccountID()),
                         toStringOrNull(project.getAddressID())
                 );
@@ -740,12 +740,16 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexProject(String projectId, String projectSAPId, String projectName, String deploymentVariantId, String bundleType, boolean stillActive,
+    public void indexProject(String projectId, String projectSAPId, String projectName, String deploymentVariantId, String bundleType, String lifecycleStatus,
                              String accountId, String addressId) {
-        String activeWord  = stillActive ? "active" : "inactive";
-        String activeToken = stillActive ? "statusactive" : "statusinactive";
+        String status = lifecycleStatus == null ? "" : lifecycleStatus.trim();
+        String statusLabel = status.replace('_', ' ').toLowerCase(Locale.ROOT);
+        if (!statusLabel.isEmpty()) {
+            statusLabel = statusLabel.substring(0, 1).toUpperCase(Locale.ROOT) + statusLabel.substring(1);
+        }
+        String statusToken = tokenWithPrefix("status", status);
         indexDocument(projectId, TYPE_PROJECT, projectName, bundleType,
-                String.valueOf(stillActive), activeWord, activeToken, projectSAPId, deploymentVariantId, accountId, addressId);
+                status, statusLabel, statusToken, projectSAPId, deploymentVariantId, accountId, addressId);
     }
 
     @Override

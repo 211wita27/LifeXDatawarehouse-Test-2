@@ -91,6 +91,15 @@ function parseBool(value){
     return ['true','1','yes','y','ja','wahr'].includes(normalized);
 }
 
+function normalizeLifecycleStatus(value){
+    return (value ?? '').toString().trim().toUpperCase();
+}
+
+function isLifecycleStatusOperational(value){
+    const status = normalizeLifecycleStatus(value);
+    return status === 'ACTIVE' || status === 'MAINTENANCE';
+}
+
 function formatDateLabel(value){
     if (value === null || value === undefined) return '';
     const str = String(value).trim();
@@ -126,7 +135,7 @@ async function loadShortcutItems(kind){
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const rows = await res.json();
             return rows
-                .filter(row => parseBool(val(row,'StillActive','stillActive','still_active')))
+                .filter(row => isLifecycleStatusOperational(val(row,'LifecycleStatus','lifecycleStatus','lifecycle_status')))
                 .map(row => {
                     const id       = val(row,'ProjectID');
                     const name     = val(row,'ProjectName');

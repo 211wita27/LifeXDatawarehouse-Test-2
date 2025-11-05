@@ -86,7 +86,7 @@ CREATE TABLE Project (
                          DeploymentVariantID UUID NOT NULL,
                          BundleType          VARCHAR(50),
                          CreateDateTime      DATE,
-                         StillActive         BOOLEAN NOT NULL,
+                         LifecycleStatus     VARCHAR(20) NOT NULL,
                          AccountID           UUID NOT NULL,
                          AddressID           UUID NOT NULL,
                          CONSTRAINT uq_project_sap UNIQUE (ProjectSAPID),

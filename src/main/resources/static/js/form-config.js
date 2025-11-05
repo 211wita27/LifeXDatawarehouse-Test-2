@@ -185,6 +185,12 @@
             { id: 'pname', label: 'Project Name', component: 'input', name: 'ProjectName' },
             { id: 'variantId', label: 'Select deployment variant', component: 'asyncSelect', source: 'deploymentVariants', placeholder: 'Select deployment variant', allowManual: false, name: 'DeploymentVariantID' },
             { id: 'bundle', label: 'Bundle Type', component: 'input', name: 'BundleType', required: false },
+            { id: 'lifecycle', label: 'Lifecycle Status', component: 'select', name: 'LifecycleStatus', options: [
+                { value: 'PLANNED', label: 'Planned' },
+                { value: 'ACTIVE', label: 'Active' },
+                { value: 'MAINTENANCE', label: 'Maintenance' },
+                { value: 'RETIRED', label: 'Retired' }
+            ] },
             { id: 'accId', label: 'Select account', component: 'asyncSelect', source: 'accounts', allowManual: false, name: 'AccountID' },
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID' }
         ],
