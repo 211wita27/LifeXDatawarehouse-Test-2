@@ -1,5 +1,7 @@
 package at.htlle.freq.seed;
 
+import at.htlle.freq.domain.ProjectLifecycleStatus;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -274,6 +276,12 @@ public final class SeedDataGenerator {
         List<String> projectThemes = List.of("Aurora", "Beacon", "Cascade", "Delta", "Ember", "Frontier", "Guardian", "Harbor", "Ion", "Jade");
         List<String> bundleTypes = List.of("Premium", "Standard", "Hybrid", "Edge");
         List<Project> projects = new ArrayList<>();
+        List<ProjectLifecycleStatus> lifecycleStatuses = List.of(
+                ProjectLifecycleStatus.ACTIVE,
+                ProjectLifecycleStatus.MAINTENANCE,
+                ProjectLifecycleStatus.PLANNED,
+                ProjectLifecycleStatus.RETIRED
+        );
         for (int i = 0; i < 38; i++) {
             String sapId = "PX-" + (2101 + i);
             String theme = projectThemes.get(i % projectThemes.size());
@@ -283,7 +291,7 @@ public final class SeedDataGenerator {
             Address address = addresses.get(i % addresses.size());
             String bundleType = bundleTypes.get(i % bundleTypes.size());
             int createOffset = - (10 + i * 4);
-            boolean active = (i % 5) != 0;
+            ProjectLifecycleStatus lifecycleStatus = lifecycleStatuses.get(i % lifecycleStatuses.size());
             projects.add(new Project(
                     generateId(EntityType.PROJECT),
                     sapId,
@@ -291,7 +299,7 @@ public final class SeedDataGenerator {
                     variant.id(),
                     bundleType,
                     createOffset,
-                    active,
+                    lifecycleStatus,
                     account.id(),
                     address.id()
             ));
@@ -582,7 +590,7 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "Project", List.of("ProjectID", "ProjectSAPID", "ProjectName", "DeploymentVariantID", "BundleType", "CreateDateTime", "StillActive", "AccountID", "AddressID"), projects.stream()
+        appendInsert(sb, "Project", List.of("ProjectID", "ProjectSAPID", "ProjectName", "DeploymentVariantID", "BundleType", "CreateDateTime", "LifecycleStatus", "AccountID", "AddressID"), projects.stream()
                 .map(project -> row(
                         str(project.id()),
                         str(project.sapId()),
@@ -590,7 +598,7 @@ public final class SeedDataGenerator {
                         str(project.deploymentVariantId()),
                         str(project.bundleType()),
                         dateOffset(project.createOffset()),
-                        bool(project.active()),
+                        str(project.status().name()),
                         str(project.accountId()),
                         str(project.addressId())
                 ))
@@ -789,7 +797,7 @@ public final class SeedDataGenerator {
     private record Software(String id, String name, String release, String revision, String supportPhase, String licenseModel, int endOfSalesOffset, int supportStartOffset, int supportEndOffset) {
     }
 
-    private record Project(String id, String sapId, String projectName, String deploymentVariantId, String bundleType, int createOffset, boolean active, String accountId, String addressId) {
+    private record Project(String id, String sapId, String projectName, String deploymentVariantId, String bundleType, int createOffset, ProjectLifecycleStatus status, String accountId, String addressId) {
     }
 
     private record Site(String id, String name, String projectId, String addressId, String fireZone, int tenantCount) {

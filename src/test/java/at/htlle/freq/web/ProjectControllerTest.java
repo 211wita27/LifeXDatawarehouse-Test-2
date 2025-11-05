@@ -35,7 +35,7 @@ class ProjectControllerTest {
     }
 
     @Test
-    void createDefaultsStillActiveToTrue() {
+    void createDefaultsLifecycleStatusToActive() {
         Map<String, Object> body = baseBody();
 
         controller.create(body);
@@ -44,20 +44,20 @@ class ProjectControllerTest {
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
         verify(jdbc).update(sqlCaptor.capture(), paramsCaptor.capture());
 
-        assertTrue(sqlCaptor.getValue().contains(":stillActive"));
-        assertEquals(Boolean.TRUE, paramsCaptor.getValue().getValue("stillActive"));
+        assertTrue(sqlCaptor.getValue().contains(":lifecycleStatus"));
+        assertEquals("ACTIVE", paramsCaptor.getValue().getValue("lifecycleStatus"));
     }
 
     @Test
-    void createUsesProvidedStillActiveFlag() {
+    void createUsesProvidedLifecycleStatus() {
         Map<String, Object> body = baseBody();
-        body.put("stillActive", false);
+        body.put("LifecycleStatus", "retired");
 
         controller.create(body);
 
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
         verify(jdbc).update(anyString(), paramsCaptor.capture());
 
-        assertEquals(Boolean.FALSE, paramsCaptor.getValue().getValue("stillActive"));
+        assertEquals("RETIRED", paramsCaptor.getValue().getValue("lifecycleStatus"));
     }
 }

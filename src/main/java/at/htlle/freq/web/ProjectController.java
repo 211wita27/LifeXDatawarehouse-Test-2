@@ -1,5 +1,6 @@
 package at.htlle.freq.web;
 
+import at.htlle.freq.domain.ProjectLifecycleStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -34,13 +35,13 @@ public class ProjectController {
     public List<Map<String, Object>> findByAccount(@RequestParam(required = false) String accountId) {
         if (accountId != null) {
             return jdbc.queryForList("""
-                SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, StillActive, CreateDateTime
+                SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime
                 FROM Project
                 WHERE AccountID = :accId
                 """, new MapSqlParameterSource("accId", accountId));
         }
         return jdbc.queryForList("""
-            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, StillActive, CreateDateTime
+            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime
             FROM Project
             """, new HashMap<>());
     }
@@ -48,7 +49,7 @@ public class ProjectController {
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, StillActive, CreateDateTime
+            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime
             FROM Project
             WHERE ProjectID = :id
             """, new MapSqlParameterSource("id", id));
@@ -71,28 +72,33 @@ public class ProjectController {
         }
 
         String sql = """
-            INSERT INTO Project (ProjectSAPID, ProjectName, DeploymentVariantID, BundleType, CreateDateTime, StillActive, AccountID, AddressID)
-            VALUES (:projectSAPID, :projectName, :deploymentVariantID, :bundleType, CURRENT_DATE, :stillActive, :accountID, :addressID)
+            INSERT INTO Project (ProjectSAPID, ProjectName, DeploymentVariantID, BundleType, CreateDateTime, LifecycleStatus, AccountID, AddressID)
+            VALUES (:projectSAPID, :projectName, :deploymentVariantID, :bundleType, CURRENT_DATE, :lifecycleStatus, :accountID, :addressID)
             """;
 
-        Object stillActiveRaw = Optional.ofNullable(body.get("stillActive"))
-                .orElse(body.get("StillActive"));
-        boolean stillActive;
-        if (stillActiveRaw == null) {
-            stillActive = true;
-        } else if (stillActiveRaw instanceof Boolean b) {
-            stillActive = b;
+        Object statusRaw = Optional.ofNullable(body.get("lifecycleStatus"))
+                .orElse(Optional.ofNullable(body.get("LifecycleStatus"))
+                        .orElse(body.get("lifecycle_status")));
+
+        ProjectLifecycleStatus status;
+        if (statusRaw == null) {
+            status = ProjectLifecycleStatus.ACTIVE;
         } else {
-            stillActive = Boolean.parseBoolean(stillActiveRaw.toString());
+            try {
+                status = ProjectLifecycleStatus.fromString(statusRaw.toString());
+            } catch (IllegalArgumentException ex) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+            }
         }
 
         MapSqlParameterSource params = new MapSqlParameterSource();
         body.forEach((key, value) -> {
-            if (!"stillActive".equals(key) && !"StillActive".equals(key)) {
+            String normalized = key == null ? "" : key.toLowerCase(Locale.ROOT);
+            if (!"lifecyclestatus".equals(normalized) && !"lifecycle_status".equals(normalized)) {
                 params.addValue(key, value);
             }
         });
-        params.addValue("stillActive", stillActive);
+        params.addValue("lifecycleStatus", status.name());
 
         jdbc.update(sql, params);
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
