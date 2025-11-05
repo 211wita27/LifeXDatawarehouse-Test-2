@@ -23,19 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Central reporting service that aggregates LifeX warehouse data and renders export artefacts.
- * <p>
- * The service queries the operational schema through {@link NamedParameterJdbcTemplate} – in
- * particular the {@code Project}, {@code Site}, {@code DeploymentVariant}, {@code Software} and
- * asset related tables such as {@code Server}, {@code Clients}, {@code Radio} or
- * {@code UpgradePlan}. Based on the provided {@link ReportFilter} it assembles rich
- * {@link ReportResponse} objects that are later rendered as CSV or PDF.
- * </p>
- * <p>
- * Output artefacts follow the UX requirements of the reporting UI: CSV exports use semicolon
- * delimiters compatible with central controlling tools and PDFs are sized for A4 portrait layout
- * with condensed tables and KPI sections.
- * </p>
+ * Aggregiert Reporting-Daten, bereitet sie für UI und Exporte auf und rendert CSV/PDF-Ausgaben.
  */
 @Service
 public class ReportService {
@@ -54,6 +42,11 @@ public class ReportService {
         PERCENT_FMT.setMaximumFractionDigits(1);
     }
 
+    /**
+     * Erstellt den Service mit dem benötigten JDBC-Template.
+     *
+     * @param jdbc Datenzugriff für Reporting-Abfragen
+     */
     public ReportService(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
@@ -96,6 +89,10 @@ public class ReportService {
     }
 
     /**
+     * Generiert einen Report basierend auf den übergebenen Filterkriterien.
+     *
+     * @param filter Report-Filter mit Typ, Zeitraum und weiteren Parametern
+     * @return aufbereitete Reportdaten inklusive Tabelle und Kennzahlen
      * Dispatches to a specialised builder based on the requested {@link ReportType}.
      * <p>
      * Each builder hits dedicated tables (e.g. {@code InstalledSoftware}, {@code UpgradePlan},
@@ -113,6 +110,10 @@ public class ReportService {
     }
 
     /**
+     * Serialisiert einen Report in das CSV-Format.
+     *
+     * @param report zuvor generierter Report
+     * @return CSV-Inhalt als String
      * Converts a {@link ReportResponse} table into the semicolon-separated CSV export.
      * <p>
      * Keeps the column layout defined by the builder and escapes values so that controlling can
@@ -141,6 +142,10 @@ public class ReportService {
     }
 
     /**
+     * Rendert einen Report als PDF mithilfe von PDFBox.
+     *
+     * @param report zuvor generierter Report
+     * @return Byte-Array des PDF-Dokuments
      * Renders the headline KPIs, table snippet and chart summary of a report into an A4 PDF.
      * <p>
      * The PDF writer enforces the reporting guideline that only the first 45 table rows should be
