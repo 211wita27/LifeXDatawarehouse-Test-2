@@ -72,10 +72,29 @@ public class ProjectController {
 
         String sql = """
             INSERT INTO Project (ProjectSAPID, ProjectName, DeploymentVariantID, BundleType, CreateDateTime, StillActive, AccountID, AddressID)
-            VALUES (:projectSAPID, :projectName, :deploymentVariantID, :bundleType, CURRENT_DATE, TRUE, :accountID, :addressID)
+            VALUES (:projectSAPID, :projectName, :deploymentVariantID, :bundleType, CURRENT_DATE, :stillActive, :accountID, :addressID)
             """;
 
-        jdbc.update(sql, new MapSqlParameterSource(body));
+        Object stillActiveRaw = Optional.ofNullable(body.get("stillActive"))
+                .orElse(body.get("StillActive"));
+        boolean stillActive;
+        if (stillActiveRaw == null) {
+            stillActive = true;
+        } else if (stillActiveRaw instanceof Boolean b) {
+            stillActive = b;
+        } else {
+            stillActive = Boolean.parseBoolean(stillActiveRaw.toString());
+        }
+
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        body.forEach((key, value) -> {
+            if (!"stillActive".equals(key) && !"StillActive".equals(key)) {
+                params.addValue(key, value);
+            }
+        });
+        params.addValue("stillActive", stillActive);
+
+        jdbc.update(sql, params);
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
