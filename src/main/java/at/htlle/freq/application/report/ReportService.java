@@ -22,6 +22,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Aggregiert Reporting-Daten, bereitet sie für UI und Exporte auf und rendert CSV/PDF-Ausgaben.
+ */
 @Service
 public class ReportService {
 
@@ -38,10 +41,20 @@ public class ReportService {
         PERCENT_FMT.setMaximumFractionDigits(1);
     }
 
+    /**
+     * Erstellt den Service mit dem benötigten JDBC-Template.
+     *
+     * @param jdbc Datenzugriff für Reporting-Abfragen
+     */
     public ReportService(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
 
+    /**
+     * Liefert Optionen (Varianten, Typen, Zeiträume) für das Reporting-Frontend.
+     *
+     * @return Auswahloptionen für Filter und Dropdowns
+     */
     public ReportOptions getOptions() {
         List<VariantOption> variants = jdbc.query(
                 "SELECT VariantCode, VariantName, IsActive FROM DeploymentVariant ORDER BY VariantName",
@@ -72,6 +85,12 @@ public class ReportService {
         return periods;
     }
 
+    /**
+     * Generiert einen Report basierend auf den übergebenen Filterkriterien.
+     *
+     * @param filter Report-Filter mit Typ, Zeitraum und weiteren Parametern
+     * @return aufbereitete Reportdaten inklusive Tabelle und Kennzahlen
+     */
     public ReportResponse getReport(ReportFilter filter) {
         return switch (filter.type()) {
             case DIFFERENCE -> buildDifferenceReport(filter);
@@ -81,6 +100,12 @@ public class ReportService {
         };
     }
 
+    /**
+     * Serialisiert einen Report in das CSV-Format.
+     *
+     * @param report zuvor generierter Report
+     * @return CSV-Inhalt als String
+     */
     public String renderCsv(ReportResponse report) {
         StringBuilder sb = new StringBuilder();
         sb.append("Report;").append(report.type().label()).append('\n');
@@ -102,6 +127,12 @@ public class ReportService {
         return sb.toString();
     }
 
+    /**
+     * Rendert einen Report als PDF mithilfe von PDFBox.
+     *
+     * @param report zuvor generierter Report
+     * @return Byte-Array des PDF-Dokuments
+     */
     public byte[] renderPdf(ReportResponse report) {
         try (PDDocument document = new PDDocument(); PdfPageWriter writer = new PdfPageWriter(document)) {
             writer.writeLine(PDType1Font.HELVETICA_BOLD, 16, "LifeX Report – " + report.type().label());
