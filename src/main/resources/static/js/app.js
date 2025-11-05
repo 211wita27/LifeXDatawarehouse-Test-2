@@ -285,12 +285,17 @@ function buildUserQuery(raw){
 }
 
 /* ===================== Ergebnis-Vorschau (Anreicherung) ===================== */
+const entityTypeRegistry = window.EntityTypeRegistry || null;
+
 function normalizeTypeKey(value) {
+    if (entityTypeRegistry && typeof entityTypeRegistry.normalizeTypeKey === 'function') {
+        return entityTypeRegistry.normalizeTypeKey(value);
+    }
     if (value === undefined || value === null) return '';
     return String(value).trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-const ENTITY_TYPE_MAP = {
+const ENTITY_TYPE_MAP = entityTypeRegistry?.ENTITY_TYPE_MAP || {
     account: { detailType: 'account', typeToken: 'type:account', table: 'Account', aliases: ['account', 'accounts'] },
     project: { detailType: 'project', typeToken: 'type:project', table: 'Project', aliases: ['project', 'projects'] },
     site:    { detailType: 'site',    typeToken: 'type:site',    table: 'Site',    aliases: ['site', 'sites'] },
@@ -334,14 +339,17 @@ const ENTITY_TYPE_MAP = {
     },
 };
 
-const TABLE_NAME_LOOKUP = {};
-Object.entries(ENTITY_TYPE_MAP).forEach(([key, info]) => {
-    const aliases = new Set([key, info.table, info.detailType, ...(info.aliases || [])]);
-    aliases.forEach(alias => {
-        const normalized = normalizeTypeKey(alias);
-        if (normalized) TABLE_NAME_LOOKUP[normalized] = info;
+const TABLE_NAME_LOOKUP = entityTypeRegistry?.TABLE_NAME_LOOKUP || (() => {
+    const lookup = {};
+    Object.entries(ENTITY_TYPE_MAP).forEach(([key, info]) => {
+        const aliases = new Set([key, info.table, info.detailType, ...(info.aliases || [])]);
+        aliases.forEach(alias => {
+            const normalized = normalizeTypeKey(alias);
+            if (normalized) lookup[normalized] = info;
+        });
     });
-});
+    return lookup;
+})();
 
 const COLUMN_DETAIL_TYPE_OVERRIDE_SUFFIXES = [
     ['deploymentvariantguid', 'deploymentvariant'],
@@ -392,6 +400,9 @@ function getTypeTokenForDetailType(detailType) {
 }
 
 function tableForType(t){
+    if (entityTypeRegistry && typeof entityTypeRegistry.canonicalTableForType === 'function') {
+        return entityTypeRegistry.canonicalTableForType(t);
+    }
     const key = normalizeTypeKey(t);
     const info = ENTITY_TYPE_MAP[key];
     if (info && info.table) return info.table;

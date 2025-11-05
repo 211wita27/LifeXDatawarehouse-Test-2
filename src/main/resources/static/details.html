@@ -65,6 +65,7 @@
     <div id="children"></div>
 </main>
 
+<script src="/js/entity-type-map.js"></script>
 <script src="/js/form-config.js"></script>
 <script>
     /* -------------------- Helpers -------------------- */
@@ -219,7 +220,11 @@
         const display = shortId(full);
         return `<span class="id-chip" title="${escapeHtml(full)}">${escapeHtml(display)}</span>`;
     }
+    const entityTypeRegistry = window.EntityTypeRegistry || null;
     function tableForType(t){
+        if(entityTypeRegistry && typeof entityTypeRegistry.canonicalTableForType === 'function'){
+            return entityTypeRegistry.canonicalTableForType(t);
+        }
         const s=(t||'').toLowerCase();
         switch(s){
             case 'account': return 'Account';
@@ -242,6 +247,9 @@
         }
     }
     function configKeyForTable(table){
+        if(entityTypeRegistry && typeof entityTypeRegistry.canonicalConfigKeyForTable === 'function'){
+            return entityTypeRegistry.canonicalConfigKeyForTable(table);
+        }
         const normalized = tableForType(table);
         if(!normalized) return null;
         if(normalized === 'Clients') return 'WorkingPosition';
