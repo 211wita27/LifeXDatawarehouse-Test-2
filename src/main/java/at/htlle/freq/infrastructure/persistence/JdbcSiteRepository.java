@@ -25,7 +25,7 @@ public class JdbcSiteRepository implements SiteRepository {
             rs.getObject("ProjectID", UUID.class),
             rs.getObject("AddressID", UUID.class),
             rs.getString("FireZone"),
-            (Integer) rs.getObject("TenantCount") // nullable
+            (Integer) rs.getObject("TenantCount") // nullable column
     );
 
     @Override

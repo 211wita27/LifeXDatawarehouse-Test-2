@@ -79,7 +79,7 @@ public class JdbcClientsRepository implements ClientsRepository {
         boolean isNew = (c.getClientID() == null);
 
         if (isNew) {
-            // Generate the UUID inside the application because H2 does not support RETURNING
+            // Generate the UUID within the application because H2 does not support RETURNING
             UUID newId = UUID.randomUUID();
             c.setClientID(newId);
 
