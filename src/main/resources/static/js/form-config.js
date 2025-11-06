@@ -240,7 +240,7 @@
         InstalledSoftware: [
             { id: 'siteID', label: 'Select site', component: 'asyncSelect', source: 'sites', placeholder: 'Select site', allowManual: false, name: 'SiteID', hint: 'Only sites assigned to the selected project will appear.' },
             { id: 'softwareID', label: 'Select software', component: 'asyncSelect', source: 'software', placeholder: 'Select software', allowManual: false, name: 'SoftwareID', hint: 'Choose the exact release that is deployed.' },
-            { id: 'status', label: 'Status', component: 'select', options: ['Offered','Installed','Rejected'], name: 'Status', defaultValue: 'Offered' }
+            { id: 'status', label: 'Status', component: 'select', options: ['Offered','Installed','Rejected'], name: 'Status', placeholder: 'Select status' }
         ],
         PhoneIntegration: [
             { id: 'client', label: 'Select client', component: 'asyncSelect', source: 'clients', placeholder: 'Select client', allowManual: false, name: 'ClientID', hint: 'Integrations attach to the working position using the phone.' },
