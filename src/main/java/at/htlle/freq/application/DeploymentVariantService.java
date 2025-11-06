@@ -100,7 +100,7 @@ public class DeploymentVariantService {
         DeploymentVariant saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("DeploymentVariant gespeichert: id={} code='{}' name='{}'",
+        log.info("DeploymentVariant saved: id={} code='{}' name='{}'",
                 saved.getVariantID(), saved.getVariantCode(), saved.getVariantName());
         return saved;
     }
@@ -126,7 +126,7 @@ public class DeploymentVariantService {
             DeploymentVariant saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("DeploymentVariant aktualisiert: id={} name='{}'",
+            log.info("DeploymentVariant updated: id={} name='{}'",
                     id, saved.getVariantName());
             return saved;
         });
@@ -141,7 +141,7 @@ public class DeploymentVariantService {
     public void deleteVariant(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(v -> {
-            log.info("DeploymentVariant gelöscht: id={} name='{}'",
+            log.info("DeploymentVariant deleted: id={} name='{}'",
                     id, v.getVariantName());
             // Optional: lucene.deleteVariant(id.toString());
         });
@@ -171,9 +171,9 @@ public class DeploymentVariantService {
                     v.getDescription(),
                     Boolean.parseBoolean(Boolean.toString(v.isActive()))
             );
-            log.debug("DeploymentVariant in Lucene indexiert: id={}", v.getVariantID());
+            log.debug("DeploymentVariant indexed in Lucene: id={}", v.getVariantID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für DeploymentVariant {} fehlgeschlagen", v.getVariantID(), e);
+            log.error("Lucene indexing for DeploymentVariant {} failed", v.getVariantID(), e);
         }
     }
 

@@ -88,7 +88,7 @@ public class SiteService {
         Site saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("Site gespeichert: id={} name='{}' projectID={}",
+        log.info("Site saved: id={} name='{}' projectID={}",
                 saved.getSiteID(), saved.getSiteName(), saved.getProjectID());
         return saved;
     }
@@ -115,7 +115,7 @@ public class SiteService {
             Site saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("Site aktualisiert: id={} name='{}'", id, saved.getSiteName());
+            log.info("Site updated: id={} name='{}'", id, saved.getSiteName());
             return saved;
         });
     }
@@ -129,7 +129,7 @@ public class SiteService {
     public void deleteSite(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(s -> {
-            log.info("Site gelöscht: id={} name='{}'", id, s.getSiteName());
+            log.info("Site deleted: id={} name='{}'", id, s.getSiteName());
             // Optional: lucene.deleteSite(id.toString());
         });
     }
@@ -159,9 +159,9 @@ public class SiteService {
                     s.getFireZone(),
                     s.getTenantCount()
             );
-            log.debug("Site in Lucene indexiert: id={}", s.getSiteID());
+            log.debug("Site indexed in Lucene: id={}", s.getSiteID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Site {} fehlgeschlagen", s.getSiteID(), e);
+            log.error("Lucene indexing for Site {} failed", s.getSiteID(), e);
         }
     }
 

@@ -102,7 +102,7 @@ public class InstalledSoftwareService {
         InstalledSoftware saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("InstalledSoftware gespeichert: id={} site={} software={} status={}",
+        log.info("InstalledSoftware saved: id={} site={} software={} status={}",
                 saved.getInstalledSoftwareID(), saved.getSiteID(), saved.getSoftwareID(), saved.getStatus());
         return saved;
     }
@@ -131,7 +131,7 @@ public class InstalledSoftwareService {
             InstalledSoftware saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("InstalledSoftware aktualisiert: id={} site={} software={} status={}",
+            log.info("InstalledSoftware updated: id={} site={} software={} status={}",
                     id, saved.getSiteID(), saved.getSoftwareID(), saved.getStatus());
             return saved;
         });
@@ -146,7 +146,7 @@ public class InstalledSoftwareService {
     public void deleteInstalledSoftware(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(isw -> {
-            log.info("InstalledSoftware gelöscht: id={} site={} software={} status={}",
+            log.info("InstalledSoftware deleted: id={} site={} software={} status={}",
                     id, isw.getSiteID(), isw.getSoftwareID(), isw.getStatus());
             // Optional: lucene.deleteInstalledSoftware(id.toString());
         });
@@ -175,9 +175,9 @@ public class InstalledSoftwareService {
                     isw.getSoftwareID() != null ? isw.getSoftwareID().toString() : null,
                     isw.getStatus()
             );
-            log.debug("InstalledSoftware in Lucene indexiert: id={}", isw.getInstalledSoftwareID());
+            log.debug("InstalledSoftware indexed in Lucene: id={}", isw.getInstalledSoftwareID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für InstalledSoftware {} fehlgeschlagen", isw.getInstalledSoftwareID(), e);
+            log.error("Lucene indexing for InstalledSoftware {} failed", isw.getInstalledSoftwareID(), e);
         }
     }
 

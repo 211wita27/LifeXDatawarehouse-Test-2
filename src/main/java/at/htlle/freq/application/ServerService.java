@@ -93,7 +93,7 @@ public class ServerService {
         Server saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("Server gespeichert: id={} site={} name='{}' brand='{}'",
+        log.info("Server saved: id={} site={} name='{}' brand='{}'",
                 saved.getServerID(), saved.getSiteID(), saved.getServerName(), saved.getServerBrand());
         return saved;
     }
@@ -124,7 +124,7 @@ public class ServerService {
             Server saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("Server aktualisiert: id={} name='{}'", id, saved.getServerName());
+            log.info("Server updated: id={} name='{}'", id, saved.getServerName());
             return saved;
         });
     }
@@ -138,7 +138,7 @@ public class ServerService {
     public void deleteServer(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(s -> {
-            log.info("Server gelöscht: id={} name='{}' brand='{}'", id, s.getServerName(), s.getServerBrand());
+            log.info("Server deleted: id={} name='{}' brand='{}'", id, s.getServerName(), s.getServerBrand());
             // Optional: lucene.deleteServer(id.toString());
         });
     }
@@ -172,9 +172,9 @@ public class ServerService {
                     s.getVirtualVersion(),
                     s.isHighAvailability()
             );
-            log.debug("Server in Lucene indexiert: id={}", s.getServerID());
+            log.debug("Server indexed in Lucene: id={}", s.getServerID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Server {} fehlgeschlagen", s.getServerID(), e);
+            log.error("Lucene indexing for Server {} failed", s.getServerID(), e);
         }
     }
 

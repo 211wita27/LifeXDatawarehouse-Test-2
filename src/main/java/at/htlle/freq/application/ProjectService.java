@@ -92,7 +92,7 @@ public class ProjectService {
         Project saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("Project gespeichert: id={} name='{}' SAP={}",
+        log.info("Project saved: id={} name='{}' SAP={}",
                 saved.getProjectID(), saved.getProjectName(), saved.getProjectSAPID());
         return saved;
     }
@@ -123,7 +123,7 @@ public class ProjectService {
             Project saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("Project aktualisiert: id={} name='{}'", id, saved.getProjectName());
+            log.info("Project updated: id={} name='{}'", id, saved.getProjectName());
             return saved;
         });
     }
@@ -137,7 +137,7 @@ public class ProjectService {
     public void deleteProject(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(p -> {
-            log.info("Project gelöscht: id={} name='{}'", id, p.getProjectName());
+            log.info("Project deleted: id={} name='{}'", id, p.getProjectName());
             // Optional: lucene.deleteProject(id.toString());
         });
     }
@@ -169,9 +169,9 @@ public class ProjectService {
                     p.getAccountID() != null ? p.getAccountID().toString() : null,
                     p.getAddressID() != null ? p.getAddressID().toString() : null
             );
-            log.debug("Project in Lucene indexiert: id={}", p.getProjectID());
+            log.debug("Project indexed in Lucene: id={}", p.getProjectID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Project {} fehlgeschlagen", p.getProjectID(), e);
+            log.error("Lucene indexing for Project {} failed", p.getProjectID(), e);
         }
     }
 

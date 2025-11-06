@@ -93,7 +93,7 @@ public class ClientsService {
         // Index in Lucene after the commit
         registerAfterCommitIndexing(in);
 
-        log.info("Client gespeichert: id={} name='{}'", in.getClientID(), in.getClientName());
+        log.info("Client saved: id={} name='{}'", in.getClientID(), in.getClientName());
         return in;
     }
 
@@ -126,7 +126,7 @@ public class ClientsService {
         repo.save(existing);
         registerAfterCommitIndexing(existing);
 
-        log.info("Client aktualisiert: id={} name='{}'", id, existing.getClientName());
+        log.info("Client updated: id={} name='{}'", id, existing.getClientName());
         return existing;
     }
 
@@ -146,7 +146,7 @@ public class ClientsService {
         }
 
         repo.deleteById(id);
-        log.info("Client gelöscht: id={}", id);
+        log.info("Client deleted: id={}", id);
 
         // Optional: remove the Lucene entry if the LuceneService supports it
         try {
@@ -182,10 +182,10 @@ public class ClientsService {
                     c.getClientOS(),
                     c.getInstallType()
             );
-            log.debug("Client in Lucene indexiert: id={}", c.getClientID());
+            log.debug("Client indexed in Lucene: id={}", c.getClientID());
         } catch (Exception e) {
             // Indexing errors must not roll back the database transaction
-            log.error("Lucene-Indexing für Client {} fehlgeschlagen", c.getClientID(), e);
+            log.error("Lucene indexing for Client {} failed", c.getClientID(), e);
         }
     }
 

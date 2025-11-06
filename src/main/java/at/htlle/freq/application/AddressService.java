@@ -88,7 +88,7 @@ public class AddressService {
         // Index after commit to keep Lucene and the database aligned
         registerAfterCommitIndexing(incoming);
 
-        log.info("Address gespeichert: id={} street='{}' cityID='{}'", id, incoming.getStreet(), incoming.getCityID());
+        log.info("Address saved: id={} street='{}' cityID='{}'", id, incoming.getStreet(), incoming.getCityID());
         return incoming;
     }
 
@@ -110,7 +110,7 @@ public class AddressService {
 
             repo.save(existing);
             registerAfterCommitIndexing(existing);
-            log.info("Address aktualisiert: id={} street='{}' cityID='{}'", id, existing.getStreet(), existing.getCityID());
+            log.info("Address updated: id={} street='{}' cityID='{}'", id, existing.getStreet(), existing.getCityID());
             return existing;
         });
     }
@@ -124,7 +124,7 @@ public class AddressService {
     public void deleteAddress(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.deleteById(id);
-        log.info("Address gelöscht: id={}", id);
+        log.info("Address deleted: id={}", id);
     }
 
     // ---------- Internals ----------
@@ -149,9 +149,9 @@ public class AddressService {
                     a.getStreet(),
                     a.getCityID()
             );
-            log.debug("Address in Lucene indexiert: id={}", a.getAddressID());
+            log.debug("Address indexed in Lucene: id={}", a.getAddressID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Address {} fehlgeschlagen", a.getAddressID(), e);
+            log.error("Lucene indexing for Address {} failed", a.getAddressID(), e);
         }
     }
 

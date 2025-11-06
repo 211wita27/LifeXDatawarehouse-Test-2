@@ -97,7 +97,7 @@ public class AccountService {
         // Index after the commit so Lucene and the database remain consistent
         registerAfterCommitIndexing(saved);
 
-        log.info("Account gespeichert: id={} name='{}'", id, saved.getAccountName());
+        log.info("Account saved: id={} name='{}'", id, saved.getAccountName());
         return saved;
     }
 
@@ -124,7 +124,7 @@ public class AccountService {
 
             Account saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
-            log.info("Account aktualisiert: id={} name='{}'", id, saved.getAccountName());
+            log.info("Account updated: id={} name='{}'", id, saved.getAccountName());
             return saved;
         });
     }
@@ -140,7 +140,7 @@ public class AccountService {
         repo.deleteById(id);
         // Optional: also remove the record from Lucene (e.g. via reindexAll or a dedicated delete)
         // If Lucene deletions are required, add a delete(id, type) method to LuceneIndexService
-        log.info("Account gelöscht: id={}", id);
+        log.info("Account deleted: id={}", id);
     }
 
     // ---------- Internals ----------
@@ -167,10 +167,10 @@ public class AccountService {
                     a.getCountry(),
                     a.getContactEmail()
             );
-            log.debug("Account in Lucene indexiert: id={}", a.getAccountID());
+            log.debug("Account indexed in Lucene: id={}", a.getAccountID());
         } catch (Exception e) {
             // Indexing errors must not roll back the database transaction
-            log.error("Lucene-Indexing für Account {} fehlgeschlagen", a.getAccountID(), e);
+            log.error("Lucene indexing for Account {} failed", a.getAccountID(), e);
         }
     }
 
