@@ -87,10 +87,10 @@ public class ClientsService {
         if (isBlank(in.getClientName())) throw new IllegalArgumentException("clientName is required");
         if (isBlank(in.getInstallType())) throw new IllegalArgumentException("installType is required (LOCAL/BROWSER)");
 
-        // Persist (JdbcClientsRepository assigns the UUID via RETURNING)
+        // Persist the entity; JdbcClientsRepository assigns the UUID via RETURNING.
         repo.save(in);
 
-        // Index in Lucene after the commit
+        // Index the record in Lucene after the commit.
         registerAfterCommitIndexing(in);
 
         log.info("Client saved: id={} name='{}'", in.getClientID(), in.getClientName());
@@ -132,8 +132,8 @@ public class ClientsService {
 
 // ----------------------------
 // DELETE
-// WOULD BE IMPORTANT, BUT OUR LUCENE LAYER DOES NOT SUPPORT IT YET
-// BECAUSE IT IS NOT INTEGRATED INTO THE CONTROLLER SO FAR
+// Deletion support would be useful, but the Lucene integration cannot remove entries yet,
+// therefore the controller does not expose a delete endpoint at this time.
 // ----------------------------
 /*
     @Transactional
@@ -148,7 +148,7 @@ public class ClientsService {
         repo.deleteById(id);
         log.info("Client deleted: id={}", id);
 
-        // Optional: remove the Lucene entry if the LuceneService supports it
+        // Optionally remove the Lucene entry once the Lucene service offers delete support.
         try {
             lucene.deleteClient(id.toString());
         } catch (Exception e) {
@@ -184,7 +184,7 @@ public class ClientsService {
             );
             log.debug("Client indexed in Lucene: id={}", c.getClientID());
         } catch (Exception e) {
-            // Indexing errors must not roll back the database transaction
+            // Indexing failures must not trigger a database rollback.
             log.error("Lucene indexing for Client {} failed", c.getClientID(), e);
         }
     }

@@ -133,7 +133,7 @@ public class PhoneIntegrationService {
         repo.findById(id).ifPresent(p -> {
             log.info("PhoneIntegration deleted: id={} client={} type='{}'",
                     id, p.getClientID(), p.getPhoneType());
-            // Optional: lucene.deletePhoneIntegration(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 

@@ -137,7 +137,7 @@ public class ServiceContractService {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(sc -> {
             log.info("ServiceContract deleted: id={} contractNumber='{}'", id, sc.getContractNumber());
-            // Optional: lucene.deleteServiceContract(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 

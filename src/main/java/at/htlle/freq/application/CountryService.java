@@ -120,7 +120,7 @@ public class CountryService {
         repo.findById(code).ifPresent(c -> {
             log.info("Country deleted: code={} name='{}'",
                     code, c.getCountryName());
-            // Optional: lucene.deleteCountry(code);
+            // Optionally remove the entry from Lucene when delete support is added.
         });
     }
 

@@ -148,7 +148,7 @@ public class InstalledSoftwareService {
         repo.findById(id).ifPresent(isw -> {
             log.info("InstalledSoftware deleted: id={} site={} software={} status={}",
                     id, isw.getSiteID(), isw.getSoftwareID(), isw.getStatus());
-            // Optional: lucene.deleteInstalledSoftware(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 
