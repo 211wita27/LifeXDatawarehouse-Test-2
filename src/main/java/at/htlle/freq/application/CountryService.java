@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Verwaltet Länderstammdaten und hält Lucene nach erfolgreichen Transaktionen synchron.
+ * Manages country master data and keeps Lucene synchronized after successful transactions.
  */
 @Service
 public class CountryService {
@@ -27,10 +27,10 @@ public class CountryService {
     private final LuceneIndexService lucene;
 
     /**
-     * Erstellt den Service mit Repository- und Index-Abhängigkeiten.
+     * Creates the service with repository and index dependencies.
      *
-     * @param repo   Repository für Länder
-     * @param lucene Indexservice für Lucene
+     * @param repo   repository for countries
+     * @param lucene Lucene index service
      */
     public CountryService(CountryRepository repo, LuceneIndexService lucene) {
         this.repo = repo;
@@ -40,19 +40,19 @@ public class CountryService {
     // ---------- Queries ----------
 
     /**
-     * Liefert alle Länder.
+     * Returns all countries.
      *
-     * @return Liste aller Länder
+     * @return list of every country
      */
     public List<Country> getAllCountries() {
         return repo.findAll();
     }
 
     /**
-     * Holt ein Land anhand seines Codes.
+     * Loads a country by its code.
      *
-     * @param code Ländercode (Primärschlüssel)
-     * @return Optional mit Land oder leer
+     * @param code country code (primary key)
+     * @return optional containing the country or empty if missing
      */
     public Optional<Country> getCountryByCode(String code) {
         Objects.requireNonNull(code, "country code must not be null");
@@ -62,11 +62,11 @@ public class CountryService {
     // ---------- Commands ----------
 
     /**
-     * Speichert ein Land und indexiert es nach dem Commit in Lucene. Validiert
-     * Pflichtfelder für Code und Name.
+     * Saves a country and indexes it in Lucene after the commit. Validates required fields for
+     * code and name.
      *
-     * @param incoming Land, das erstellt oder aktualisiert werden soll
-     * @return gespeichertes Land
+     * @param incoming country to create or update
+     * @return persisted country
      */
     @Transactional
     public Country createOrUpdateCountry(Country incoming) {
@@ -86,11 +86,11 @@ public class CountryService {
     }
 
     /**
-     * Aktualisiert ein bestehendes Land und synchronisiert anschließend Lucene.
+     * Updates an existing country and synchronizes Lucene afterwards.
      *
-     * @param code  Ländercode
-     * @param patch Änderungen, die übernommen werden sollen
-     * @return Optional mit dem aktualisierten Land oder leer
+     * @param code  country code
+     * @param patch changes to merge into the entity
+     * @return optional containing the updated country or empty otherwise
      */
     @Transactional
     public Optional<Country> updateCountry(String code, Country patch) {
@@ -110,9 +110,9 @@ public class CountryService {
     }
 
     /**
-     * Entfernt ein Land dauerhaft aus der Datenbank.
+     * Permanently removes a country from the database.
      *
-     * @param code Ländercode
+     * @param code country code
      */
     @Transactional
     public void deleteCountry(String code) {

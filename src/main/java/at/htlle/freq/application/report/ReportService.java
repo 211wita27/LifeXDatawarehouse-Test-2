@@ -23,7 +23,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Aggregiert Reporting-Daten, bereitet sie für UI und Exporte auf und rendert CSV/PDF-Ausgaben.
+ * Aggregates reporting data, prepares it for the UI and exports, and renders CSV/PDF outputs.
  */
 @Service
 public class ReportService {
@@ -43,9 +43,9 @@ public class ReportService {
     }
 
     /**
-     * Erstellt den Service mit dem benötigten JDBC-Template.
+     * Creates the service with the required JDBC template.
      *
-     * @param jdbc Datenzugriff für Reporting-Abfragen
+     * @param jdbc data access component for reporting queries
      */
     public ReportService(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -89,10 +89,10 @@ public class ReportService {
     }
 
     /**
-     * Generiert einen Report basierend auf den übergebenen Filterkriterien.
+     * Generates a report based on the provided filter criteria.
      *
-     * @param filter Report-Filter mit Typ, Zeitraum und weiteren Parametern
-     * @return aufbereitete Reportdaten inklusive Tabelle und Kennzahlen
+     * @param filter report filter including type, period, and additional parameters
+     * @return prepared report data including table and KPIs
      * Dispatches to a specialised builder based on the requested {@link ReportType}.
      * <p>
      * Each builder hits dedicated tables (e.g. {@code InstalledSoftware}, {@code UpgradePlan},
@@ -110,10 +110,10 @@ public class ReportService {
     }
 
     /**
-     * Serialisiert einen Report in das CSV-Format.
+     * Serialises a report into CSV format.
      *
-     * @param report zuvor generierter Report
-     * @return CSV-Inhalt als String
+     * @param report previously generated report
+     * @return CSV content as a string
      * Converts a {@link ReportResponse} table into the semicolon-separated CSV export.
      * <p>
      * Keeps the column layout defined by the builder and escapes values so that controlling can
@@ -142,10 +142,10 @@ public class ReportService {
     }
 
     /**
-     * Rendert einen Report als PDF mithilfe von PDFBox.
+     * Renders a report as PDF using PDFBox.
      *
-     * @param report zuvor generierter Report
-     * @return Byte-Array des PDF-Dokuments
+     * @param report previously generated report
+     * @return byte array of the PDF document
      * Renders the headline KPIs, table snippet and chart summary of a report into an A4 PDF.
      * <p>
      * The PDF writer enforces the reporting guideline that only the first 45 table rows should be
@@ -213,7 +213,7 @@ public class ReportService {
     }
 
     /**
-     * Compiles the Soll-/Ist-Abgleich by comparing installed software with latest releases.
+     * Compiles the target-versus-actual comparison by analysing installed software versus the latest releases.
      * <p>
      * Joins {@code InstalledSoftware}, {@code Site}, {@code Project}, {@code DeploymentVariant},
      * {@code Software} plus helper CTEs for planned upgrades and allows filtering by variant,
@@ -401,7 +401,7 @@ public class ReportService {
     }
 
     /**
-     * Builds the Wartungsfenster & Upgrades view from maintenance planning tables.
+     * Builds the maintenance windows and upgrades view from the planning tables.
      * <p>
      * Uses {@code UpgradePlan} joined with {@code Site}, {@code Project}, {@code DeploymentVariant}
      * and {@code Software} to highlight overdue and upcoming tasks. Supports query, variant and
@@ -529,7 +529,7 @@ public class ReportService {
     }
 
     /**
-     * Aggregates configuration KPIs per site for the Konfigurationsübersicht.
+     * Aggregates configuration KPIs per site for the configuration overview.
      * <p>
      * Summarises {@code Server}, {@code Clients}, {@code Radio}, {@code AudioDevice} and
      * {@code PhoneIntegration} counts alongside {@code Site}/{@code Project}/{@code DeploymentVariant}
@@ -684,7 +684,7 @@ public class ReportService {
     }
 
     /**
-     * Creates the asset Bestandsübersicht across all filtered sites.
+     * Creates the asset inventory overview across all filtered sites.
      * <p>
      * Resolves site IDs via {@code Site}, {@code Project} and {@code DeploymentVariant} joins before
      * aggregating asset quantities from category tables ({@code Server}, {@code Clients},
