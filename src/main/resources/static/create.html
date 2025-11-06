@@ -1232,6 +1232,8 @@
                 }
                 break;
             case 'InstalledSoftware':
+                if(accountId) context.accountId=accountId;
+                if(projectId) context.projectId=projectId;
                 if(siteId){
                     await ensureAsyncValue('siteID', siteId, {lock:true});
                     context.siteId=siteId;
@@ -1242,6 +1244,8 @@
                 }
                 break;
             case 'UpgradePlan':
+                if(accountId) context.accountId=accountId;
+                if(projectId) context.projectId=projectId;
                 if(siteId){
                     await ensureAsyncValue('siteID', siteId, {lock:true});
                     context.siteId=siteId;
