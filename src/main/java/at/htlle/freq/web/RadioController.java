@@ -27,15 +27,13 @@ public class RadioController {
         this.jdbc = jdbc;
     }
 
-    // ----------------------------
-    // READ
-    // ----------------------------
+    // READ operations
 
     /**
      * Lists radios, optionally filtered by site.
      *
      * <p>Path: {@code GET /radios}</p>
-     * <p>Query parameter: {@code siteId} (optional).</p>
+     * <p>Optional {@code siteId} query parameter narrows the result to a site.</p>
      *
      * @param siteId optional site ID.
      * @return 200 OK with a JSON list of radios.
@@ -77,15 +75,13 @@ public class RadioController {
         return rows.get(0);
     }
 
-    // ----------------------------
-    // CREATE
-    // ----------------------------
+    // CREATE operations
 
     /**
      * Creates a radio.
      *
      * <p>Path: {@code POST /radios}</p>
-     * <p>Request body: JSON with columns such as {@code siteID}, {@code radioBrand}.</p>
+     * <p>Request body: JSON with columns such as {@code siteID} or {@code radioBrand}.</p>
      *
      * @param body input payload.
      * @throws ResponseStatusException 400 if the body is empty.
@@ -106,15 +102,13 @@ public class RadioController {
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
-    // ----------------------------
-    // UPDATE
-    // ----------------------------
+    // UPDATE operations
 
     /**
      * Updates a radio.
      *
      * <p>Path: {@code PUT /radios/{id}}</p>
-     * <p>Request body: JSON object with the columns to set.</p>
+     * <p>Request body: JSON object with the columns to update.</p>
      *
      * @param id   primary key.
      * @param body field values.
@@ -142,9 +136,7 @@ public class RadioController {
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("RadioID", id), body.keySet());
     }
 
-    // ----------------------------
-    // DELETE
-    // ----------------------------
+    // DELETE operations
 
     /**
      * Deletes a radio.

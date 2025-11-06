@@ -27,15 +27,13 @@ public class ServerController {
         this.jdbc = jdbc;
     }
 
-    // ----------------------------
-    // READ
-    // ----------------------------
+    // READ operations
 
     /**
      * Lists servers, optionally filtered by site.
      *
      * <p>Path: {@code GET /servers}</p>
-     * <p>Query parameter: {@code siteId} (optional).</p>
+     * <p>Optional {@code siteId} query parameter narrows the result to a site.</p>
      *
      * @param siteId optional site ID.
      * @return 200 OK with server rows as JSON.
@@ -81,15 +79,13 @@ public class ServerController {
         return rows.get(0);
     }
 
-    // ----------------------------
-    // CREATE
-    // ----------------------------
+    // CREATE operations
 
     /**
      * Creates a server.
      *
      * <p>Path: {@code POST /servers}</p>
-     * <p>Request body: JSON with server fields (for example {@code siteID}, {@code serverName}).</p>
+     * <p>Request body: JSON with server fields such as {@code siteID} or {@code serverName}.</p>
      *
      * @param body input payload.
      * @throws ResponseStatusException 400 if the body is empty.
@@ -112,15 +108,13 @@ public class ServerController {
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
-    // ----------------------------
-    // UPDATE
-    // ----------------------------
+    // UPDATE operations
 
     /**
      * Updates a server.
      *
      * <p>Path: {@code PUT /servers/{id}}</p>
-     * <p>Request body: JSON object with the columns to set.</p>
+     * <p>Request body: JSON object with the columns to update.</p>
      *
      * @param id   server ID.
      * @param body field values.
@@ -148,9 +142,7 @@ public class ServerController {
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("ServerID", id), body.keySet());
     }
 
-    // ----------------------------
-    // DELETE
-    // ----------------------------
+    // DELETE operations
 
     /**
      * Deletes a server.

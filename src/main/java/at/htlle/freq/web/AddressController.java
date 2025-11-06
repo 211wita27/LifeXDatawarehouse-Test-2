@@ -26,7 +26,7 @@ public class AddressController {
         this.service = service;
     }
 
-    // ---------- READ ----------
+    // READ operations
 
     /**
      * Lists all addresses.
@@ -54,7 +54,7 @@ public class AddressController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
     }
 
-    // ---------- WRITE ----------
+    // WRITE operations
 
     /**
      * Creates a new address.

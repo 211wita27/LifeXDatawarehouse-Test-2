@@ -27,14 +27,12 @@ public class PhoneController {
         this.jdbc = jdbc;
     }
 
-    // ----------------------------
-    // READ: Fetch all or filter by client
-    // ----------------------------
+    // READ operations: list all integrations or filter by client
     /**
      * Lists phone integrations and optionally filters by client.
      *
      * <p>Path: {@code GET /phones}</p>
-     * <p>Query parameter: {@code clientId} (optional).</p>
+     * <p>Optional {@code clientId} query parameter narrows the result to a client.</p>
      *
      * @param clientId optional client ID.
      * @return 200 OK with a JSON list of phone integrations.
@@ -80,14 +78,12 @@ public class PhoneController {
         return rows.get(0);
     }
 
-    // ----------------------------
-    // CREATE
-    // ----------------------------
+    // CREATE operations
     /**
      * Creates a new phone integration.
      *
      * <p>Path: {@code POST /phones}</p>
-     * <p>Request body: JSON with column fields (for example {@code clientID}, {@code phoneType}).</p>
+     * <p>Request body: JSON with column fields such as {@code clientID} or {@code phoneType}.</p>
      *
      * @param body input payload.
      * @throws ResponseStatusException 400 if the body is empty.
@@ -109,14 +105,12 @@ public class PhoneController {
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
-    // ----------------------------
-    // UPDATE
-    // ----------------------------
+    // UPDATE operations
     /**
      * Updates a phone integration.
      *
      * <p>Path: {@code PUT /phones/{id}}</p>
-     * <p>Request body: JSON object with column values to overwrite.</p>
+     * <p>Request body: JSON object with the columns to update.</p>
      *
      * @param id   primary key.
      * @param body field values.
@@ -146,9 +140,7 @@ public class PhoneController {
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("PhoneIntegrationID", id), body.keySet());
     }
 
-    // ----------------------------
-    // DELETE
-    // ----------------------------
+    // DELETE operations
     /**
      * Deletes a phone integration.
      *

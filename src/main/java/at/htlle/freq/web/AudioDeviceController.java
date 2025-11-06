@@ -28,14 +28,12 @@ public class AudioDeviceController {
         this.jdbc = jdbc;
     }
 
-    // ----------------------------
-    // READ: Fetch all or filter by client
-    // ----------------------------
+    // READ operations: list all devices or filter by client
     /**
      * Lists audio devices and optionally filters by client.
      *
      * <p>Path: {@code GET /audio}</p>
-     * <p>Query parameter: {@code clientId} (optional, String) to filter by client.</p>
+     * <p>Optional {@code clientId} query parameter narrows the result to a client.</p>
      *
      * @param clientId optional client ID.
      * @return 200 OK with a JSON list of device representations.
@@ -81,14 +79,12 @@ public class AudioDeviceController {
         return rows.get(0);
     }
 
-    // ----------------------------
-    // CREATE
-    // ----------------------------
+    // CREATE operations
     /**
      * Creates an audio device.
      *
      * <p>Path: {@code POST /audio}</p>
-     * <p>Request body: JSON object with column fields (for example {@code clientID}, {@code audioDeviceBrand}).</p>
+     * <p>Request body: JSON object with column fields such as {@code clientID} or {@code audioDeviceBrand}.</p>
      *
      * @param body input payload.
      * @throws ResponseStatusException 400 if the body is empty or the device type is invalid.
@@ -112,14 +108,12 @@ public class AudioDeviceController {
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
-    // ----------------------------
-    // UPDATE
-    // ----------------------------
+    // UPDATE operations
     /**
      * Updates an audio device.
      *
      * <p>Path: {@code PUT /audio/{id}}</p>
-     * <p>Request body: JSON object with column values to overwrite.</p>
+     * <p>Request body: JSON object with the columns to update.</p>
      *
      * @param id   primary key.
      * @param body field values for the update.
@@ -151,9 +145,7 @@ public class AudioDeviceController {
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("AudioDeviceID", id), body.keySet());
     }
 
-    // ----------------------------
-    // DELETE
-    // ----------------------------
+    // DELETE operations
     /**
      * Deletes an audio device.
      *
