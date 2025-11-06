@@ -11,22 +11,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /*
- * Camel-Routen-Hub für alle Lucene-Schreiboperationen.
+ * Camel routing hub for all Lucene write operations.
  *
- * Datenfluss:
- *  - UnifiedIndexingRoutes (Timer, Direct-Endpunkte) pushen Domain-Entities in "seda:lucene-index".
- *  - Diese Route konsumiert die Queue mit exactly-one Consumer und ruft abhängig vom Body die passenden indexXxx()-Methoden.
- *  - Fehler werden im onException-Block geloggt und die Nachricht verworfen, damit keine Retry-Stürme entstehen (siehe log.error).
+ * Data flow:
+ *  - UnifiedIndexingRoutes (timers, direct endpoints) push domain entities into "seda:lucene-index".
+ *  - This route consumes the queue with an exactly-one consumer and invokes the corresponding indexXxx() method based on the body.
+ *  - Errors are logged inside onException and the message is dropped to avoid retry storms (see log.error).
  *
- * Retry-/Locking-Aspekte:
- *  - Camel-SEDA mit concurrentConsumers=1 verhindert parallele Writer-Zugriffe, zusätzlich serialisiert der Service selbst
- *    (ReentrantLock in LuceneIndexServiceImpl) die Schreibzugriffe.
- *  - Kein automatisches Redelivery: handled(true) sorgt dafür, dass Dead Letter Handling deaktiviert bleibt – konsistent mit den
- *    Logger-Hinweisen.
+ * Retry / locking considerations:
+ *  - Camel SEDA with concurrentConsumers=1 prevents concurrent writer access; the service itself (ReentrantLock in
+ *    LuceneIndexServiceImpl) serializes write operations as well.
+ *  - No automatic redelivery: handled(true) keeps dead-letter handling disabled, matching the logging guidance.
  *
- * Integrationspunkte:
- *  - Bindeglied zwischen Camel und LuceneIndexServiceImpl.
- *  - Konsumiert Entities aus Repositories (siehe UnifiedIndexingRoutes) und spiegelt deren Struktur 1:1 in die Indexmethoden.
+ * Integration points:
+ *  - Acts as the bridge between Camel and LuceneIndexServiceImpl.
+ *  - Consumes entities from the repositories (see UnifiedIndexingRoutes) and mirrors their structure 1:1 in the indexing methods.
  */
 @Component("LuceneIndexingHubRoute")
 @ConditionalOnProperty(value = "lifex.lucene.camel.enabled", havingValue = "true", matchIfMissing = true)
@@ -41,12 +40,12 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
 
     @Override
     /**
-     * Richtet das onException-Logging sowie den Single-Consumer-Flow ein.
-     * Keine parallele Verarbeitung – consistent mit den Lock-Warnungen des Services.
+     * Sets up onException logging and the single-consumer flow.
+     * No parallel processing—consistent with the lock warnings emitted by the service.
      */
     public void configure() {
 
-        // Globales Error-Handling: loggen & Nachricht verwerfen (kein Retry-Sturm)
+        // Global error handling: log and drop the message (no retry storm)
         onException(Exception.class)
                 .handled(true)
                 .process(ex -> {
@@ -58,7 +57,7 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                             cause);
                 });
 
-        // EIN Consumer -> keine write.lock Konflikte
+        // Single consumer -> prevents write.lock conflicts
         from("seda:lucene-index?concurrentConsumers=1")
                 .routeId("LuceneIndexHub")
                 .process(ex -> {
