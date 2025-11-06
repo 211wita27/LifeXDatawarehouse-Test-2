@@ -18,7 +18,7 @@ public class AccountFactory {
                           String vatNumber,
                           String country) {
         return new Account(
-                null, // DB vergibt UUID
+                null, // database assigns the UUID
                 accountName,
                 contactName,
                 contactEmail,

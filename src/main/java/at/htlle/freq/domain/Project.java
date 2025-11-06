@@ -14,7 +14,7 @@ public class Project {
     private String projectName;
     private UUID deploymentVariantID;
     private String bundleType;
-    private String createDateTime; // ggf. später auf LocalDate/Time ändern
+    private String createDateTime; // potentially switch to LocalDate/Time later
     private ProjectLifecycleStatus lifecycleStatus;
     private UUID accountID;
     private UUID addressID;
