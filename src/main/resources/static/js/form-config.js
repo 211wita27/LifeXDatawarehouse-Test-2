@@ -190,7 +190,10 @@
         },
         Software: {
             summary: 'Catalog a software release so it can be linked to deployments and upgrade plans.',
-            notes: ['Provide support window information for upgrade planning where possible.']
+            notes: [
+                'Provide support window information for upgrade planning where possible.',
+                'Flag third-party software so rollout plans can account for external vendors.'
+            ]
         },
         UpgradePlan: {
             summary: 'Plan a software upgrade by selecting the site and software along with a target window.',
@@ -304,6 +307,12 @@
             { id: 'swRevision', label: 'Revision', component: 'input', name: 'Revision' },
             { id: 'swPhase', label: 'SupportPhase', component: 'select', options: ['Preview','Production','EoL'], name: 'SupportPhase' },
             { id: 'swLicense', label: 'License Model', component: 'input', name: 'LicenseModel', required: false },
+            { id: 'swThirdParty', label: 'Third-party vendor', component: 'select',
+              options: [
+                  { value: 'false', label: 'LifeX / first-party' },
+                  { value: 'true', label: 'External third-party' }
+              ],
+              name: 'ThirdParty', defaultValue: () => 'false' },
             { id: 'swEos', label: 'End of Sales', component: 'input', inputType: 'date', name: 'EndOfSalesDate', required: false },
             { id: 'swSupportStart', label: 'Support Start', component: 'input', inputType: 'date', name: 'SupportStartDate', required: false },
             { id: 'swSupportEnd', label: 'Support End', component: 'input', inputType: 'date', name: 'SupportEndDate', required: false }

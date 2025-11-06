@@ -227,6 +227,7 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 sw.getRevision(),
                                 sw.getSupportPhase(),
                                 sw.getLicenseModel(),
+                                sw.isThirdParty(),
                                 sw.getEndOfSalesDate(),
                                 sw.getSupportStartDate(),
                                 sw.getSupportEndDate()

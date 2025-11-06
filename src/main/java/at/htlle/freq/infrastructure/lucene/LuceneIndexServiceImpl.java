@@ -553,6 +553,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         software.getRevision(),
                         software.getSupportPhase(),
                         software.getLicenseModel(),
+                        software.isThirdParty(),
                         software.getEndOfSalesDate(),
                         software.getSupportStartDate(),
                         software.getSupportEndDate()
@@ -880,8 +881,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     public void indexSoftware(String softwareId, String name, String release, String revision, String supportPhase,
-                              String licenseModel, String endOfSalesDate, String supportStartDate, String supportEndDate) {
-        indexDocument(softwareId, TYPE_SOFTWARE, name, release, revision, supportPhase, licenseModel, endOfSalesDate, supportStartDate, supportEndDate);
+                              String licenseModel, boolean thirdParty, String endOfSalesDate, String supportStartDate, String supportEndDate) {
+        String vendorLabel = thirdParty ? "Third-party" : "LifeX";
+        String vendorToken = tokenWithPrefix("thirdparty", thirdParty ? "true" : "false");
+        indexDocument(softwareId, TYPE_SOFTWARE, name, release, revision, supportPhase, licenseModel, vendorLabel, vendorToken, endOfSalesDate, supportStartDate, supportEndDate);
     }
 
     @Override

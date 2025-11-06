@@ -1430,12 +1430,15 @@
 
             case 'Software':
                 url='/row/software';
+                const thirdPartyRaw=v('swThirdParty')||'false';
+                const thirdParty=thirdPartyRaw==='true';
                 p={
                     Name: v('swName'),
                     Release: v('swRelease'),
                     Revision: v('swRevision'),
                     SupportPhase: v('swPhase'),
                     LicenseModel: toNull(v('swLicense')),
+                    ThirdParty: thirdParty,
                     EndOfSalesDate: toNull(v('swEos')),
                     SupportStartDate: toNull(v('swSupportStart')),
                     SupportEndDate: toNull(v('swSupportEnd'))

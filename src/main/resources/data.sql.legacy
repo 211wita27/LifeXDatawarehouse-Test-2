@@ -78,12 +78,12 @@ INSERT INTO PhoneIntegration (PhoneIntegrationID, ClientID, PhoneType, PhoneBran
     ('00000000-0000-0000-0000-000000000a02', '00000000-0000-0000-0000-000000000703', 'NonEmergency', 'Cisco', 'PH-MUC-01', '2.0.1');
 
 -- Software catalogue entries (releases and lifecycle data)
-INSERT INTO Software (SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel, EndOfSalesDate, SupportStartDate, SupportEndDate) VALUES
-    ('00000000-0000-0000-0000-000000000b01', 'LifeX Core', '2024.4', '8', 'Production', 'Subscription', DATEADD('DAY', 365, CURRENT_DATE), DATEADD('DAY', -180, CURRENT_DATE), DATEADD('DAY', 90, CURRENT_DATE)),
-    ('00000000-0000-0000-0000-000000000b02', 'LifeX Core', '2025.1', '15', 'Production', 'Subscription', DATEADD('DAY', 540, CURRENT_DATE), DATEADD('DAY', -30, CURRENT_DATE), DATEADD('DAY', 240, CURRENT_DATE)),
-    ('00000000-0000-0000-0000-000000000b03', 'Command Center', '2024.3', '5', 'Production', 'Perpetual', DATEADD('DAY', 720, CURRENT_DATE), DATEADD('DAY', -210, CURRENT_DATE), DATEADD('DAY', 120, CURRENT_DATE)),
-    ('00000000-0000-0000-0000-000000000b04', 'Command Center', '2025.1', '2', 'Preview', 'Perpetual', DATEADD('DAY', 900, CURRENT_DATE), DATEADD('DAY', 10, CURRENT_DATE), DATEADD('DAY', 370, CURRENT_DATE)),
-    ('00000000-0000-0000-0000-000000000b05', 'Edge Gateway', '2024.2', '9', 'Production', 'Subscription', DATEADD('DAY', 400, CURRENT_DATE), DATEADD('DAY', -120, CURRENT_DATE), DATEADD('DAY', 60, CURRENT_DATE));
+INSERT INTO Software (SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel, ThirdParty, EndOfSalesDate, SupportStartDate, SupportEndDate) VALUES
+    ('00000000-0000-0000-0000-000000000b01', 'LifeX Core', '2024.4', '8', 'Production', 'Subscription', FALSE, DATEADD('DAY', 365, CURRENT_DATE), DATEADD('DAY', -180, CURRENT_DATE), DATEADD('DAY', 90, CURRENT_DATE)),
+    ('00000000-0000-0000-0000-000000000b02', 'LifeX Core', '2025.1', '15', 'Production', 'Subscription', FALSE, DATEADD('DAY', 540, CURRENT_DATE), DATEADD('DAY', -30, CURRENT_DATE), DATEADD('DAY', 240, CURRENT_DATE)),
+    ('00000000-0000-0000-0000-000000000b03', 'Command Center', '2024.3', '5', 'Production', 'Perpetual', FALSE, DATEADD('DAY', 720, CURRENT_DATE), DATEADD('DAY', -210, CURRENT_DATE), DATEADD('DAY', 120, CURRENT_DATE)),
+    ('00000000-0000-0000-0000-000000000b04', 'Command Center', '2025.1', '2', 'Preview', 'Perpetual', FALSE, DATEADD('DAY', 900, CURRENT_DATE), DATEADD('DAY', 10, CURRENT_DATE), DATEADD('DAY', 370, CURRENT_DATE)),
+    ('00000000-0000-0000-0000-000000000b05', 'Edge Gateway', '2024.2', '9', 'Production', 'Subscription', TRUE, DATEADD('DAY', 400, CURRENT_DATE), DATEADD('DAY', -120, CURRENT_DATE), DATEADD('DAY', 60, CURRENT_DATE));
 
 -- Installed software per site (site-to-software mapping)
 INSERT INTO InstalledSoftware (InstalledSoftwareID, SiteID, SoftwareID) VALUES
