@@ -234,4 +234,4 @@ erDiagram
 
 ---
 
-© 2025 Mario Ziegerhofer • HTL Leoben Information Technology • All information provided without guarantee
+© 2025 Mario Ziegerhofer • HTL Leoben Information Technology • All information is provided without warranty
