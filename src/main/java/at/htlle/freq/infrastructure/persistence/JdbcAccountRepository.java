@@ -11,10 +11,10 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 
 /**
- * JDBC implementation of the {@link AccountRepository} that encapsulates all CRUD operations for
- * the {@code Account} table and maps the account data from the columns {@code AccountID},
- * {@code AccountName}, {@code ContactName}, {@code ContactEmail}, {@code ContactPhone},
- * {@code VATNumber}, and {@code Country} into the domain model.
+ * JDBC-based implementation of {@link AccountRepository} that encapsulates all CRUD operations
+ * against the {@code Account} table and maps the columns {@code AccountID}, {@code AccountName},
+ * {@code ContactName}, {@code ContactEmail}, {@code ContactPhone}, {@code VATNumber}, and
+ * {@code Country} into {@link Account} domain objects.
  */
 @Repository
 public class JdbcAccountRepository implements AccountRepository {
@@ -81,7 +81,7 @@ public class JdbcAccountRepository implements AccountRepository {
      * <p>
      * New entities generate a UUID within the service layer and pass it through named parameters
      * into the {@code Account} table. Existing records perform a full-column update so the
-     * RowMapper stays consistent and no partial updates are required.
+     * {@link RowMapper} stays aligned and no partial updates are required.
      * </p>
      *
      * @param a domain object whose properties are mapped to identically named columns via

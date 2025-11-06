@@ -1,4 +1,3 @@
-// at/htlle/freq/domain/AccountRepository.java (or your repository package)
 package at.htlle.freq.domain;
 
 import java.util.List;
@@ -6,7 +5,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository abstraction for working with {@link Account} aggregates.
+ * Repository abstraction for working with {@link Account} aggregates stored in the
+ * {@code Account} table.
  */
 public interface AccountRepository {
     /**
