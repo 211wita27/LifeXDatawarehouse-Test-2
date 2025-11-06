@@ -5,11 +5,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class AccountFactory {
     /**
-     * Creates a new {@link Account} aggregate with the provided master data. The
-     * identifier remains {@code null} so the persistence layer can write the
-     * database-generated {@code AccountID} during persistence.
+     * Creates a new {@link Account} aggregate that represents a customer
+     * account with the provided master data. The identifier remains
+     * {@code null} so the persistence layer can write the database-generated
+     * {@code AccountID} during persistence.
      *
-     * @return a transient account instance ready for persistence
+     * @return a transient customer account ready for persistence
      */
     public Account create(String accountName,
                           String contactName,
