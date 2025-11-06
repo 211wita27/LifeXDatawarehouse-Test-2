@@ -348,7 +348,7 @@ public class ReportService {
         try {
             installStatusEnum = InstalledSoftwareStatus.from(installStatusRaw);
         } catch (IllegalArgumentException ex) {
-            installStatusEnum = InstalledSoftwareStatus.ACTIVE;
+            installStatusEnum = InstalledSoftwareStatus.OFFERED;
         }
         String installStatus = installStatusEnum.dbValue();
         LocalDate targetSupport = getLocalDate(rs, "target_support_end");

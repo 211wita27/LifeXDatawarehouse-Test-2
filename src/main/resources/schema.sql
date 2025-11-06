@@ -229,12 +229,12 @@ CREATE TABLE InstalledSoftware (
                                    InstalledSoftwareID UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
                                    SiteID              UUID NOT NULL,
                                    SoftwareID          UUID NOT NULL,
-                                   Status              VARCHAR(12) NOT NULL DEFAULT 'Active',
+                                   Status              VARCHAR(12) NOT NULL DEFAULT 'Offered',
                                    CONSTRAINT fk_instsw_site FOREIGN KEY (SiteID)
                                        REFERENCES Site(SiteID),
                                    CONSTRAINT fk_instsw_software FOREIGN KEY (SoftwareID)
                                        REFERENCES Software(SoftwareID),
-                                   CONSTRAINT ck_instsw_status CHECK (Status IN ('Active','Pending','Retired'))
+                                   CONSTRAINT ck_instsw_status CHECK (Status IN ('Offered','Installed','Rejected'))
 );
 
 -- =========================================================
