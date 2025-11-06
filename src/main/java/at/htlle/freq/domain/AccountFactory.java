@@ -6,8 +6,8 @@ import org.springframework.stereotype.Component;
 public class AccountFactory {
     /**
      * Creates a new {@link Account} aggregate with the provided master data. The
-     * identifier is left {@code null} so that the persistence layer can assign a
-     * UUID when the account is stored.
+     * identifier remains {@code null} so the persistence layer can write the
+     * database-generated {@code AccountID} during persistence.
      *
      * @return a transient account instance ready for persistence
      */
@@ -18,7 +18,7 @@ public class AccountFactory {
                           String vatNumber,
                           String country) {
         return new Account(
-                null, // database assigns the UUID
+                null, // Database assigns the AccountID column value
                 accountName,
                 contactName,
                 contactEmail,
