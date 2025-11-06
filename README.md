@@ -4,13 +4,13 @@
 
 ## 📑 Project Overview
 
-LifeX Data Warehouse is a lean yet feature-rich application that is being developed as part of a diploma thesis at HTL Leoben (Department of Information Technology).
-It combines **ETL-style data storage**, **full-text search via Lucene** (or regular search with autocomplete), a **lightweight web UI**, and a **REST API** in a single Spring Boot project.
+LifeX Data Warehouse is a lean yet feature-rich application developed as part of a diploma thesis at HTL Leoben (Department of Information Technology).
+The project combines **ETL-style data storage**, **full-text search via Lucene** (or regular search with autocomplete), a **lightweight web UI**, and a **REST API** in a single Spring Boot codebase.
 
 > **Mission Statement**
 > "Static master data (Account → Project → Site …) should be captured, searched, and exported quickly—without heavyweight BI tools."
 
-The global search now supports **Lucene syntax or regular input** with automatic prefix expansion (token\*), autocomplete suggestions, and enriched result lists.
+Global search supports **Lucene syntax or regular input** with automatic prefix expansion (token\*), autocomplete suggestions, and enriched result lists.
 
 ---
 
@@ -95,9 +95,9 @@ mvn spring-boot:run
 ## 🧪 Seed Data & Generator
 
 - `src/main/resources/data.sql` now contains roughly **500 interconnected records** across all tables (Countries → ServiceContract). The volume planning is documented in [`docs/data-volume-plan.md`](docs/data-volume-plan.md).
-- The **UUIDs** receive a two-digit hex prefix per table in the last block (e.g., `07` for `Project`) plus a ten-digit sequence number. That makes it easier to group IDs in the UI while keeping them UUID compliant.
-- Use the helper tool [`SeedDataGenerator`](src/test/java/at/htlle/freq/seed/SeedDataGenerator.java) to reproduce the dataset. The generator creates a backup (`data.sql.legacy`) if needed and then overwrites the current seed file.
-- After modifying the generator: `javac --release 17 -d target/test-classes src/test/java/at/htlle/freq/seed/SeedDataGenerator.java && java -cp target/test-classes at.htlle.freq.seed.SeedDataGenerator`
+- The **UUIDs** receive a two-digit hex prefix per table in the last block (e.g., `07` for `Project`) plus a ten-digit sequence number. This convention makes it easier to group IDs in the UI while keeping them compliant with the UUID format.
+- Use the helper tool [`SeedDataGenerator`](src/test/java/at/htlle/freq/seed/SeedDataGenerator.java) to reproduce the dataset. The generator creates a backup (`data.sql.legacy`) when necessary and then overwrites the current seed file.
+- After updating the generator, rebuild and run it with `javac --release 17 -d target/test-classes src/test/java/at/htlle/freq/seed/SeedDataGenerator.java && java -cp target/test-classes at.htlle.freq.seed.SeedDataGenerator`
 
 ---
 
