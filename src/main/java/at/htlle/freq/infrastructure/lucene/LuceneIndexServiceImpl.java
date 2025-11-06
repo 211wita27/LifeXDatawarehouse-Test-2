@@ -153,7 +153,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Opens an IndexWriter with serialized access (see the "Could not close Lucene directory" logger message).
+     * Opens an IndexWriter with serialized access (mirrors the "Could not close Lucene directory" warning emitted on
+     * close failures).
      *
      * Scheduling & parallelism: used indirectly by all indexXxx() methods so the ReentrantLock serializes access to the index.
      * Camel delivers messages in parallel, but the lock enforces FIFO processing here.
@@ -200,8 +201,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     /**
      * Attempts to clean up orphaned write.lock files so a reindex does not stall.
      *
-     * Side effects: removes the lock file from disk when possible and emits log warnings (see log.warn in clearStaleLock).
-     * Invoked only by withWriter() after an initial open attempt failed.
+     * Side effects: removes the lock file from disk when possible and emits the warnings
+     * {@code "Lucene lock on {} was released via obtainLock()."} and {@code "Removed orphaned Lucene write.lock ({})"}
+     * before retrying. Invoked only by withWriter() after an initial open attempt failed.
      */
     private boolean clearStaleLock(FSDirectory dir) {
         boolean cleared = false;
@@ -583,7 +585,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     /**
      * Clears the entire Lucene index and commits the deletion immediately.
-     * Called only from reindexAll() and mirrors the "Lucene index cleared" log message.
+     * Called only from reindexAll() and mirrors the log entry "Lucene index cleared (ready for reindex)".
      */
     private void clearIndex() throws IOException {
         withWriter(writer -> {

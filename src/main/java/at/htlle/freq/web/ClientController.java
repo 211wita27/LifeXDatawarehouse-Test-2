@@ -45,10 +45,10 @@ public class ClientController {
      * Creates a new client.
      *
      * <p>Path: {@code POST /clients}</p>
-     * <p>Request body: JSON representation of a {@link Clients} record.</p>
+     * <p>Request body: JSON representation of a {@link Clients} record validated by the service.</p>
      *
      * @param client client payload.
-     * @return 200 OK with the saved entity or an appropriate error status (400/500).
+     * @return HTTP 200 containing the saved entity; HTTP 400/500 with an explanatory error message otherwise.
      */
     @PostMapping
     public ResponseEntity<?> create(@RequestBody Clients client) {

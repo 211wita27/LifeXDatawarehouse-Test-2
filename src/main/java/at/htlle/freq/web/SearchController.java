@@ -51,12 +51,12 @@ public class SearchController {
             return ResponseEntity.ok(List.of());
         }
 
-                // Execute the Lucene string directly when 'raw' is set or the syntax is clearly Lucene
+        // Run the Lucene query verbatim when 'raw' is true or the input already uses Lucene syntax.
         if (raw || SmartQueryBuilder.looksLikeLucene(q)) {
             return ResponseEntity.ok(lucene.search(q));
         }
 
-                // "Smart" user input -> build a Lucene query and call the overload
+        // Otherwise build a Lucene query from the user-friendly input and use the Query overload.
         Query built = smart.build(q);
         return ResponseEntity.ok(lucene.search(built));
     }
