@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
  * Data flow:
  *  - UnifiedIndexingRoutes (timers, direct endpoints) push domain entities into "seda:lucene-index".
  *  - This route consumes the queue with an exactly-one consumer and invokes the corresponding indexXxx() method based on the body.
- *  - Errors are logged inside onException and the message is dropped to avoid retry storms (see log.error).
+ *  - Errors are logged inside onException with the template {@code "Lucene indexing failed for {}: {}"} and the
+ *    message is dropped to avoid retry storms.
  *
  * Retry / locking considerations:
  *  - Camel SEDA with concurrentConsumers=1 prevents concurrent writer access; the service itself (ReentrantLock in

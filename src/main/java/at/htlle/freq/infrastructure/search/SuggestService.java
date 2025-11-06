@@ -29,13 +29,13 @@ public class SuggestService {
         this.lucene = lucene;
     }
 
-    // Fields that supply suggestion candidates
+    // Fields used to source suggestion candidates
     private static final List<String> FIELDS = List.of(
-            // The aggregated search content is stored in the "content" field when indexing
+            // The aggregated search content is stored in the "content" field during indexing
             "content"
     );
 
-    /** Returns up to {@code max} suggestions for the prefix {@code prefix}. */
+    /** Returns up to {@code max} suggestions whose terms begin with the provided {@code prefix}. */
     public List<String> suggest(String prefix, int max) {
         if (prefix == null) return List.of();
         String pfx = prefix.toLowerCase();
