@@ -11,9 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 
 /**
- * Vollständiger CRUD-Controller für Server.
+ * Fully featured CRUD controller for servers.
  *
- * <p>Verwendet den {@link NamedParameterJdbcTemplate} für Datenbankzugriffe.</p>
+ * <p>Uses {@link NamedParameterJdbcTemplate} for database access.</p>
  */
 @RestController
 @RequestMapping("/servers")
@@ -32,13 +32,13 @@ public class ServerController {
     // ----------------------------
 
     /**
-     * Listet Server optional gefiltert nach Site.
+     * Lists servers, optionally filtered by site.
      *
-     * <p>Pfad: {@code GET /servers}</p>
-     * <p>Query-Parameter: {@code siteId} (optional).</p>
+     * <p>Path: {@code GET /servers}</p>
+     * <p>Query parameter: {@code siteId} (optional).</p>
      *
-     * @param siteId optionale Site-ID.
-     * @return 200 OK mit Serverzeilen als JSON.
+     * @param siteId optional site ID.
+     * @return 200 OK with server rows as JSON.
      */
     @GetMapping
     public List<Map<String, Object>> findBySite(@RequestParam(required = false) String siteId) {
@@ -59,12 +59,12 @@ public class ServerController {
     }
 
     /**
-     * Liefert einen Server anhand der ID.
+     * Returns a server by ID.
      *
-     * <p>Pfad: {@code GET /servers/{id}}</p>
+     * <p>Path: {@code GET /servers/{id}}</p>
      *
-     * @param id Server-ID.
-     * @return 200 OK mit Spaltenwerten oder 404 bei unbekannter ID.
+     * @param id server ID.
+     * @return 200 OK with the column values or 404 if the ID is unknown.
      */
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
@@ -86,13 +86,13 @@ public class ServerController {
     // ----------------------------
 
     /**
-     * Legt einen Server an.
+     * Creates a server.
      *
-     * <p>Pfad: {@code POST /servers}</p>
-     * <p>Request-Body: JSON mit Serverfeldern (z.B. {@code siteID}, {@code serverName}).</p>
+     * <p>Path: {@code POST /servers}</p>
+     * <p>Request body: JSON with server fields (for example {@code siteID}, {@code serverName}).</p>
      *
-     * @param body Eingabedaten.
-     * @throws ResponseStatusException 400 bei leerem Body.
+     * @param body input payload.
+     * @throws ResponseStatusException 400 if the body is empty.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -117,14 +117,14 @@ public class ServerController {
     // ----------------------------
 
     /**
-     * Aktualisiert einen Server.
+     * Updates a server.
      *
-     * <p>Pfad: {@code PUT /servers/{id}}</p>
-     * <p>Request-Body: JSON-Objekt mit zu setzenden Spalten.</p>
+     * <p>Path: {@code PUT /servers/{id}}</p>
+     * <p>Request body: JSON object with the columns to set.</p>
      *
-     * @param id   Server-ID.
-     * @param body Feldwerte.
-     * @throws ResponseStatusException 400 bei leerem Body, 404 wenn nichts aktualisiert wurde.
+     * @param id   server ID.
+     * @param body field values.
+     * @throws ResponseStatusException 400 if the body is empty, 404 if nothing was updated.
      */
     @PutMapping("/{id}")
     public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
@@ -153,12 +153,12 @@ public class ServerController {
     // ----------------------------
 
     /**
-     * Löscht einen Server.
+     * Deletes a server.
      *
-     * <p>Pfad: {@code DELETE /servers/{id}}</p>
+     * <p>Path: {@code DELETE /servers/{id}}</p>
      *
-     * @param id Server-ID.
-     * @throws ResponseStatusException 404, wenn kein Datensatz gelöscht wurde.
+     * @param id server ID.
+     * @throws ResponseStatusException 404 if no row was deleted.
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
