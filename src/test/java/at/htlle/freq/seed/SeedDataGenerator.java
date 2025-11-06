@@ -722,7 +722,7 @@ public final class SeedDataGenerator {
     private void appendInsert(StringBuilder sb, String table, List<String> columns, List<String> rows) {
         sb.append("-- ").append(table).append("\n");
         if (rows.isEmpty()) {
-            sb.append("-- (keine Daten)\n\n");
+            sb.append("-- (no data)\n\n");
             return;
         }
         sb.append("INSERT INTO ").append(table).append(" (")
