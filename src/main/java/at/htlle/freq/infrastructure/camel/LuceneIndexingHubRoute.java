@@ -14,19 +14,19 @@ import org.springframework.stereotype.Component;
  * Camel routing hub for all Lucene write operations.
  *
  * Data flow:
- *  - UnifiedIndexingRoutes (timers, direct endpoints) push domain entities into "seda:lucene-index".
- *  - This route consumes the queue with an exactly-one consumer and invokes the corresponding indexXxx() method based on the body.
+ *  - UnifiedIndexingRoutes (timers, direct endpoints) push domain entities into the "seda:lucene-index" queue.
+ *  - This route consumes the queue with a single consumer and invokes the matching indexXxx() method based on the payload.
  *  - Errors are logged inside onException with the template {@code "Lucene indexing failed for {}: {}"} and the
- *    message is dropped to avoid retry storms.
+ *    message is dropped to prevent retry storms.
  *
  * Retry / locking considerations:
- *  - Camel SEDA with concurrentConsumers=1 prevents concurrent writer access; the service itself (ReentrantLock in
- *    LuceneIndexServiceImpl) serializes write operations as well.
- *  - No automatic redelivery: handled(true) keeps dead-letter handling disabled, matching the logging guidance.
+ *  - Camel SEDA with concurrentConsumers=1 ensures only one writer at a time; LuceneIndexServiceImpl also serializes write
+ *    operations via a ReentrantLock as an additional safeguard.
+ *  - Automatic redelivery is disabled (handled(true)) to align with the logging guidance and avoid requeue loops.
  *
  * Integration points:
- *  - Acts as the bridge between Camel and LuceneIndexServiceImpl.
- *  - Consumes entities from the repositories (see UnifiedIndexingRoutes) and mirrors their structure 1:1 in the indexing methods.
+ *  - Serves as the bridge between Camel and LuceneIndexServiceImpl.
+ *  - Consumes entities from the repositories (see UnifiedIndexingRoutes) and mirrors their structure one-to-one in the indexing methods.
  */
 @Component("LuceneIndexingHubRoute")
 @ConditionalOnProperty(value = "lifex.lucene.camel.enabled", havingValue = "true", matchIfMissing = true)
@@ -41,12 +41,12 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
 
     @Override
     /**
-     * Sets up onException logging and the single-consumer flow.
-     * No parallel processing—consistent with the lock warnings emitted by the service.
+     * Configures the onException logging and enforces a single-consumer flow.
+     * Parallel processing is disabled to match the lock warnings emitted by the service.
      */
     public void configure() {
 
-        // Global error handling: log and drop the message (no retry storm)
+        // Global error handling: log and drop the message to avoid retry storms
         onException(Exception.class)
                 .handled(true)
                 .process(ex -> {
@@ -58,7 +58,7 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                             cause);
                 });
 
-        // Single consumer -> prevents write.lock conflicts
+        // Single consumer to prevent write.lock conflicts
         from("seda:lucene-index?concurrentConsumers=1")
                 .routeId("LuceneIndexHub")
                 .process(ex -> {
@@ -248,7 +248,7 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                         return;
                     }
 
-                    // Fallback
+                    // Fallback: log unsupported payload types
                     log.warn("LuceneIndexHub: Unsupported body type: {}", body == null ? "null" : body.getClass());
                 });
     }

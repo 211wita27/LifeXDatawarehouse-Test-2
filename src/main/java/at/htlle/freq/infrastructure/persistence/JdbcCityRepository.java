@@ -59,7 +59,7 @@ public class JdbcCityRepository implements CityRepository {
      */
     @Override
     public City save(City c) {
-        // Upsert via EXISTS
+        // Upsert by checking for an existing record first
         String existsSql = "SELECT COUNT(*) FROM City WHERE CityID = :id";
         Integer count = jdbc.queryForObject(existsSql, new MapSqlParameterSource("id", c.getCityID()), Integer.class);
         boolean exists = count != null && count > 0;

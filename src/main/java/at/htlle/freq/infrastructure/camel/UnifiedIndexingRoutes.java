@@ -10,17 +10,17 @@ import org.springframework.stereotype.Component;
  * Unified Camel routes for producing Lucene index messages.
  *
  * Data flow:
- *  - Timer sources (every 3 minutes) sequentially read from the JPA repositories and stream individual entities.
- *  - Each source writes the records to the central "seda:lucene-index" queue.
- *  - Additional direct endpoints enable ad-hoc indexing (e.g., after CRUD events) and also end up in the queue.
+ *  - Timer sources fire every three minutes, read sequentially from the JPA repositories, and stream individual entities.
+ *  - Each source writes its records to the central "seda:lucene-index" queue.
+ *  - Direct endpoints allow ad-hoc indexing (for example after CRUD events) and also publish to the queue.
  *
  * Retry / locking considerations:
- *  - The SEDA queue uses blockWhenFull=true (see configuration) to avoid backpressure issues.
- *  - Serialization happens downstream (LuceneIndexingHubRoute + LuceneIndexServiceImpl); no extra locks are required because
- *    Camel guarantees ordering within a route.
+ *  - The SEDA queue is configured with blockWhenFull=true (see configuration) to avoid backpressure issues.
+ *  - Serialization happens downstream (LuceneIndexingHubRoute + LuceneIndexServiceImpl), so no extra locks are required because
+ *    Camel preserves ordering within a route.
  *
  * Integration points:
- *  - Obtains all repositories via Spring so the timers can perform complete reindex runs (see log information in reindexAll()).
+ *  - Obtains all repositories via Spring, enabling the timers to run complete reindex jobs (see the log output in reindexAll()).
  *  - Delivers messages to LuceneIndexingHubRoute, which in turn drives the Lucene API.
  */
 @Component("UnifiedIndexingRoutes")
@@ -82,11 +82,11 @@ public class UnifiedIndexingRoutes extends RouteBuilder {
     @Override
     /**
      * Wires timers and direct endpoints to the shared SEDA queue.
-     * Scheduling: every timer fires every 180 seconds and streams entities so even large tables are processed.
+     * Each timer fires every 180 seconds and streams entities so even large tables are processed incrementally.
      */
     public void configure() {
 
-        // ===== Timer-based reindex for every entity → into the shared SEDA queue =====
+        // ===== Timer-based reindex for every entity, routed into the shared SEDA queue =====
         from("timer://idxAccounts?period=180000").routeId("ReindexAccounts")
                 .bean(accountRepo, "findAll").split(body()).streaming()
                 .to("seda:lucene-index?size=2000&blockWhenFull=true");
@@ -151,7 +151,7 @@ public class UnifiedIndexingRoutes extends RouteBuilder {
                 .bean(upgradePlanRepo, "findAll").split(body()).streaming()
                 .to("seda:lucene-index?size=2000&blockWhenFull=true");
 
-        // ===== Single index endpoints → also into the queue =====
+        // ===== Single index endpoints, also routed into the queue =====
         from("direct:index-single-account").routeId("IndexSingleAccount").to("seda:lucene-index");
         from("direct:index-single-address").routeId("IndexSingleAddress").to("seda:lucene-index");
         from("direct:index-single-audioDevice").routeId("IndexSingleAudioDevice").to("seda:lucene-index");
