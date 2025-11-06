@@ -34,22 +34,22 @@ import java.util.Objects;
 import java.util.concurrent.locks.ReentrantLock;
 
 /*
- * Zentraler Lucene-Schreibdienst.
+ * Central Lucene write service.
  *
- * Datenfluss:
- *  - Camel-Routen (Timer & Direct) liefern Domain-Entities in die "seda:lucene-index"-Queue.
- *  - Der LuceneIndexingHubRoute entpackt die Entities und ruft die passenden indexXxx()-Methoden auf.
- *  - Jede indexXxx()-Methode konsolidiert Felder, leitet sie an indexDocument() weiter und persistiert in Lucene.
+ * Data flow:
+ *  - Camel routes (timers & direct endpoints) push domain entities into the "seda:lucene-index" queue.
+ *  - LuceneIndexingHubRoute unwraps the entities and invokes the matching indexXxx() methods.
+ *  - Each indexXxx() method consolidates fields, forwards them to indexDocument(), and persists them in Lucene.
  *
- * Retry- & Locking-Strategie:
- *  - Der IndexWriter ist durch withWriter() und einen ReentrantLock serialisiert; parallele Zugriffe aus mehreren Threads
- *    (z. B. Timer + On-Demand) werden dadurch aneinander gereiht.
- *  - Scheitert Lucene mit einem write.lock, wird einmal versucht, das Lock via obtainLock() aufzuräumen – analog zu den
- *    Logger-Warnungen in clearStaleLock(). Danach wird ein Fehler geloggt und propagiert.
+ * Retry & locking strategy:
+ *  - The IndexWriter is serialized via withWriter() and a ReentrantLock so that concurrent access from multiple threads (e.g.,
+ *    timer plus on-demand) is queued.
+ *  - If Lucene fails with a write.lock, the service attempts to clean up the lock once via obtainLock()—see the warnings in
+ *    clearStaleLock(). Afterwards the error is logged and propagated.
  *
- * Integrationspunkte:
- *  - Repositories liefern Daten für reindexAll(); Scheduler/Timer triggern diesen Pfad laut UnifiedIndexingRoutes.
- *  - Die JSON-Lizenzfragmente werden synchronisiert, damit REST-Controller und Index konsistent bleiben.
+ * Integration points:
+ *  - Repositories provide the data for reindexAll(); schedulers/timers trigger this path as configured in UnifiedIndexingRoutes.
+ *  - The JSON license fragments stay in sync so REST controllers and the index expose the same information.
  */
 @Service
 public class LuceneIndexServiceImpl implements LuceneIndexService {
@@ -96,16 +96,16 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     private volatile Path storedLicenseJsonPath;
 
     /**
-     * Konstruktor für Tests – initialisiert alle Repository-Referenzen mit {@code null}.
-     * Der Indexpfad wird über {@link #setIndexPath(Path)} gesetzt, wodurch auch Lizenzdateien gefunden werden.
+     * Test constructor—initializes every repository reference with {@code null}.
+     * The index path is configured via {@link #setIndexPath(Path)}, which also resolves the license files.
      */
     public LuceneIndexServiceImpl() {
         this(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     /**
-     * Produktionskonstruktor: alle Repository-Instanzen werden injiziert.
-     * Der Indexpfad basiert auf {@link LuceneIndexService#INDEX_PATH} (siehe Logging-Hinweis bei Fehlern in clearIndex()).
+     * Production constructor: all repository instances are injected.
+     * The index path is derived from {@link LuceneIndexService#INDEX_PATH} (see the logging hint for failures in clearIndex()).
      */
     @Autowired
     public LuceneIndexServiceImpl(AccountRepository accountRepository,
@@ -144,8 +144,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Ermöglicht alternative Indexpfade (z. B. Tests oder temporäre Builds).
-     * Wichtig für parallele Testläufe, damit keine Locks kollidieren.
+     * Allows alternative index paths (e.g., tests or temporary builds).
+     * Important for parallel test runs so locks never collide.
      */
     public LuceneIndexServiceImpl(Path indexPath) {
         this();
@@ -153,13 +153,13 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Öffnet einen IndexWriter mit Serienzugriff (vgl. Logger "Konnte Lucene-Verzeichnis nicht schließen").
+     * Opens an IndexWriter with serialized access (see the "Konnte Lucene-Verzeichnis nicht schließen" logger message).
      *
-     * Scheduling & Parallelisierung: Wird von allen indexXxx()-Methoden indirekt genutzt, wodurch der ReentrantLock den
-     * Zugriff auf den Index serialisiert. Camel liefert Nachrichten parallel, aber der Lock zwingt sie hier in eine FIFO-Reihe.
+     * Scheduling & parallelism: used indirectly by all indexXxx() methods so the ReentrantLock serializes access to the index.
+     * Camel delivers messages in parallel, but the lock enforces FIFO processing here.
      *
-     * Retry-Strategie: Bei {@link LockObtainFailedException} wird einmal clearStaleLock() versucht, anschließend erneut
-     * geöffnet. Erst danach wird die Exception nach außen gegeben (siehe log.warn/log.error in clearStaleLock()).
+     * Retry strategy: on {@link LockObtainFailedException} the service invokes clearStaleLock() once and then retries opening.
+     * Only afterwards is the exception propagated (see the log.warn/log.error entries in clearStaleLock()).
      */
     private void withWriter(WriterCallback callback) throws IOException {
         writerLock.lock();
@@ -198,10 +198,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Versucht verwaiste write.lock-Dateien aufzuräumen, damit ein Reindex nicht hängen bleibt.
+     * Attempts to clean up orphaned write.lock files so a reindex does not stall.
      *
-     * Nebenwirkungen: Löscht ggf. die Lockdatei auf dem Filesystem und schreibt Warnungen in das Log (siehe log.warn in
-     * clearStaleLock). Wird nur von withWriter() nach einer gescheiterten Erstöffnung aufgerufen.
+     * Side effects: removes the lock file from disk when possible and emits log warnings (see log.warn in clearStaleLock).
+     * Invoked only by withWriter() after an initial open attempt failed.
      */
     private boolean clearStaleLock(FSDirectory dir) {
         boolean cleared = false;
@@ -235,8 +235,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Liest das persistent abgelegte license-fragments.json, damit der Index dieselben Lizenzanteile nutzt wie REST.
-     * Bei I/O-Fehlern wird eine Runtime-Exception mit Logger-Kontext geworfen.
+     * Reads the persisted license-fragments.json so the index uses the same license fragments as REST.
+     * Throws a runtime exception with logging context if I/O fails.
      */
     private JsonNode readStoredLicenseJson() {
         if (!Files.exists(storedLicenseJsonPath)) {
@@ -252,7 +252,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Persistiert Lizenzinformationen atomar (über Files.newOutputStream). Nebenwirkung: erzeugt Verzeichnisse.
+     * Persists license information atomically (via Files.newOutputStream). Side effect: creates directories as needed.
      */
     private void writeStoredLicenseJson(ObjectNode node) {
         try {
@@ -266,7 +266,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Öffnet einen Lesekontext für Ad-hoc-Suchen. Gibt {@code null} zurück, wenn noch kein Index existiert.
+     * Opens a reader context for ad-hoc searches. Returns {@code null} when no index exists yet.
      */
     private DirectoryReader openReader() throws IOException {
         if (!Files.isDirectory(indexDir)) {
@@ -282,7 +282,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     /**
-     * Liefert den aktuell verwendeten Indexpfad. Synchronisiert, da Timer/REST ihn konfigurieren können.
+     * Returns the currently configured index path. Synchronized because timers/REST may reconfigure it.
      */
     public synchronized Path getIndexPath() {
         return Objects.requireNonNull(indexDir, "indexPath is not configured");
@@ -290,8 +290,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     /**
-     * Konfiguriert einen neuen Indexpfad und aktualisiert den Speicherort der Lizenzfragmente.
-     * Nebenwirkung: Nachfolgende indexXxx()-Aufrufe schreiben in das neue Verzeichnis.
+     * Configures a new index path and updates the location of the license fragments.
+     * Side effect: subsequent indexXxx() calls write to the new directory.
      */
     public synchronized void setIndexPath(Path indexPath) {
         Path normalized = Objects.requireNonNull(indexPath, "indexPath must not be null");
@@ -303,8 +303,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     /**
-     * Parst eine Query (StandardAnalyzer) und ruft {@link #search(Query)} auf. Fehler werden geloggt und als leere Liste
-     * beantwortet, damit REST-Endpoints nicht mit Exceptions zurückkehren (siehe log.error Meldung).
+     * Parses a query (StandardAnalyzer) and delegates to {@link #search(Query)}. Errors are logged and answered with an empty
+     * list so REST endpoints do not return exceptions (see the log.error entry).
      */
     public List<SearchHit> search(String queryText) {
         try {
@@ -319,8 +319,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     /**
-     * Führt eine Lucene-Suche durch, begrenzt auf 50 Treffer. Stellt sicher, dass Reader geschlossen werden (vgl. Logger
-     * "Konnte Lucene-Reader nicht schließen"). Thread-sicher, da Reader pro Aufruf neu geöffnet wird.
+     * Executes a Lucene search limited to 50 hits. Ensures readers are closed (see the "Konnte Lucene-Reader nicht schließen"
+     * logger message). Thread-safe because readers are opened per invocation.
      */
     public List<SearchHit> search(Query query) {
         List<SearchHit> results = new ArrayList<>();
@@ -355,11 +355,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     /**
-     * Aggregiert alle Domain-Datensätze aus den Repositories und indexiert sie sequenziell.
+     * Aggregates all domain records from the repositories and indexes them sequentially.
      *
-     * Scheduling & Parallelisierung: Wird typischerweise von Camel-Timern (UnifiedIndexingRoutes) oder Admin-Triggern
-     * aufgerufen. Der Fortschritt wird in {@link IndexProgress} geschrieben, sodass REST/Monitoring darauf zugreifen kann.
-     * Nebenwirkungen: Löscht den bestehenden Index (siehe clearIndex()) und schreibt umfangreiche Infos in das Log.
+     * Scheduling & parallelism: typically invoked by Camel timers (UnifiedIndexingRoutes) or admin triggers. Progress is written
+     * to {@link IndexProgress} so REST/monitoring endpoints can consume it. Side effects: clears the existing index (see
+     * clearIndex()) and emits detailed log output.
      */
     public void reindexAll() {
         List<Account> accounts = accountRepository != null ? safeList(accountRepository.findAll()) : List.of();
@@ -582,8 +582,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     // =================== Helper ===================
 
     /**
-     * Löscht den kompletten Lucene-Index und committet die Löschung sofort.
-     * Wird nur aus reindexAll() aufgerufen und spiegelt die Log-Meldung "Lucene-Index geleert" wider.
+     * Clears the entire Lucene index and commits the deletion immediately.
+     * Called only from reindexAll() and mirrors the "Lucene-Index geleert" log message.
      */
     private void clearIndex() throws IOException {
         withWriter(writer -> {
@@ -620,11 +620,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Kern der Indexierung: schreibt/aktualisiert ein Dokument und erhöht den Fortschritt.
+     * Core indexing routine: writes or updates a document and advances the progress tracker.
      *
-     * Nebenwirkungen: Commits den Writer direkt (siehe writer.commit()), erzeugt Log-Meldungen und aktualisiert
-     * {@link IndexProgress}. Die Methode wird von Camel sowohl seriell (SEDA) als auch potenziell parallel via REST genutzt,
-     * der interne Lock in withWriter() garantiert jedoch deterministische Updates.
+     * Side effects: commits the writer immediately (see writer.commit()), emits log messages, and updates {@link IndexProgress}.
+     * Camel invokes the method serially (SEDA) and potentially in parallel via REST, but the internal lock in withWriter()
+     * guarantees deterministic updates.
      */
     private void indexDocument(String id, String type, String... fields) {
         try {

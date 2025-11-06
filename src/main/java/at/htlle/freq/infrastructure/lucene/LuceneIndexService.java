@@ -15,14 +15,14 @@ public interface LuceneIndexService {
 
     void setIndexPath(Path indexPath);
 
-    // ========= Suche =========
+    // ========= Search =========
     List<SearchHit> search(String queryText);
     List<SearchHit> search(Query query);
 
-    // ========= Verwaltung =========
+    // ========= Administration =========
     void reindexAll();
 
-    // ========= Index-APIs =========
+    // ========= Index APIs =========
     void indexAccount(String accountId, String accountName, String country, String contactEmail);
     void indexAddress(String addressId, String street, String cityId);
     void indexCity(String cityId, String cityName, String countryCode);
