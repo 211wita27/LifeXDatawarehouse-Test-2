@@ -10,7 +10,7 @@ It combines **ETL-style data storage**, **full-text search via Lucene** (or regu
 > **Mission Statement**
 > "Static master data (Account → Project → Site …) should be captured, searched, and exported quickly—without heavyweight BI tools."
 
-New: The global search now supports **Lucene syntax or regular input** with automatic prefix expansion (token\*), autocomplete suggestions, and enriched result lists.
+The global search now supports **Lucene syntax or regular input** with automatic prefix expansion (token\*), autocomplete suggestions, and enriched result lists.
 
 ---
 
@@ -234,4 +234,4 @@ erDiagram
 
 ---
 
-© 2025 Mario Ziegerhofer • HTL Leoben Information Technology • All information is provided without warranty
+© 2025 Mario Ziegerhofer • HTL Leoben Information Technology • All information is provided as-is without warranty.

@@ -10,15 +10,15 @@ The following target volumes are based on the schema from `src/main/resources/sc
 | `Account` | 30 | Distinct organization names (`Guardian Network 01`), varying contacts, phone numbers, and domains. |
 | `DeploymentVariant` | 10 | Expressive codes (`URB-HA`) and descriptive names per variant. |
 | `Software` | 12 | Version sequences (`2025.1`, `2025.2`), changing license and support phases. |
-| `Project` | 38 | Project SAP IDs with sequence (`PX-2101`), project names like `Project Aurora 01`, boolean active flags vary. |
-| `Site` | 55 | Site names referencing the city or project (`Aurora Hub Vienna`), different fire zones and tenant counts. |
+| `Project` | 38 | Project SAP IDs follow a sequence (`PX-2101`), project names like `Project Aurora 01`, and lifecycle statuses alternate between Active, Maintenance, Planned, and Retired. |
+| `Site` | 55 | Site names reference the city or project (`Aurora Hub Vienna`), with varied fire zones and tenant counts. |
 | `Server` | 28 | Server names (`SRV-VIE-001`), brands, serial numbers, and OS/hypervisor combinations vary. |
-| `Clients` | 40 | Operator station names (`Operator Console 014`), serial numbers, and mixed installation types (`LOCAL`/`BROWSER`). |
-| `Radio` | 18 | Serial numbers with site abbreviations, different modes (`Analog`/`Digital`) and standards. |
-| `AudioDevice` | 36 | Device labels (`Headset 021`), firmware versions, and device types (`HEADSET`/`SPEAKER`/`MIC`). |
-| `PhoneIntegration` | 32 | Telephone types vary (`Emergency`, `NonEmergency`, `Both`), manufacturers/serial numbers change. |
-| `InstalledSoftware` | 55 | Each installation links a site and software; combinations alternate between releases. |
-| `UpgradePlan` | 18 | Time windows as `DATEADD` offsets, status values rotate (`Planned`, `Approved`, …). |
-| `ServiceContract` | 28 | Contract numbers such as `SC-2025-030`, mixed statuses, durations as relative date values. |
+| `Clients` | 40 | Operator station names (`Operator Console 014`), serial numbers, and a mix of installation types (`LOCAL` and `BROWSER`). |
+| `Radio` | 18 | Serial numbers include site abbreviations, with modes toggling between `Analog` and `Digital` and standards rotating accordingly. |
+| `AudioDevice` | 36 | Device labels (`Headset 021`), firmware versions, and device types (`HEADSET`, `SPEAKER`, `MIC`). |
+| `PhoneIntegration` | 32 | Telephone types rotate (`Emergency`, `NonEmergency`, `Both`), and manufacturer/serial pairs change per record. |
+| `InstalledSoftware` | 55 | Each installation links a site to software; release combinations alternate for coverage. |
+| `UpgradePlan` | 18 | Time windows use `DATEADD` offsets, and status values rotate through `Planned`, `Approved`, and more. |
+| `ServiceContract` | 28 | Contract numbers such as `SC-2025-030`, status values rotate, and durations use relative date values. |
 
 **Note on UUID readability:** A dedicated sequence is maintained for each table. The last block of the UUID receives a two-digit hex prefix for the table type plus a ten-digit decimal sequence number (e.g., `05 0000000123` for the 123rd project record). This makes it easy to sort IDs in the UI while still using valid UUIDs.
