@@ -80,7 +80,7 @@ public class CountryService {
         Country saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("Country gespeichert: code={} name='{}'",
+        log.info("Country saved: code={} name='{}'",
                 saved.getCountryCode(), saved.getCountryName());
         return saved;
     }
@@ -103,7 +103,7 @@ public class CountryService {
             Country saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("Country aktualisiert: code={} name='{}'",
+            log.info("Country updated: code={} name='{}'",
                     code, saved.getCountryName());
             return saved;
         });
@@ -118,7 +118,7 @@ public class CountryService {
     public void deleteCountry(String code) {
         Objects.requireNonNull(code, "country code must not be null");
         repo.findById(code).ifPresent(c -> {
-            log.info("Country gelöscht: code={} name='{}'",
+            log.info("Country deleted: code={} name='{}'",
                     code, c.getCountryName());
             // Optional: lucene.deleteCountry(code);
         });
@@ -145,9 +145,9 @@ public class CountryService {
                     c.getCountryCode(),
                     c.getCountryName()
             );
-            log.debug("Country in Lucene indexiert: code={}", c.getCountryCode());
+            log.debug("Country indexed in Lucene: code={}", c.getCountryCode());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Country {} fehlgeschlagen", c.getCountryCode(), e);
+            log.error("Lucene indexing for Country {} failed", c.getCountryCode(), e);
         }
     }
 

@@ -88,7 +88,7 @@ public class SoftwareService {
         Software saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("Software gespeichert: id={} name='{}' release='{}'",
+        log.info("Software saved: id={} name='{}' release='{}'",
                 saved.getSoftwareID(), saved.getName(), saved.getRelease());
         return saved;
     }
@@ -118,7 +118,7 @@ public class SoftwareService {
             Software saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("Software aktualisiert: id={} name='{}'", id, saved.getName());
+            log.info("Software updated: id={} name='{}'", id, saved.getName());
             return saved;
         });
     }
@@ -132,7 +132,7 @@ public class SoftwareService {
     public void deleteSoftware(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(sw -> {
-            log.info("Software gelöscht: id={} name='{}' release='{}'",
+            log.info("Software deleted: id={} name='{}' release='{}'",
                     id, sw.getName(), sw.getRelease());
             // Optional: lucene.deleteSoftware(id.toString());
         });
@@ -166,9 +166,9 @@ public class SoftwareService {
                     sw.getSupportStartDate(),
                     sw.getSupportEndDate()
             );
-            log.debug("Software in Lucene indexiert: id={}", sw.getSoftwareID());
+            log.debug("Software indexed in Lucene: id={}", sw.getSoftwareID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Software {} fehlgeschlagen", sw.getSoftwareID(), e);
+            log.error("Lucene indexing for Software {} failed", sw.getSoftwareID(), e);
         }
     }
 

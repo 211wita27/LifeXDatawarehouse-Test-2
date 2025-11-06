@@ -90,7 +90,7 @@ public class UpgradePlanService {
         UpgradePlan saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("UpgradePlan gespeichert: id={} site={} software={} status='{}'",
+        log.info("UpgradePlan saved: id={} site={} software={} status='{}'",
                 saved.getUpgradePlanID(), saved.getSiteID(), saved.getSoftwareID(), saved.getStatus());
         return saved;
     }
@@ -119,7 +119,7 @@ public class UpgradePlanService {
             UpgradePlan saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("UpgradePlan aktualisiert: id={} status='{}'", id, saved.getStatus());
+            log.info("UpgradePlan updated: id={} status='{}'", id, saved.getStatus());
             return saved;
         });
     }
@@ -133,7 +133,7 @@ public class UpgradePlanService {
     public void deleteUpgradePlan(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(up -> {
-            log.info("UpgradePlan gelöscht: id={} site={} software={}",
+            log.info("UpgradePlan deleted: id={} site={} software={}",
                     id, up.getSiteID(), up.getSoftwareID());
             // Optional: lucene.deleteUpgradePlan(id.toString());
         });
@@ -166,9 +166,9 @@ public class UpgradePlanService {
                     up.getCreatedAt(),
                     up.getCreatedBy()
             );
-            log.debug("UpgradePlan in Lucene indexiert: id={}", up.getUpgradePlanID());
+            log.debug("UpgradePlan indexed in Lucene: id={}", up.getUpgradePlanID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für UpgradePlan {} fehlgeschlagen", up.getUpgradePlanID(), e);
+            log.error("Lucene indexing for UpgradePlan {} failed", up.getUpgradePlanID(), e);
         }
     }
 

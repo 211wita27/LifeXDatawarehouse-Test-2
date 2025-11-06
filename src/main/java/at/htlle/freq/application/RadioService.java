@@ -93,7 +93,7 @@ public class RadioService {
         Radio saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("Radio gespeichert: id={} site={} brand='{}' serialNr='{}'",
+        log.info("Radio saved: id={} site={} brand='{}' serialNr='{}'",
                 saved.getRadioID(), saved.getSiteID(), saved.getRadioBrand(), saved.getRadioSerialNr());
         return saved;
     }
@@ -121,7 +121,7 @@ public class RadioService {
             Radio saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("Radio aktualisiert: id={} brand='{}'", id, saved.getRadioBrand());
+            log.info("Radio updated: id={} brand='{}'", id, saved.getRadioBrand());
             return saved;
         });
     }
@@ -135,7 +135,7 @@ public class RadioService {
     public void deleteRadio(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(r -> {
-            log.info("Radio gelöscht: id={} brand='{}' serialNr='{}'",
+            log.info("Radio deleted: id={} brand='{}' serialNr='{}'",
                     id, r.getRadioBrand(), r.getRadioSerialNr());
             // Optional: lucene.deleteRadio(id.toString());
         });
@@ -167,9 +167,9 @@ public class RadioService {
                     r.getMode(),
                     r.getDigitalStandard()
             );
-            log.debug("Radio in Lucene indexiert: id={}", r.getRadioID());
+            log.debug("Radio indexed in Lucene: id={}", r.getRadioID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für Radio {} fehlgeschlagen", r.getRadioID(), e);
+            log.error("Lucene indexing for Radio {} failed", r.getRadioID(), e);
         }
     }
 

@@ -89,7 +89,7 @@ public class PhoneIntegrationService {
         PhoneIntegration saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("PhoneIntegration gespeichert: id={} client={} type='{}'",
+        log.info("PhoneIntegration saved: id={} client={} type='{}'",
                 saved.getPhoneIntegrationID(), saved.getClientID(), saved.getPhoneType());
         return saved;
     }
@@ -116,7 +116,7 @@ public class PhoneIntegrationService {
             PhoneIntegration saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("PhoneIntegration aktualisiert: id={} client={} type='{}'",
+            log.info("PhoneIntegration updated: id={} client={} type='{}'",
                     id, saved.getClientID(), saved.getPhoneType());
             return saved;
         });
@@ -131,7 +131,7 @@ public class PhoneIntegrationService {
     public void deletePhoneIntegration(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(p -> {
-            log.info("PhoneIntegration gelöscht: id={} client={} type='{}'",
+            log.info("PhoneIntegration deleted: id={} client={} type='{}'",
                     id, p.getClientID(), p.getPhoneType());
             // Optional: lucene.deletePhoneIntegration(id.toString());
         });
@@ -162,9 +162,9 @@ public class PhoneIntegrationService {
                     p.getPhoneSerialNr(),
                     p.getPhoneFirmware()
             );
-            log.debug("PhoneIntegration in Lucene indexiert: id={}", p.getPhoneIntegrationID());
+            log.debug("PhoneIntegration indexed in Lucene: id={}", p.getPhoneIntegrationID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für PhoneIntegration {} fehlgeschlagen", p.getPhoneIntegrationID(), e);
+            log.error("Lucene indexing for PhoneIntegration {} failed", p.getPhoneIntegrationID(), e);
         }
     }
 

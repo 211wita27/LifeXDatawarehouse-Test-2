@@ -92,7 +92,7 @@ public class ServiceContractService {
         ServiceContract saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("ServiceContract gespeichert: id={} contractNumber='{}' status='{}'",
+        log.info("ServiceContract saved: id={} contractNumber='{}' status='{}'",
                 saved.getContractID(), saved.getContractNumber(), saved.getStatus());
         return saved;
     }
@@ -121,7 +121,7 @@ public class ServiceContractService {
             ServiceContract saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("ServiceContract aktualisiert: id={} number='{}' status='{}'",
+            log.info("ServiceContract updated: id={} number='{}' status='{}'",
                     id, saved.getContractNumber(), saved.getStatus());
             return saved;
         });
@@ -136,7 +136,7 @@ public class ServiceContractService {
     public void deleteContract(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(sc -> {
-            log.info("ServiceContract gelöscht: id={} contractNumber='{}'", id, sc.getContractNumber());
+            log.info("ServiceContract deleted: id={} contractNumber='{}'", id, sc.getContractNumber());
             // Optional: lucene.deleteServiceContract(id.toString());
         });
     }
@@ -168,9 +168,9 @@ public class ServiceContractService {
                     sc.getStartDate(),
                     sc.getEndDate()
             );
-            log.debug("ServiceContract in Lucene indexiert: id={}", sc.getContractID());
+            log.debug("ServiceContract indexed in Lucene: id={}", sc.getContractID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für ServiceContract {} fehlgeschlagen", sc.getContractID(), e);
+            log.error("Lucene indexing for ServiceContract {} failed", sc.getContractID(), e);
         }
     }
 

@@ -91,7 +91,7 @@ public class CityService {
         City saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("City gespeichert: id={} name='{}'", saved.getCityID(), saved.getCityName());
+        log.info("City saved: id={} name='{}'", saved.getCityID(), saved.getCityName());
         return saved;
     }
 
@@ -114,7 +114,7 @@ public class CityService {
             City saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("City aktualisiert: id={} name='{}'", id, saved.getCityName());
+            log.info("City updated: id={} name='{}'", id, saved.getCityName());
             return saved;
         });
     }
@@ -130,7 +130,7 @@ public class CityService {
         Optional<City> existing = repo.findById(id);
         repo.deleteById(id);
         existing.ifPresentOrElse(
-                c -> log.info("City gelöscht: id={} name='{}'", id, c.getCityName()),
+                c -> log.info("City deleted: id={} name='{}'", id, c.getCityName()),
                 () -> log.info("City delete requested: id={} (not found)", id)
         );
     }
@@ -157,9 +157,9 @@ public class CityService {
                     c.getCityName(),
                     c.getCountryCode()
             );
-            log.debug("City in Lucene indexiert: id={}", c.getCityID());
+            log.debug("City indexed in Lucene: id={}", c.getCityID());
         } catch (Exception e) {
-            log.error("Lucene-Indexing für City {} fehlgeschlagen", c.getCityID(), e);
+            log.error("Lucene indexing for City {} failed", c.getCityID(), e);
         }
     }
 

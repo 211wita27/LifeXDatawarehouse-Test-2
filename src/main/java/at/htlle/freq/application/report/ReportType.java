@@ -6,10 +6,10 @@ import java.util.Locale;
  * Supported report categories for the reporting front end.
  */
 public enum ReportType {
-    DIFFERENCE("Difference", "Vergleich von Soll- und Ist-Konfigurationen"),
-    MAINTENANCE("Maintenance", "Geplante und laufende Wartungsfenster"),
-    CONFIGURATION("Configuration", "Konfigurationsübersicht über Standorte"),
-    INVENTORY("Inventory", "Inventarverteilung nach Asset-Klasse");
+    DIFFERENCE("Difference", "Comparison of target and actual configurations"),
+    MAINTENANCE("Maintenance", "Planned and ongoing maintenance windows"),
+    CONFIGURATION("Configuration", "Configuration overview by site"),
+    INVENTORY("Inventory", "Asset distribution by category");
 
     private final String label;
     private final String description;
