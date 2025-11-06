@@ -27,15 +27,13 @@ public class SiteController {
         this.jdbc = jdbc;
     }
 
-    // ----------------------------
-    // READ: Fetch all sites or filter by project
-    // ----------------------------
+    // READ operations: list all sites or filter by project
 
     /**
      * Lists sites, optionally filtered by project.
      *
      * <p>Path: {@code GET /sites}</p>
-     * <p>Query parameter: {@code projectId} (optional).</p>
+     * <p>Optional {@code projectId} query parameter narrows the result to a project.</p>
      *
      * @param projectId optional project foreign key.
      * @return 200 OK with sites as JSON.
@@ -78,15 +76,13 @@ public class SiteController {
         return rows.get(0);
     }
 
-    // ----------------------------
-    // CREATE
-    // ----------------------------
+    // CREATE operations
 
     /**
      * Creates a site.
      *
      * <p>Path: {@code POST /sites}</p>
-     * <p>Request body: JSON with fields such as {@code siteName}, {@code projectID}.</p>
+     * <p>Request body: JSON with fields such as {@code siteName} or {@code projectID}.</p>
      *
      * @param body input payload.
      * @throws ResponseStatusException 400 if the body is empty.
@@ -107,15 +103,13 @@ public class SiteController {
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
-    // ----------------------------
-    // UPDATE
-    // ----------------------------
+    // UPDATE operations
 
     /**
      * Updates a site.
      *
      * <p>Path: {@code PUT /sites/{id}}</p>
-     * <p>Request body: JSON object with the columns to set.</p>
+     * <p>Request body: JSON object with the columns to update.</p>
      *
      * @param id   site ID.
      * @param body field values.
@@ -143,9 +137,7 @@ public class SiteController {
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("SiteID", id), body.keySet());
     }
 
-    // ----------------------------
-    // DELETE
-    // ----------------------------
+    // DELETE operations
 
     /**
      * Deletes a site.

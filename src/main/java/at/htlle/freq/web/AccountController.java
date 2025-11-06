@@ -61,7 +61,7 @@ public class AccountController {
      */
     @PostMapping
     public Account create(@RequestBody Account account) {
-        // Note: Account contains contactName -> AccountService.createAccount(Account) handles all fields.
+        // Account already carries the contactName field; AccountService#createAccount handles it along with the rest.
         return accountService.createAccount(account);
     }
 }

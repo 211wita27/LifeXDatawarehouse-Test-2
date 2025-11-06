@@ -28,15 +28,13 @@ public class ProjectController {
         this.jdbc = jdbc;
     }
 
-    // ----------------------------
-    // READ: Fetch all projects or filter by account
-    // ----------------------------
+    // READ operations: list all projects or filter by account
 
     /**
      * Lists projects and optionally filters by account.
      *
      * <p>Path: {@code GET /projects}</p>
-     * <p>Query parameter: {@code accountId} (optional).</p>
+     * <p>Optional {@code accountId} query parameter narrows the result to an account.</p>
      *
      * @param accountId optional account foreign key.
      * @return 200 OK with project rows as JSON.
@@ -78,15 +76,13 @@ public class ProjectController {
         return rows.get(0);
     }
 
-    // ----------------------------
-    // CREATE
-    // ----------------------------
+    // CREATE operations
 
     /**
      * Creates a new project.
      *
      * <p>Path: {@code POST /projects}</p>
-     * <p>Request body: JSON with project data (for example {@code projectName}, {@code accountID}).</p>
+     * <p>Request body: JSON with project data such as {@code projectName} or {@code accountID}.</p>
      *
      * @param body input payload.
      * @throws ResponseStatusException 400 if the body is empty or the lifecycle status is invalid.
@@ -131,15 +127,13 @@ public class ProjectController {
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
-    // ----------------------------
-    // UPDATE
-    // ----------------------------
+    // UPDATE operations
 
     /**
      * Updates a project.
      *
      * <p>Path: {@code PUT /projects/{id}}</p>
-     * <p>Request body: JSON with columns to overwrite.</p>
+     * <p>Request body: JSON with the columns to update.</p>
      *
      * @param id   project ID.
      * @param body field values.
@@ -168,9 +162,7 @@ public class ProjectController {
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("ProjectID", id), body.keySet());
     }
 
-    // ----------------------------
-    // DELETE
-    // ----------------------------
+    // DELETE operations
 
     /**
      * Deletes a project.
