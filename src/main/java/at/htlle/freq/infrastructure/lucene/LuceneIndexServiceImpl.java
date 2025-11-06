@@ -826,8 +826,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         try {
             resolved = InstalledSoftwareStatus.from(status);
         } catch (IllegalArgumentException ex) {
-            log.warn("Unknown installed software status '{}', defaulting to Active", status);
-            resolved = InstalledSoftwareStatus.ACTIVE;
+            log.warn("Unknown installed software status '{}', defaulting to Offered", status);
+            resolved = InstalledSoftwareStatus.OFFERED;
         }
         String statusValue = resolved.dbValue();
         String statusLabel = resolved.label();

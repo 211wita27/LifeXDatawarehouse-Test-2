@@ -67,7 +67,7 @@ final class TestFixtures {
     }
 
     static InstalledSoftware installedSoftware() {
-        return new InstalledSoftware(UUID2, UUID4, UUID5, InstalledSoftwareStatus.ACTIVE.dbValue());
+        return new InstalledSoftware(UUID2, UUID4, UUID5, InstalledSoftwareStatus.OFFERED.dbValue());
     }
 
     static ServiceContract serviceContract() {

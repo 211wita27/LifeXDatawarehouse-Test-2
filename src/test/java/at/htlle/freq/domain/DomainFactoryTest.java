@@ -54,7 +54,7 @@ class DomainFactoryTest {
         InstalledSoftware installedSoftware = installedSoftwareFactory.create(UUID1, UUID2);
         assertEquals(UUID1, installedSoftware.getSiteID());
         assertEquals(UUID2, installedSoftware.getSoftwareID());
-        assertEquals(InstalledSoftwareStatus.ACTIVE.dbValue(), installedSoftware.getStatus());
+        assertEquals(InstalledSoftwareStatus.OFFERED.dbValue(), installedSoftware.getStatus());
 
         PhoneIntegrationFactory phoneIntegrationFactory = new PhoneIntegrationFactory();
         PhoneIntegration phoneIntegration = phoneIntegrationFactory.create(UUID1, "TYPE", "Brand", "SN", "FW");
