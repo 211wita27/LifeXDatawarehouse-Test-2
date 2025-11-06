@@ -4,27 +4,28 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /**
- * Einstiegspunkt der LifeX-Datawarehouse-Anwendung.
+ * Entry point of the LifeX Datawarehouse application.
  * <p>
- * Aktiviert standardmäßig das {@code default}-Spring-Profil sowie die Camel-Routen
- * {@link at.htlle.freq.infrastructure.camel.UnifiedIndexingRoutes} und den
- * {@link at.htlle.freq.infrastructure.camel.LuceneIndexingHubRoute}, die gemeinsam
- * mit dem {@link at.htlle.freq.infrastructure.lucene.LuceneIndexService LuceneIndexService}
- * den Suchindex pflegen. Konfigurationen (z.&nbsp;B. Datenquelle, Lucene-Flags und
- * Profile) werden zentral in {@code application.yml} verwaltet.
+ * Enables the {@code default} Spring profile and starts the Camel routes
+ * {@link at.htlle.freq.infrastructure.camel.UnifiedIndexingRoutes} and
+ * {@link at.htlle.freq.infrastructure.camel.LuceneIndexingHubRoute}. Together with the
+ * {@link at.htlle.freq.infrastructure.lucene.LuceneIndexService LuceneIndexService}
+ * they maintain the search index. Configuration (e.g., data source, Lucene flags, and
+ * profiles) is centrally managed in {@code application.yml}.
  * </p>
  */
 @SpringBootApplication
 public class LifeXDatawrehouseAppApplication {
 
-        /** Startet die Spring-Boot-Anwendung.
-         * <p>
-         * Erwartet eine erreichbare Datenbank sowie Schreibzugriff auf den Lucene-Indexpfad
-         * ({@code target/lifex-index}); bei deaktiviertem Camel-Lucene-Setup (Property
-         * {@code lifex.lucene.camel.enabled=false}) müssen Reindex-Aufrufe manuell erfolgen.
-         * </p>
-         */
-        public static void main(String[] args) {
-                SpringApplication.run(LifeXDatawrehouseAppApplication.class, args);
-        }
+    /**
+     * Starts the Spring Boot application.
+     * <p>
+     * Requires a reachable database and write access to the Lucene index path
+     * ({@code target/lifex-index}); if the Camel-Lucene setup is disabled (property
+     * {@code lifex.lucene.camel.enabled=false}), reindex calls must be triggered manually.
+     * </p>
+     */
+    public static void main(String[] args) {
+        SpringApplication.run(LifeXDatawrehouseAppApplication.class, args);
+    }
 }

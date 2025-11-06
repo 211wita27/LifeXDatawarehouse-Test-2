@@ -153,7 +153,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Opens an IndexWriter with serialized access (see the "Konnte Lucene-Verzeichnis nicht schließen" logger message).
+     * Opens an IndexWriter with serialized access (see the logger message that indicates the Lucene directory could not be
+     * closed).
      *
      * Scheduling & parallelism: used indirectly by all indexXxx() methods so the ReentrantLock serializes access to the index.
      * Camel delivers messages in parallel, but the lock enforces FIFO processing here.
@@ -319,8 +320,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     /**
-     * Executes a Lucene search limited to 50 hits. Ensures readers are closed (see the "Konnte Lucene-Reader nicht schließen"
-     * logger message). Thread-safe because readers are opened per invocation.
+     * Executes a Lucene search limited to 50 hits. Ensures readers are closed (see the logger message about Lucene readers that
+     * could not be closed). Thread-safe because readers are opened per invocation.
      */
     public List<SearchHit> search(Query query) {
         List<SearchHit> results = new ArrayList<>();
