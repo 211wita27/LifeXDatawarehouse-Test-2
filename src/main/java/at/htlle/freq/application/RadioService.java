@@ -14,7 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.*;
 
 /**
- * Verwaltet Funkgeräte, prüft Pflichtangaben und synchronisiert Lucene.
+ * Manages radios, validates required fields, and synchronizes Lucene.
  */
 @Service
 public class RadioService {
@@ -25,10 +25,10 @@ public class RadioService {
     private final LuceneIndexService lucene;
 
     /**
-     * Erstellt den Service mit Repository- und Index-Abhängigkeiten.
+     * Creates the service with repository and index dependencies.
      *
-     * @param repo   Repository für Funkgeräte
-     * @param lucene Lucene-Indexdienst
+     * @param repo   repository for radios
+     * @param lucene Lucene indexing service
      */
     public RadioService(RadioRepository repo, LuceneIndexService lucene) {
         this.repo = repo;
@@ -38,19 +38,19 @@ public class RadioService {
     // ---------- Queries ----------
 
     /**
-     * Liefert alle Funkgeräte.
+     * Returns all radios.
      *
-     * @return Liste der Funkgeräte
+     * @return list of radios
      */
     public List<Radio> getAllRadios() {
         return repo.findAll();
     }
 
     /**
-     * Holt ein Funkgerät anhand seiner ID.
+     * Retrieves a radio by its identifier.
      *
-     * @param id Funkgeräte-ID
-     * @return Optional mit Funkgerät oder leer
+     * @param id radio identifier
+     * @return optional containing the radio or empty otherwise
      */
     public Optional<Radio> getRadioById(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -58,10 +58,10 @@ public class RadioService {
     }
 
     /**
-     * Liefert Funkgeräte für eine Site.
+     * Returns radios for a site.
      *
-     * @param siteId Site-ID
-     * @return Liste der Funkgeräte
+     * @param siteId site identifier
+     * @return list of radios
      */
     public List<Radio> getRadiosBySite(UUID siteId) {
         Objects.requireNonNull(siteId, "siteId must not be null");
@@ -71,11 +71,11 @@ public class RadioService {
     // ---------- Commands ----------
 
     /**
-     * Speichert ein Funkgerät und validiert Pflichtfelder wie Site, Marke, Seriennummer und Modus.
-     * Indexiert nach Commit in Lucene.
+     * Saves a radio and validates required fields such as site, brand, serial number, and mode.
+     * Indexes the record in Lucene after the commit.
      *
-     * @param incoming Funkgerät, das gespeichert werden soll
-     * @return gespeichertes Funkgerät
+     * @param incoming radio to persist
+     * @return stored radio
      */
     @Transactional
     public Radio createOrUpdateRadio(Radio incoming) {
@@ -99,11 +99,11 @@ public class RadioService {
     }
 
     /**
-     * Aktualisiert ein Funkgerät und synchronisiert Lucene.
+     * Updates a radio and synchronizes Lucene.
      *
-     * @param id    Funkgeräte-ID
-     * @param patch Änderungen, die übernommen werden sollen
-     * @return Optional mit aktualisiertem Funkgerät oder leer
+     * @param id    radio identifier
+     * @param patch changes to merge into the entity
+     * @return optional containing the updated radio or empty otherwise
      */
     @Transactional
     public Optional<Radio> updateRadio(UUID id, Radio patch) {
@@ -127,9 +127,9 @@ public class RadioService {
     }
 
     /**
-     * Löscht ein Funkgerät.
+     * Deletes a radio.
      *
-     * @param id Funkgeräte-ID
+     * @param id radio identifier
      */
     @Transactional
     public void deleteRadio(UUID id) {

@@ -14,7 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.*;
 
 /**
- * Koordiniert Upgrade-Pläne, validiert Pflichtfelder und synchronisiert Lucene.
+ * Coordinates upgrade plans, validates required fields, and synchronizes Lucene.
  */
 @Service
 public class UpgradePlanService {
@@ -25,10 +25,10 @@ public class UpgradePlanService {
     private final LuceneIndexService lucene;
 
     /**
-     * Erstellt den Service mit Repository- und Index-Abhängigkeiten.
+     * Creates the service with repository and index dependencies.
      *
-     * @param repo   Repository für Upgrade-Pläne
-     * @param lucene Lucene-Indexdienst
+     * @param repo   repository for upgrade plans
+     * @param lucene Lucene indexing service
      */
     public UpgradePlanService(UpgradePlanRepository repo, LuceneIndexService lucene) {
         this.repo = repo;
@@ -38,19 +38,19 @@ public class UpgradePlanService {
     // ---------- Queries ----------
 
     /**
-     * Liefert alle Upgrade-Pläne.
+     * Returns all upgrade plans.
      *
-     * @return Liste der Upgrade-Pläne
+     * @return list of upgrade plans
      */
     public List<UpgradePlan> getAllUpgradePlans() {
         return repo.findAll();
     }
 
     /**
-     * Holt einen Upgrade-Plan anhand seiner ID.
+     * Retrieves an upgrade plan by its identifier.
      *
-     * @param id Plan-ID
-     * @return Optional mit Upgrade-Plan oder leer
+     * @param id plan identifier
+     * @return optional containing the upgrade plan or empty otherwise
      */
     public Optional<UpgradePlan> getUpgradePlanById(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -58,10 +58,10 @@ public class UpgradePlanService {
     }
 
     /**
-     * Liefert Upgrade-Pläne für eine Site.
+     * Returns upgrade plans for a site.
      *
-     * @param siteId Site-ID
-     * @return Liste der Upgrade-Pläne
+     * @param siteId site identifier
+     * @return list of upgrade plans
      */
     public List<UpgradePlan> getUpgradePlansBySite(UUID siteId) {
         Objects.requireNonNull(siteId, "siteId must not be null");
@@ -71,10 +71,10 @@ public class UpgradePlanService {
     // ---------- Commands ----------
 
     /**
-     * Speichert einen Upgrade-Plan, validiert Pflichtfelder und indexiert nach Commit.
+     * Saves an upgrade plan, validates required fields, and indexes it after the commit.
      *
-     * @param incoming Upgrade-Plan, der gespeichert werden soll
-     * @return gespeicherter Upgrade-Plan
+     * @param incoming upgrade plan to persist
+     * @return stored upgrade plan
      */
     @Transactional
     public UpgradePlan createOrUpdateUpgradePlan(UpgradePlan incoming) {
@@ -96,11 +96,11 @@ public class UpgradePlanService {
     }
 
     /**
-     * Aktualisiert einen Upgrade-Plan und synchronisiert Lucene.
+     * Updates an upgrade plan and synchronizes Lucene.
      *
-     * @param id    Plan-ID
-     * @param patch Änderungen, die übernommen werden sollen
-     * @return Optional mit aktualisiertem Plan oder leer
+     * @param id    plan identifier
+     * @param patch changes to merge into the entity
+     * @return optional containing the updated plan or empty otherwise
      */
     @Transactional
     public Optional<UpgradePlan> updateUpgradePlan(UUID id, UpgradePlan patch) {
@@ -125,9 +125,9 @@ public class UpgradePlanService {
     }
 
     /**
-     * Löscht einen Upgrade-Plan.
+     * Deletes an upgrade plan.
      *
-     * @param id Plan-ID
+     * @param id plan identifier
      */
     @Transactional
     public void deleteUpgradePlan(UUID id) {

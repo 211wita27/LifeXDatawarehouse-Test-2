@@ -14,7 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.*;
 
 /**
- * Betreut Softwarestammdaten, validiert Pflichtfelder und synchronisiert Lucene.
+ * Manages software master data, validates required fields, and synchronizes Lucene.
  */
 @Service
 public class SoftwareService {
@@ -25,10 +25,10 @@ public class SoftwareService {
     private final LuceneIndexService lucene;
 
     /**
-     * Erstellt den Service mit Repository und Indexdienst.
+     * Creates the service with repository and indexing dependencies.
      *
-     * @param repo   Repository für Software
-     * @param lucene Lucene-Indexdienst
+     * @param repo   repository for software
+     * @param lucene Lucene indexing service
      */
     public SoftwareService(SoftwareRepository repo, LuceneIndexService lucene) {
         this.repo = repo;
@@ -38,19 +38,19 @@ public class SoftwareService {
     // ---------- Queries ----------
 
     /**
-     * Liefert alle Softwareeinträge.
+     * Returns all software entries.
      *
-     * @return Liste der Software
+     * @return list of software records
      */
     public List<Software> getAllSoftware() {
         return repo.findAll();
     }
 
     /**
-     * Sucht Software anhand ihrer ID.
+     * Retrieves software by its identifier.
      *
-     * @param id Software-ID
-     * @return Optional mit Software oder leer
+     * @param id software identifier
+     * @return optional containing the software or empty otherwise
      */
     public Optional<Software> getSoftwareById(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -58,10 +58,10 @@ public class SoftwareService {
     }
 
     /**
-     * Liefert Softwareeinträge anhand eines Namens.
+     * Returns software entries by name.
      *
-     * @param name Suchname
-     * @return Liste passender Softwareeinträge
+     * @param name search term
+     * @return list of matching software entries
      */
     public List<Software> getSoftwareByName(String name) {
         if (isBlank(name)) return List.of();
@@ -71,10 +71,10 @@ public class SoftwareService {
     // ---------- Commands ----------
 
     /**
-     * Speichert Software, validiert Pflichtfelder und indexiert nach Commit in Lucene.
+     * Saves software, validates required fields, and indexes the record in Lucene after the commit.
      *
-     * @param incoming Software, die gespeichert werden soll
-     * @return gespeicherte Software
+     * @param incoming software entity to persist
+     * @return stored software
      */
     @Transactional
     public Software createOrUpdateSoftware(Software incoming) {
@@ -94,11 +94,11 @@ public class SoftwareService {
     }
 
     /**
-     * Aktualisiert Softwaredaten und synchronisiert Lucene.
+     * Updates software data and synchronizes Lucene.
      *
-     * @param id    Software-ID
-     * @param patch Änderungen, die übernommen werden sollen
-     * @return Optional mit aktualisierter Software oder leer
+     * @param id    software identifier
+     * @param patch changes to merge into the entity
+     * @return optional containing the updated software or empty otherwise
      */
     @Transactional
     public Optional<Software> updateSoftware(UUID id, Software patch) {
@@ -124,9 +124,9 @@ public class SoftwareService {
     }
 
     /**
-     * Löscht eine Software.
+     * Deletes a software record.
      *
-     * @param id Software-ID
+     * @param id software identifier
      */
     @Transactional
     public void deleteSoftware(UUID id) {

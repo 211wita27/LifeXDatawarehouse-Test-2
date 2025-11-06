@@ -17,8 +17,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Betreut Adressdaten, führt Validierungen durch und hält den Lucene-Index nach
- * erfolgreichen Datenbanktransaktionen konsistent.
+ * Manages address data, performs validation, and keeps the Lucene index in sync after
+ * successful database transactions.
  */
 @Service
 public class AddressService {
@@ -29,10 +29,10 @@ public class AddressService {
     private final LuceneIndexService lucene;
 
     /**
-     * Erstellt den Service mit Repository- und Lucene-Abhängigkeiten.
+     * Creates the service with repository and Lucene dependencies.
      *
-     * @param repo   Repository für Adressentitäten
-     * @param lucene Service zur Index-Synchronisierung
+     * @param repo   repository for address entities
+     * @param lucene service that keeps the index synchronized
      */
     public AddressService(AddressRepository repo, LuceneIndexService lucene) {
         this.repo = repo;
@@ -42,19 +42,19 @@ public class AddressService {
     // ---------- Queries ----------
 
     /**
-     * Liefert sämtliche Adressen.
+     * Returns every address.
      *
-     * @return vollständige Liste aller Adressen
+     * @return complete list of addresses
      */
     public List<Address> getAllAddresses() {
         return repo.findAll();
     }
 
     /**
-     * Sucht eine Adresse anhand ihrer ID.
+     * Fetches an address by its identifier.
      *
-     * @param id eindeutiger Schlüssel der Adresse
-     * @return Optional mit der gefundenen Adresse oder leer
+     * @param id unique key of the address
+     * @return optional with the matching address or empty otherwise
      */
     public Optional<Address> getAddressById(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -64,11 +64,11 @@ public class AddressService {
     // ---------- Commands ----------
 
     /**
-     * Persistiert eine neue oder bestehende Adresse und indexiert sie nach dem
-     * Transaktions-Commit in Lucene. Enthält Pflichtfeldprüfungen für Straße und City.
+     * Persists a new or existing address and indexes it in Lucene once the transaction commits.
+     * Includes mandatory field checks for street and city.
      *
-     * @param incoming zu speichernde Adresse
-     * @return die gespeicherte Adresse inklusive ID
+     * @param incoming address to store
+     * @return stored address including its identifier
      */
     @Transactional
     public Address createAddress(Address incoming) {
@@ -81,11 +81,11 @@ public class AddressService {
             throw new IllegalArgumentException("CityID is required");
         }
 
-        // Persistieren (Repo generiert UUID, falls null)
+        // Persist (the repository generates a UUID if it is null)
         repo.save(incoming);
         UUID id = incoming.getAddressID();
 
-        // Nach Commit indexieren, damit Index & DB konsistent bleiben
+        // Index after commit to keep Lucene and the database aligned
         registerAfterCommitIndexing(incoming);
 
         log.info("Address gespeichert: id={} street='{}' cityID='{}'", id, incoming.getStreet(), incoming.getCityID());
@@ -93,11 +93,11 @@ public class AddressService {
     }
 
     /**
-     * Aktualisiert eine bestehende Adresse und stößt anschließend das Indexieren an.
+     * Updates an existing address and triggers indexing afterwards.
      *
-     * @param id    eindeutiger Schlüssel der Adresse
-     * @param patch Änderungswerte, die übernommen werden sollen
-     * @return Optional mit der aktualisierten Adresse oder leer, falls nicht gefunden
+     * @param id    unique key of the address
+     * @param patch values to merge into the stored entity
+     * @return optional containing the updated address or empty if it does not exist
      */
     @Transactional
     public Optional<Address> updateAddress(UUID id, Address patch) {
@@ -116,9 +116,9 @@ public class AddressService {
     }
 
     /**
-     * Löscht eine Adresse dauerhaft.
+     * Permanently deletes an address.
      *
-     * @param id eindeutiger Schlüssel der Adresse
+     * @param id unique key of the address
      */
     @Transactional
     public void deleteAddress(UUID id) {

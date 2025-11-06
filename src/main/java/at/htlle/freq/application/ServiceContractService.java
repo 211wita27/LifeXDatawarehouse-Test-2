@@ -14,7 +14,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.util.*;
 
 /**
- * Verwaltet Serviceverträge, validiert Pflichtfelder und synchronisiert Lucene.
+ * Manages service contracts, validates required fields, and keeps Lucene synchronized.
  */
 @Service
 public class ServiceContractService {
@@ -25,10 +25,10 @@ public class ServiceContractService {
     private final LuceneIndexService lucene;
 
     /**
-     * Erstellt den Service mit Repository- und Index-Abhängigkeiten.
+     * Creates the service with repository and index dependencies.
      *
-     * @param repo   Repository für Verträge
-     * @param lucene Lucene-Indexdienst
+     * @param repo   repository for contracts
+     * @param lucene Lucene indexing service
      */
     public ServiceContractService(ServiceContractRepository repo, LuceneIndexService lucene) {
         this.repo = repo;
@@ -38,19 +38,19 @@ public class ServiceContractService {
     // ---------- Queries ----------
 
     /**
-     * Liefert alle Serviceverträge.
+     * Returns all service contracts.
      *
-     * @return Liste der Verträge
+     * @return list of contracts
      */
     public List<ServiceContract> getAllContracts() {
         return repo.findAll();
     }
 
     /**
-     * Holt einen Vertrag anhand seiner ID.
+     * Retrieves a contract by its identifier.
      *
-     * @param id Vertrags-ID
-     * @return Optional mit Vertrag oder leer
+     * @param id contract identifier
+     * @return optional containing the contract or empty otherwise
      */
     public Optional<ServiceContract> getContractById(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -58,10 +58,10 @@ public class ServiceContractService {
     }
 
     /**
-     * Liefert Verträge eines Accounts.
+     * Returns contracts of an account.
      *
-     * @param accountId Account-ID
-     * @return Liste der Verträge des Accounts
+     * @param accountId account identifier
+     * @return list of the account's contracts
      */
     public List<ServiceContract> getContractsByAccount(UUID accountId) {
         Objects.requireNonNull(accountId, "accountId must not be null");
@@ -71,10 +71,10 @@ public class ServiceContractService {
     // ---------- Commands ----------
 
     /**
-     * Speichert einen Vertrag, validiert Pflichtfelder und indexiert nach Commit in Lucene.
+     * Saves a contract, validates required fields, and indexes it in Lucene after the commit.
      *
-     * @param incoming Vertrag, der gespeichert werden soll
-     * @return gespeicherter Vertrag
+     * @param incoming contract to persist
+     * @return stored contract
      */
     @Transactional
     public ServiceContract createOrUpdateContract(ServiceContract incoming) {
@@ -98,11 +98,11 @@ public class ServiceContractService {
     }
 
     /**
-     * Aktualisiert einen Vertrag und synchronisiert Lucene.
+     * Updates a contract and synchronizes Lucene.
      *
-     * @param id    Vertrags-ID
-     * @param patch Änderungen, die übernommen werden sollen
-     * @return Optional mit aktualisiertem Vertrag oder leer
+     * @param id    contract identifier
+     * @param patch changes to merge into the entity
+     * @return optional containing the updated contract or empty otherwise
      */
     @Transactional
     public Optional<ServiceContract> updateContract(UUID id, ServiceContract patch) {
@@ -128,9 +128,9 @@ public class ServiceContractService {
     }
 
     /**
-     * Löscht einen Vertrag.
+     * Deletes a contract.
      *
-     * @param id Vertrags-ID
+     * @param id contract identifier
      */
     @Transactional
     public void deleteContract(UUID id) {
