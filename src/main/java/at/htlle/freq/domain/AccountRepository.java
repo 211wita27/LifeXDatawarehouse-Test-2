@@ -1,4 +1,4 @@
-// at/htlle/freq/domain/AccountRepository.java (oder dein Repo-Package)
+// at/htlle/freq/domain/AccountRepository.java (or your repository package)
 package at.htlle.freq.domain;
 
 import java.util.List;
