@@ -134,7 +134,7 @@ public class SoftwareService {
         repo.findById(id).ifPresent(sw -> {
             log.info("Software deleted: id={} name='{}' release='{}'",
                     id, sw.getName(), sw.getRelease());
-            // Optional: lucene.deleteSoftware(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 

@@ -137,7 +137,7 @@ public class RadioService {
         repo.findById(id).ifPresent(r -> {
             log.info("Radio deleted: id={} brand='{}' serialNr='{}'",
                     id, r.getRadioBrand(), r.getRadioSerialNr());
-            // Optional: lucene.deleteRadio(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 

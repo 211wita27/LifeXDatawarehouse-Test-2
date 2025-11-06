@@ -81,11 +81,11 @@ public class AddressService {
             throw new IllegalArgumentException("CityID is required");
         }
 
-        // Persist (the repository generates a UUID if it is null)
+        // Persist the entity; the repository generates a UUID when necessary.
         repo.save(incoming);
         UUID id = incoming.getAddressID();
 
-        // Index after commit to keep Lucene and the database aligned
+        // Index the record after the commit so Lucene and the database stay aligned.
         registerAfterCommitIndexing(incoming);
 
         log.info("Address saved: id={} street='{}' cityID='{}'", id, incoming.getStreet(), incoming.getCityID());

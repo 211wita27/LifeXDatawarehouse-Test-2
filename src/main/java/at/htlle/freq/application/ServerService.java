@@ -139,7 +139,7 @@ public class ServerService {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(s -> {
             log.info("Server deleted: id={} name='{}' brand='{}'", id, s.getServerName(), s.getServerBrand());
-            // Optional: lucene.deleteServer(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 

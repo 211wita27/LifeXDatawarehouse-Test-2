@@ -85,16 +85,16 @@ public class AccountService {
     public Account createAccount(Account incoming) {
         Objects.requireNonNull(incoming, "account payload must not be null");
 
-        // Basic validation
+        // Perform mandatory validation.
         if (isBlank(incoming.getAccountName())) {
             throw new IllegalArgumentException("AccountName is required");
         }
 
-        // Persist (the repository generates a UUID if it is null)
+        // Persist the entity; the repository generates a UUID when none is provided.
         Account saved = repo.save(incoming);
         UUID id = saved.getAccountID();
 
-        // Index after the commit so Lucene and the database remain consistent
+        // Index the record after the commit so Lucene remains aligned with the database.
         registerAfterCommitIndexing(saved);
 
         log.info("Account saved: id={} name='{}'", id, saved.getAccountName());
@@ -114,7 +114,7 @@ public class AccountService {
         Objects.requireNonNull(patch, "patch must not be null");
 
         return repo.findById(id).map(existing -> {
-            // Overwrite fields (simple replacement – adjust to advanced patch logic if necessary)
+            // Overwrite fields using simple replacement; extend to advanced patch logic if required.
             existing.setAccountName(nvl(patch.getAccountName(), existing.getAccountName()));
             existing.setContactName(nvl(patch.getContactName(), existing.getContactName()));
             existing.setContactEmail(nvl(patch.getContactEmail(), existing.getContactEmail()));
@@ -138,15 +138,15 @@ public class AccountService {
     public void deleteAccount(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.deleteById(id);
-        // Optional: also remove the record from Lucene (e.g. via reindexAll or a dedicated delete)
-        // If Lucene deletions are required, add a delete(id, type) method to LuceneIndexService
+        // Optionally remove the record from Lucene (for example via reindexAll or a dedicated delete).
+        // Add a delete(id, type) operation to LuceneIndexService if Lucene cleanup becomes necessary.
         log.info("Account deleted: id={}", id);
     }
 
     // ---------- Internals ----------
 
     private void registerAfterCommitIndexing(Account a) {
-        // If no open transaction is present, index immediately (e.g., during tests)
+        // When no transaction is active, index immediately (useful for tests).
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             indexToLucene(a);
             return;
@@ -169,7 +169,7 @@ public class AccountService {
             );
             log.debug("Account indexed in Lucene: id={}", a.getAccountID());
         } catch (Exception e) {
-            // Indexing errors must not roll back the database transaction
+            // Indexing failures must not trigger a database rollback.
             log.error("Lucene indexing for Account {} failed", a.getAccountID(), e);
         }
     }

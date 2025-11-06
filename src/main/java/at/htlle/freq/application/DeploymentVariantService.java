@@ -143,7 +143,7 @@ public class DeploymentVariantService {
         repo.findById(id).ifPresent(v -> {
             log.info("DeploymentVariant deleted: id={} name='{}'",
                     id, v.getVariantName());
-            // Optional: lucene.deleteVariant(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 

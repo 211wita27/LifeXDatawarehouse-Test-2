@@ -443,7 +443,7 @@ public class ReportService {
         }
         sql.append(" ORDER BY up.PlannedWindowStart");
 
-        int[] totals = new int[4]; // overdue, dueSoon, completed, total
+        int[] totals = new int[4]; // Array indices represent overdue, due soon, completed, and total counts.
         List<Map<String, Object>> rows = jdbc.query(sql.toString(), params, (rs, rowNum) -> {
             LocalDate start = getLocalDate(rs, "PlannedWindowStart");
             LocalDate end = getLocalDate(rs, "PlannedWindowEnd");
@@ -614,7 +614,7 @@ public class ReportService {
         }
         sql.append(" ORDER BY s.SiteName");
 
-        int[] totals = new int[4]; // servers, ha, clients, local
+        int[] totals = new int[4]; // Array indices represent servers, high-availability servers, total clients, and local clients.
         List<Map<String, Object>> rows = jdbc.query(sql.toString(), params, (rs, rowNum) -> {
             int serverCount = rs.getInt("server_count");
             int haServers = rs.getInt("ha_servers");

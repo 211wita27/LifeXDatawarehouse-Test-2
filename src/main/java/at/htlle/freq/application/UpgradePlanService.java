@@ -135,7 +135,7 @@ public class UpgradePlanService {
         repo.findById(id).ifPresent(up -> {
             log.info("UpgradePlan deleted: id={} site={} software={}",
                     id, up.getSiteID(), up.getSoftwareID());
-            // Optional: lucene.deleteUpgradePlan(id.toString());
+            // Optionally remove the entry from Lucene once delete support exists.
         });
     }
 
