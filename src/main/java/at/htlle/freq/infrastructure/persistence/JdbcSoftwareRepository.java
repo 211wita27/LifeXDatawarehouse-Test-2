@@ -9,8 +9,8 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 
 /**
- * JDBC-Repository für {@link Software}, das Software-Metadaten in der Tabelle {@code Software}
- * verwaltet und Lebenszyklusinformationen in Domänenobjekte überführt.
+ * JDBC repository for {@link Software} that manages software metadata stored in the
+ * {@code Software} table and maps lifecycle information into domain objects.
  */
 @Repository
 public class JdbcSoftwareRepository implements SoftwareRepository {
@@ -63,16 +63,15 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
     }
 
     /**
-     * Persistiert Softwareeinträge per INSERT oder UPDATE in der Tabelle {@code Software}.
+     * Persists software entries via INSERT or UPDATE in the {@code Software} table.
      * <p>
-     * Die Insert-Anweisung nutzt {@code RETURNING SoftwareID}, um den Primärschlüssel aus der
-     * Datenbank zu übernehmen. Dank benannter Parameter werden auch optionale Zeiträume wie
-     * {@code SupportStartDate} eindeutig den Spalten zugeordnet und bleiben mit dem
-     * {@link RowMapper} synchron.
+     * The INSERT statement uses {@code RETURNING SoftwareID} to obtain the primary key from the
+     * database. Named parameters ensure that optional periods such as {@code SupportStartDate}
+     * are bound to the correct columns and stay in sync with the {@link RowMapper}.
      * </p>
      *
-     * @param s Softwareobjekt mit Release-/Support-Informationen.
-     * @return der persistierte Softwareeintrag mit {@code SoftwareID}.
+     * @param s software object containing release and support information.
+     * @return the persisted software entry including its {@code SoftwareID}.
      */
     @Override
     public Software save(Software s) {
