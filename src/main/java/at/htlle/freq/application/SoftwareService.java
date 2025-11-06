@@ -85,6 +85,10 @@ public class SoftwareService {
         if (isBlank(incoming.getRelease()))
             throw new IllegalArgumentException("Release is required");
 
+        if (incoming.getThirdParty() == null) {
+            incoming.setThirdParty(false);
+        }
+
         Software saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
@@ -111,6 +115,9 @@ public class SoftwareService {
             existing.setRevision(nvl(patch.getRevision(), existing.getRevision()));
             existing.setSupportPhase(nvl(patch.getSupportPhase(), existing.getSupportPhase()));
             existing.setLicenseModel(nvl(patch.getLicenseModel(), existing.getLicenseModel()));
+            if (patch.getThirdParty() != null) {
+                existing.setThirdParty(patch.getThirdParty());
+            }
             existing.setEndOfSalesDate(nvl(patch.getEndOfSalesDate(), existing.getEndOfSalesDate()));
             existing.setSupportStartDate(nvl(patch.getSupportStartDate(), existing.getSupportStartDate()));
             existing.setSupportEndDate(nvl(patch.getSupportEndDate(), existing.getSupportEndDate()));
@@ -162,6 +169,7 @@ public class SoftwareService {
                     sw.getRevision(),
                     sw.getSupportPhase(),
                     sw.getLicenseModel(),
+                    sw.isThirdParty(),
                     sw.getEndOfSalesDate(),
                     sw.getSupportStartDate(),
                     sw.getSupportEndDate()

@@ -26,6 +26,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
             rs.getString("Revision"),
             rs.getString("SupportPhase"),
             rs.getString("LicenseModel"),
+            rs.getBoolean("ThirdParty"),
             rs.getString("EndOfSalesDate"),
             rs.getString("SupportStartDate"),
             rs.getString("SupportEndDate")
@@ -34,7 +35,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
     @Override
     public Optional<Software> findById(UUID id) {
         String sql = """
-            SELECT SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel,
+            SELECT SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel, ThirdParty,
                    EndOfSalesDate, SupportStartDate, SupportEndDate
             FROM Software WHERE SoftwareID = :id
             """;
@@ -45,7 +46,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
     @Override
     public List<Software> findByName(String name) {
         String sql = """
-            SELECT SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel,
+            SELECT SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel, ThirdParty,
                    EndOfSalesDate, SupportStartDate, SupportEndDate
             FROM Software WHERE Name = :name
             """;
@@ -55,7 +56,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
     @Override
     public List<Software> findAll() {
         String sql = """
-            SELECT SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel,
+            SELECT SoftwareID, Name, Release, Revision, SupportPhase, LicenseModel, ThirdParty,
                    EndOfSalesDate, SupportStartDate, SupportEndDate
             FROM Software
             """;
@@ -79,8 +80,8 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
         if (isNew) {
             String sql = """
                 INSERT INTO Software (Name, Release, Revision, SupportPhase, LicenseModel,
-                                      EndOfSalesDate, SupportStartDate, SupportEndDate)
-                VALUES (:name, :rel, :rev, :phase, :lic, :eos, :ss, :se)
+                                      ThirdParty, EndOfSalesDate, SupportStartDate, SupportEndDate)
+                VALUES (:name, :rel, :rev, :phase, :lic, :third, :eos, :ss, :se)
                 RETURNING SoftwareID
                 """;
             UUID id = jdbc.queryForObject(sql, new MapSqlParameterSource()
@@ -89,6 +90,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
                             .addValue("rev",  s.getRevision())
                             .addValue("phase",s.getSupportPhase())
                             .addValue("lic",  s.getLicenseModel())
+                            .addValue("third", s.isThirdParty())
                             .addValue("eos",  s.getEndOfSalesDate())
                             .addValue("ss",   s.getSupportStartDate())
                             .addValue("se",   s.getSupportEndDate()),
@@ -98,7 +100,8 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
             String sql = """
                 UPDATE Software SET
                     Name = :name, Release = :rel, Revision = :rev, SupportPhase = :phase,
-                    LicenseModel = :lic, EndOfSalesDate = :eos, SupportStartDate = :ss, SupportEndDate = :se
+                    LicenseModel = :lic, ThirdParty = :third, EndOfSalesDate = :eos,
+                    SupportStartDate = :ss, SupportEndDate = :se
                 WHERE SoftwareID = :id
                 """;
             jdbc.update(sql, new MapSqlParameterSource()
@@ -108,6 +111,7 @@ public class JdbcSoftwareRepository implements SoftwareRepository {
                     .addValue("rev",  s.getRevision())
                     .addValue("phase",s.getSupportPhase())
                     .addValue("lic",  s.getLicenseModel())
+                    .addValue("third", s.isThirdParty())
                     .addValue("eos",  s.getEndOfSalesDate())
                     .addValue("ss",   s.getSupportStartDate())
                     .addValue("se",   s.getSupportEndDate()));

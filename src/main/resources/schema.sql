@@ -124,6 +124,7 @@ CREATE TABLE Software (
                           Revision         VARCHAR(20)  NOT NULL,
                           SupportPhase     VARCHAR(10)  NOT NULL,
                           LicenseModel     VARCHAR(50),
+                          ThirdParty       BOOLEAN      NOT NULL DEFAULT FALSE,
                           EndOfSalesDate   DATE,
                           SupportStartDate DATE,
                           SupportEndDate   DATE,

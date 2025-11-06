@@ -480,6 +480,10 @@ function formatPreview(type, row){
         const release = val(row,'Release'); if (release) parts.push(`Release ${release}`);
         const revision = val(row,'Revision'); if (revision) parts.push(`Rev ${revision}`);
         const phase = val(row,'SupportPhase'); if (phase) parts.push(phase);
+        const vendor = val(row,'ThirdParty');
+        if (vendor !== undefined) {
+            parts.push(parseBool(vendor) ? 'Third-party' : 'First-party');
+        }
     } else if (t==='installedsoftware'){
         const siteId = val(row,'SiteID'); if (siteId) parts.push(`Site ${shortUuid(siteId)}`);
         const swId = val(row,'SoftwareID'); if (swId) parts.push(`Software ${shortUuid(swId)}`);
@@ -795,6 +799,12 @@ function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
         if (!normalized) return null;
         const statusToken = `status${normalized}`;
         return typeFilter ? `${typeFilter} AND ${statusToken}` : statusToken;
+    }
+
+    if (/^thirdparty$/i.test(column)) {
+        const flag = parseBool(rawValue) ? 'true' : 'false';
+        const vendorToken = `thirdparty${flag}`;
+        return typeFilter ? `${typeFilter} AND ${vendorToken}` : vendorToken;
     }
 
     const prepared = buildUserQuery(raw);
