@@ -153,7 +153,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     /**
-     * Opens an IndexWriter with serialized access (see the "Konnte Lucene-Verzeichnis nicht schließen" logger message).
+     * Opens an IndexWriter with serialized access (see the "Could not close Lucene directory" logger message).
      *
      * Scheduling & parallelism: used indirectly by all indexXxx() methods so the ReentrantLock serializes access to the index.
      * Camel delivers messages in parallel, but the lock enforces FIFO processing here.
@@ -187,7 +187,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         try {
                             dir.close();
                         } catch (IOException closeEx) {
-                            log.warn("Konnte Lucene-Verzeichnis nicht schließen", closeEx);
+                            log.warn("Could not close Lucene directory", closeEx);
                         }
                     }
                 }
@@ -209,22 +209,22 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         if (dir != null) {
             boolean lockAcquired = false;
             try (Lock luceneLock = dir.obtainLock(IndexWriter.WRITE_LOCK_NAME)) {
-                log.warn("Lucene-Lock auf {} wurde über obtainLock() freigegeben.", indexDir.toAbsolutePath());
+                log.warn("Lucene lock on {} was released via obtainLock().", indexDir.toAbsolutePath());
                 lockAcquired = true;
             } catch (LockObtainFailedException e) {
-                log.debug("Lucene-Lock auf {} ist weiterhin aktiv und konnte nicht übernommen werden.", indexDir.toAbsolutePath());
+                log.debug("Lucene lock on {} is still active and could not be acquired.", indexDir.toAbsolutePath());
             } catch (IOException e) {
-                log.error("Konnte Lucene-Lock nicht freigeben: {}", indexDir.toAbsolutePath(), e);
+                log.error("Could not release Lucene lock: {}", indexDir.toAbsolutePath(), e);
             }
 
             if (lockAcquired) {
                 Path lockFile = indexDir.resolve("write.lock");
                 try {
                     if (Files.deleteIfExists(lockFile)) {
-                        log.warn("Verwaiste Lucene write.lock entfernt ({}).", lockFile.toAbsolutePath());
+                        log.warn("Removed orphaned Lucene write.lock ({}).", lockFile.toAbsolutePath());
                     }
                 } catch (IOException e) {
-                    log.error("Konnte verwaiste Lucene write.lock nicht löschen: {}", lockFile.toAbsolutePath(), e);
+                    log.error("Could not delete orphaned Lucene write.lock: {}", lockFile.toAbsolutePath(), e);
                 }
 
                 cleared = true;
@@ -247,7 +247,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             JsonNode parsed = objectMapper.readTree(in);
             return parsed != null ? parsed : JsonNodeFactory.instance.objectNode();
         } catch (IOException e) {
-            throw new LicenseReadingException("Konnte gespeichertes license-fragments.json nicht lesen", e);
+            throw new LicenseReadingException("Could not read stored license-fragments.json", e);
         }
     }
 
@@ -261,7 +261,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                 objectMapper.writerWithDefaultPrettyPrinter().writeValue(out, node);
             }
         } catch (IOException e) {
-            throw new LicenseReadingException("Konnte license-fragments.json nicht speichern", e);
+            throw new LicenseReadingException("Could not store license-fragments.json", e);
         }
     }
 
@@ -312,14 +312,14 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             Query query = parser.parse(queryText);
             return search(query);
         } catch (Exception e) {
-            log.error("Fehler beim Parsen der Suchanfrage: {}", queryText, e);
+            log.error("Failed to parse search query: {}", queryText, e);
             return List.of();
         }
     }
 
     @Override
     /**
-     * Executes a Lucene search limited to 50 hits. Ensures readers are closed (see the "Konnte Lucene-Reader nicht schließen"
+     * Executes a Lucene search limited to 50 hits. Ensures readers are closed (see the "Could not close Lucene reader"
      * logger message). Thread-safe because readers are opened per invocation.
      */
     public List<SearchHit> search(Query query) {
@@ -338,13 +338,13 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                 results.add(mapToHit(doc));
             }
         } catch (Exception e) {
-            log.error("Fehler bei der Suche", e);
+            log.error("Search execution failed", e);
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (IOException closeEx) {
-                    log.warn("Konnte Lucene-Reader nicht schließen", closeEx);
+                    log.warn("Could not close Lucene reader", closeEx);
                 }
             }
         }
@@ -400,7 +400,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         try {
             clearIndex();
         } catch (IOException e) {
-            log.error("Fehler beim Löschen des Lucene-Index vor dem Reindex", e);
+            log.error("Failed to delete Lucene index before reindexing", e);
             return;
         }
 
@@ -414,7 +414,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             for (Integer value : totals.values()) {
                 totalRecords += (value == null ? 0 : value);
             }
-            log.info("Starte vollständiges Lucene-Reindexing mit {} Datensätzen.", totalRecords);
+            log.info("Starting full Lucene reindex with {} records.", totalRecords);
 
             for (Account account : accounts) {
                 indexAccount(
@@ -569,9 +569,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                 );
             }
 
-            log.info("Lucene-Reindex abgeschlossen. {} Dokumente verarbeitet.", progress.totalDone());
+            log.info("Lucene reindex finished. {} documents processed.", progress.totalDone());
         } catch (Exception e) {
-            log.error("Fehler beim Reindexieren", e);
+            log.error("Reindexing failed", e);
         } finally {
             if (started) {
                 progress.finish();
@@ -583,14 +583,14 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     /**
      * Clears the entire Lucene index and commits the deletion immediately.
-     * Called only from reindexAll() and mirrors the "Lucene-Index geleert" log message.
+     * Called only from reindexAll() and mirrors the "Lucene index cleared" log message.
      */
     private void clearIndex() throws IOException {
         withWriter(writer -> {
             writer.deleteAll();
             writer.commit();
         });
-        log.info("Lucene-Index geleert (bereit für Reindex) am {}", indexDir.toAbsolutePath());
+        log.info("Lucene index cleared (ready for reindex) at {}", indexDir.toAbsolutePath());
     }
 
     private String progressKey(String type) {
@@ -659,9 +659,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             if (progress.isActive()) {
                 progress.inc(progressKey(type));
             }
-            log.info("{} indexiert: {}", type, id);
+            log.info("Indexed {}: {}", type, id);
         } catch (Exception e) {
-            log.error("Fehler beim Indexieren von {}", type, e);
+            log.error("Failed to index {}", type, e);
         }
     }
 
