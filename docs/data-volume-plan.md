@@ -1,6 +1,6 @@
 # Seed Data Plan (around 500 records)
 
-The following target volumes are based on the schema from `src/main/resources/schema.sql` and were chosen so that a total of 500 linked records are created. The "Variation" column describes which attributes are given descriptive or varied values for readability.
+The following target volumes are based on the schema from `src/main/resources/schema.sql` and ensure the dataset contains roughly 500 interlinked records. The "Variation" column explains which attributes receive descriptive or rotating values to keep the sample data readable.
 
 | Table | Target Count | Variation for readability |
 | --- | --- | --- |
@@ -21,4 +21,4 @@ The following target volumes are based on the schema from `src/main/resources/sc
 | `UpgradePlan` | 18 | Time windows use `DATEADD` offsets, and status values rotate through `Planned`, `Approved`, and more. |
 | `ServiceContract` | 28 | Contract numbers such as `SC-2025-030`, status values rotate, and durations use relative date values. |
 
-**Note on UUID readability:** A dedicated sequence is maintained for each table. The last block of the UUID receives a two-digit hex prefix for the table type plus a ten-digit decimal sequence number (e.g., `05 0000000123` for the 123rd project record). This makes it easy to sort IDs in the UI while still using valid UUIDs.
+**Note on UUID readability:** A dedicated sequence is maintained for each table. The last block of the UUID receives a two-digit hex prefix for the table type plus a ten-digit decimal sequence number (e.g., `05 0000000123` for the 123rd project record). This approach keeps the IDs easy to scan in the UI while still producing valid UUIDs.

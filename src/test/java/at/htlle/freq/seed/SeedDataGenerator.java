@@ -313,7 +313,7 @@ public final class SeedDataGenerator {
         List<Site> sites = new ArrayList<>();
         int siteCounter = 0;
         for (Project project : projects) {
-            int siteCount = (siteCounter < 17) ? 2 : 1; // first 17 projects get two sites, rest one
+            int siteCount = (siteCounter < 17) ? 2 : 1; // Assign two sites to the first 17 projects and one to the remainder
             for (int i = 0; i < siteCount; i++) {
                 Address address = addresses.get((siteCounter + i) % addresses.size());
                 String name = project.projectName().replace("Project", "")
