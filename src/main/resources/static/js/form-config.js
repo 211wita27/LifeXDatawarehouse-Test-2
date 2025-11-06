@@ -312,7 +312,7 @@
                   { value: 'false', label: 'LifeX / first-party' },
                   { value: 'true', label: 'External third-party' }
               ],
-              name: 'ThirdParty', defaultValue: () => 'false' },
+              name: 'ThirdParty', placeholder: 'Select vendor type' },
             { id: 'swEos', label: 'End of Sales', component: 'input', inputType: 'date', name: 'EndOfSalesDate', required: false },
             { id: 'swSupportStart', label: 'Support Start', component: 'input', inputType: 'date', name: 'SupportStartDate', required: false },
             { id: 'swSupportEnd', label: 'Support End', component: 'input', inputType: 'date', name: 'SupportEndDate', required: false }
