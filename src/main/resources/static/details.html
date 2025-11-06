@@ -776,6 +776,14 @@
         if(ctx.siteId) contextParts.push(`Site ${shortId(ctx.siteId).replace(/^##/, '#')}`);
         if(ctx.clientId) contextParts.push(`Client ${shortId(ctx.clientId).replace(/^##/, '#')}`);
         if(ctx.cityId) contextParts.push(`City ${shortId(ctx.cityId).replace(/^##/, '#')}`);
+        if(ctx.softwareId){
+            const fallbackId = shortId(ctx.softwareId).replace(/^##/, '#');
+            const rawLabel = (meta.softwareLabel ?? ctx.softwareLabel ?? '').toString().trim();
+            const cleanedLabel = rawLabel.replace(/^Software\s+/i, '').trim();
+            const baseLabel = cleanedLabel || fallbackId.replace(/^Software\s+/i, '').trim();
+            const finalLabel = baseLabel ? `Software ${baseLabel}` : 'Software';
+            contextParts.push(finalLabel.trim());
+        }
         if(contextParts.length){
             return `Create new ${label} for ${contextParts.join(' and ')}`;
         }
@@ -1859,6 +1867,13 @@
             const installed = Array.isArray(installedRows)
                 ? installedRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
                 : [];
+            const softwareContextLabel = (() => {
+                const name = val(row,'Name');
+                const release = val(row,'Release');
+                const revision = val(row,'Revision');
+                const parts = [name, release, revision].map(part => (part ?? '').toString().trim()).filter(Boolean);
+                return parts.length ? parts.join(' ') : '';
+            })();
             addSection(box, 'Installations', installed, isw => {
                 const installId = val(isw,'InstalledSoftwareID');
                 const label = labelFor('installedsoftware', isw);
@@ -1868,6 +1883,11 @@
                     descParts.push(`Site ${shortId(siteId)}`);
                 }
                 return pillLink(`/details.html?type=installedsoftware&id=${encodeURIComponent(installId)}`, label, installId, descParts.join(' · '));
+            }, {
+                entity: 'InstalledSoftware',
+                label: 'InstalledSoftware',
+                params: { softwareId: id },
+                softwareLabel: softwareContextLabel
             });
 
             const planRows = await fetchJson(`/table/upgradeplan?limit=200`);
@@ -1881,6 +1901,11 @@
                 const window = formatDateRange(val(plan,'PlannedWindowStart'), val(plan,'PlannedWindowEnd'));
                 const descParts = [status, window].filter(Boolean);
                 return pillLink(`/details.html?type=upgradeplan&id=${encodeURIComponent(planId)}`, label, planId, descParts.join(' · '));
+            }, {
+                entity: 'UpgradePlan',
+                label: 'UpgradePlan',
+                params: { softwareId: id },
+                softwareLabel: softwareContextLabel
             });
         }
     }
