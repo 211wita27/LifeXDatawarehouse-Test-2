@@ -11,9 +11,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 
 /**
- * Vollständiger CRUD-Controller für Radios.
+ * Fully featured CRUD controller for radios.
  *
- * <p>Operiert direkt auf dem Datenbank-Schema via {@link NamedParameterJdbcTemplate}.</p>
+ * <p>Operates directly on the database schema via {@link NamedParameterJdbcTemplate}.</p>
  */
 @RestController
 @RequestMapping("/radios")
@@ -32,13 +32,13 @@ public class RadioController {
     // ----------------------------
 
     /**
-     * Listet Radios optional nach Site gefiltert.
+     * Lists radios, optionally filtered by site.
      *
-     * <p>Pfad: {@code GET /radios}</p>
-     * <p>Query-Parameter: {@code siteId} (optional).</p>
+     * <p>Path: {@code GET /radios}</p>
+     * <p>Query parameter: {@code siteId} (optional).</p>
      *
-     * @param siteId optionale Site-ID.
-     * @return 200 OK mit einer JSON-Liste von Radios.
+     * @param siteId optional site ID.
+     * @return 200 OK with a JSON list of radios.
      */
     @GetMapping
     public List<Map<String, Object>> findBySite(@RequestParam(required = false) String siteId) {
@@ -56,12 +56,12 @@ public class RadioController {
     }
 
     /**
-     * Liefert ein Radio anhand der ID.
+     * Returns a radio by ID.
      *
-     * <p>Pfad: {@code GET /radios/{id}}</p>
+     * <p>Path: {@code GET /radios/{id}}</p>
      *
-     * @param id Primärschlüssel.
-     * @return 200 OK mit den Feldwerten oder 404 bei unbekannter ID.
+     * @param id primary key.
+     * @return 200 OK with the field values or 404 if the ID is unknown.
      */
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
@@ -82,13 +82,13 @@ public class RadioController {
     // ----------------------------
 
     /**
-     * Legt ein Radio an.
+     * Creates a radio.
      *
-     * <p>Pfad: {@code POST /radios}</p>
-     * <p>Request-Body: JSON mit Spalten wie {@code siteID}, {@code radioBrand}.</p>
+     * <p>Path: {@code POST /radios}</p>
+     * <p>Request body: JSON with columns such as {@code siteID}, {@code radioBrand}.</p>
      *
-     * @param body Eingabedaten.
-     * @throws ResponseStatusException 400 bei leerem Body.
+     * @param body input payload.
+     * @throws ResponseStatusException 400 if the body is empty.
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -111,14 +111,14 @@ public class RadioController {
     // ----------------------------
 
     /**
-     * Aktualisiert ein Radio.
+     * Updates a radio.
      *
-     * <p>Pfad: {@code PUT /radios/{id}}</p>
-     * <p>Request-Body: JSON-Objekt mit zu setzenden Spalten.</p>
+     * <p>Path: {@code PUT /radios/{id}}</p>
+     * <p>Request body: JSON object with the columns to set.</p>
      *
-     * @param id   Primärschlüssel.
-     * @param body Feldwerte.
-     * @throws ResponseStatusException 400 bei leerem Body, 404 wenn nichts aktualisiert wurde.
+     * @param id   primary key.
+     * @param body field values.
+     * @throws ResponseStatusException 400 if the body is empty, 404 if nothing was updated.
      */
     @PutMapping("/{id}")
     public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
@@ -147,12 +147,12 @@ public class RadioController {
     // ----------------------------
 
     /**
-     * Löscht ein Radio.
+     * Deletes a radio.
      *
-     * <p>Pfad: {@code DELETE /radios/{id}}</p>
+     * <p>Path: {@code DELETE /radios/{id}}</p>
      *
-     * @param id Primärschlüsselwert.
-     * @throws ResponseStatusException 404, wenn kein Datensatz gelöscht wurde.
+     * @param id primary key value.
+     * @throws ResponseStatusException 404 if no row was deleted.
      */
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
