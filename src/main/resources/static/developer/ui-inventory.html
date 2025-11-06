@@ -90,7 +90,7 @@
     .quickopen button{padding:.45rem .8rem;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:pointer}
     .quickopen small{display:block;margin-top:.4rem;color:#666}
 
-    /* Toolbar (fixiert) */
+    /* Toolbar (fixed position) */
     .toolbar{position:fixed;top:68px;left:calc(320px + 24px);right:16px;background:#fff;border:1px solid var(--border);border-radius:10px;
       box-shadow:var(--card-shadow);padding:.4rem .5rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;z-index:9999;pointer-events:none}
     .toolbar > *{pointer-events:auto}
@@ -914,7 +914,7 @@
     try{
       const url = new URL(frame.src, window.location.href);
       meta.urlPath = url.pathname.replace(/^\//,'').replace(/\//g,'-');
-      // Enge Auswahl an Query-Parametern (sonst werden Namen zu lang)
+      // Limit the query parameters considered so filenames stay short
       const interesting = [];
       for (const [k,v] of url.searchParams.entries()){
         if (['type','id','q','tab','view'].includes(k)) interesting.push(`${k}-${v}`);
