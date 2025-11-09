@@ -13,17 +13,26 @@ public class InstalledSoftware {
     private UUID siteID;
     private UUID softwareID;
     private String status;
+    private String offeredDate;
+    private String installedDate;
 
     public InstalledSoftware() {}
     public InstalledSoftware(UUID installedSoftwareID, UUID siteID, UUID softwareID) {
-        this(installedSoftwareID, siteID, softwareID, null);
+        this(installedSoftwareID, siteID, softwareID, null, null, null);
     }
 
     public InstalledSoftware(UUID installedSoftwareID, UUID siteID, UUID softwareID, String status) {
+        this(installedSoftwareID, siteID, softwareID, status, null, null);
+    }
+
+    public InstalledSoftware(UUID installedSoftwareID, UUID siteID, UUID softwareID, String status,
+                             String offeredDate, String installedDate) {
         this.installedSoftwareID = installedSoftwareID;
         this.siteID = siteID;
         this.softwareID = softwareID;
         this.status = status;
+        this.offeredDate = offeredDate;
+        this.installedDate = installedDate;
     }
 
     public UUID getInstalledSoftwareID() { return installedSoftwareID; }
@@ -37,4 +46,10 @@ public class InstalledSoftware {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public String getOfferedDate() { return offeredDate; }
+    public void setOfferedDate(String offeredDate) { this.offeredDate = offeredDate; }
+
+    public String getInstalledDate() { return installedDate; }
+    public void setInstalledDate(String installedDate) { this.installedDate = installedDate; }
 }

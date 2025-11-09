@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -98,6 +99,8 @@ public class InstalledSoftwareService {
             throw new IllegalArgumentException("SoftwareID is required");
 
         incoming.setStatus(normalizeStatus(incoming.getStatus()));
+        boolean isNew = incoming.getInstalledSoftwareID() == null;
+        applyDateRules(incoming, incoming, true, isNew);
 
         InstalledSoftware saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
@@ -122,11 +125,18 @@ public class InstalledSoftwareService {
         return repo.findById(id).map(existing -> {
             existing.setSiteID(patch.getSiteID() != null ? patch.getSiteID() : existing.getSiteID());
             existing.setSoftwareID(patch.getSoftwareID() != null ? patch.getSoftwareID() : existing.getSoftwareID());
+
+            boolean statusChanged = false;
             if (patch.getStatus() != null) {
-                existing.setStatus(normalizeStatus(patch.getStatus()));
+                String normalized = normalizeStatus(patch.getStatus());
+                statusChanged = !Objects.equals(existing.getStatus(), normalized);
+                existing.setStatus(normalized);
             } else if (existing.getStatus() == null) {
                 existing.setStatus(normalizeStatus(null));
+                statusChanged = true;
             }
+
+            applyDateRules(existing, patch, statusChanged, false);
 
             InstalledSoftware saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
@@ -173,7 +183,9 @@ public class InstalledSoftwareService {
                     isw.getInstalledSoftwareID() != null ? isw.getInstalledSoftwareID().toString() : null,
                     isw.getSiteID() != null ? isw.getSiteID().toString() : null,
                     isw.getSoftwareID() != null ? isw.getSoftwareID().toString() : null,
-                    isw.getStatus()
+                    isw.getStatus(),
+                    isw.getOfferedDate(),
+                    isw.getInstalledDate()
             );
             log.debug("InstalledSoftware indexed in Lucene: id={}", isw.getInstalledSoftwareID());
         } catch (Exception e) {
@@ -187,5 +199,29 @@ public class InstalledSoftwareService {
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
         }
+    }
+
+    private void applyDateRules(InstalledSoftware target, InstalledSoftware source, boolean statusChanged, boolean isNew) {
+        if (source.getOfferedDate() != null) {
+            target.setOfferedDate(source.getOfferedDate());
+        } else if (isNew && target.getOfferedDate() == null) {
+            target.setOfferedDate(today());
+        } else if ((isNew || statusChanged)
+                && InstalledSoftwareStatus.OFFERED.dbValue().equals(target.getStatus())
+                && target.getOfferedDate() == null) {
+            target.setOfferedDate(today());
+        }
+
+        if (source.getInstalledDate() != null) {
+            target.setInstalledDate(source.getInstalledDate());
+        } else if ((isNew || statusChanged)
+                && InstalledSoftwareStatus.INSTALLED.dbValue().equals(target.getStatus())
+                && target.getInstalledDate() == null) {
+            target.setInstalledDate(today());
+        }
+    }
+
+    private String today() {
+        return LocalDate.now().toString();
     }
 }
