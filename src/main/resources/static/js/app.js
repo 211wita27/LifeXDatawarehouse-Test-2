@@ -504,6 +504,13 @@ const ENTITY_TYPE_MAP = entityTypeRegistry?.ENTITY_TYPE_MAP || {
         detailTable: 'Software',
         aliases: ['software', 'softwares'],
     },
+    installedsoftware: {
+        detailType: 'installedsoftware',
+        typeToken: 'type:installedsoftware',
+        table: 'InstalledSoftware',
+        detailTable: 'InstalledSoftware',
+        aliases: ['installedsoftware', 'installations'],
+    },
     upgradeplan: {
         detailType: 'upgradeplan',
         typeToken: 'type:upgradeplan',
@@ -621,6 +628,8 @@ const COLUMN_DETAIL_TYPE_OVERRIDE_SUFFIXES = [
     ['assignedclientid', 'client'],
     ['clientguid', 'client'],
     ['clientid', 'client'],
+    ['installedsoftwareguid', 'installedsoftware'],
+    ['installedsoftwareid', 'installedsoftware'],
     ['softwareguid', 'software'],
     ['softwareid', 'software'],
     ['countrycode', 'country'],
@@ -733,6 +742,9 @@ function formatPreview(type, row){
         if (vendor !== undefined) {
             parts.push(parseBool(vendor) ? 'Third-party' : 'First-party');
         }
+    } else if (t==='installedsoftware'){
+        const siteId = val(row,'SiteID'); if (siteId) parts.push(`Site ${shortUuid(siteId)}`);
+        const swId = val(row,'SoftwareID'); if (swId) parts.push(`Software ${shortUuid(swId)}`);
     } else if (t==='upgradeplan'){
         const status = val(row,'Status'); if (status) parts.push(status);
         const window = formatDateRange(val(row,'PlannedWindowStart'), val(row,'PlannedWindowEnd')); if (window) parts.push(window);

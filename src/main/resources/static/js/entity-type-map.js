@@ -32,6 +32,13 @@
             detailTable: 'Software',
             aliases: ['software', 'softwares']
         },
+        installedsoftware: {
+            detailType: 'installedsoftware',
+            typeToken: 'type:installedsoftware',
+            table: 'InstalledSoftware',
+            detailTable: 'InstalledSoftware',
+            aliases: ['installedsoftware', 'installations']
+        },
         upgradeplan: {
             detailType: 'upgradeplan',
             typeToken: 'type:upgradeplan',
