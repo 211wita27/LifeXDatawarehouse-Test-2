@@ -133,9 +133,7 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 is.getInstalledSoftwareID() != null ? is.getInstalledSoftwareID().toString() : null,
                                 is.getSiteID() != null ? is.getSiteID().toString() : null,
                                 is.getSoftwareID() != null ? is.getSoftwareID().toString() : null,
-                                is.getStatus(),
-                                is.getOfferedDate(),
-                                is.getInstalledDate()
+                                is.getStatus()
                         );
                         return;
                     }
