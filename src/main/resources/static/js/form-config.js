@@ -150,6 +150,10 @@
             summary: 'Describe how LifeX is deployed for a project (variant, name, and activation).',
             notes: ['Inactive variants should only be used for historical records.']
         },
+        InstalledSoftware: {
+            summary: 'Link software releases to a site to document deployments.',
+            notes: ['Ensure the site and software already exist before creating the installation.']
+        },
         PhoneIntegration: {
             summary: 'Document the phone integration that connects a client to telephony services.',
             notes: ['Capture firmware and serial numbers when needed for troubleshooting.']
@@ -235,6 +239,11 @@
             { id: 'variantName', label: 'VariantName', component: 'input', name: 'VariantName' },
             { id: 'description', label: 'Description', component: 'input', name: 'Description', required: false },
             { id: 'active', label: 'IsActive', component: 'select', options: ['true','false'], name: 'IsActive', valueType: 'boolean' }
+        ],
+        InstalledSoftware: [
+            { id: 'siteID', label: 'Select site', component: 'asyncSelect', source: 'sites', placeholder: 'Select site', allowManual: false, name: 'SiteID', hint: 'Only sites assigned to the selected project will appear.' },
+            { id: 'softwareID', label: 'Select software', component: 'asyncSelect', source: 'software', placeholder: 'Select software', allowManual: false, name: 'SoftwareID', hint: 'Choose the exact release that is deployed.' },
+            { id: 'status', label: 'Status', component: 'select', options: ['Offered','Installed','Rejected'], name: 'Status', placeholder: 'Select status' }
         ],
         PhoneIntegration: [
             { id: 'client', label: 'Select client', component: 'asyncSelect', source: 'clients', placeholder: 'Select client', allowManual: false, name: 'ClientID', hint: 'Integrations attach to the working position using the phone.' },
