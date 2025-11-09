@@ -76,8 +76,7 @@ public interface LuceneIndexService {
     /**
      * Indexes installed software references for a site, reflecting current rollout status.
      */
-    void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status,
-                                String offeredDate, String installedDate);
+    void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status);
 
     /**
      * Indexes phone integration hardware assigned to clients for operational tracking.

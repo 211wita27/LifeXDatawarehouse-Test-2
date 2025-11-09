@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 class SearchControllerIntegrationTest {
 
-    private static final String ACME_ACCOUNT_ID = "f2de6b31-a03d-439e-8a0f-040000000001";
+    private static final String ACME_ACCOUNT_ID = "bfacb3aa-2756-4c62-9f92-040000000001";
 
     @Autowired
     private MockMvc mockMvc;

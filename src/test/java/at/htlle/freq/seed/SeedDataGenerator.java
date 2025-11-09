@@ -470,24 +470,11 @@ public final class SeedDataGenerator {
             Site site = sites.get(i % sites.size());
             Software soft = software.get(i % software.size());
             InstalledSoftwareStatus status = statuses[i % statuses.length];
-            Integer offeredOffset = status == InstalledSoftwareStatus.REJECTED && i % 2 == 0
-                    ? null
-                    : -(10 + (i % 15));
-            Integer installedOffset = null;
-            if (status == InstalledSoftwareStatus.INSTALLED) {
-                int base = offeredOffset != null ? offeredOffset : -5 - (i % 7);
-                installedOffset = base + 14 + (i % 6);
-                if (offeredOffset == null) {
-                    offeredOffset = base;
-                }
-            }
             installs.add(new InstalledSoftware(
                     generateId(EntityType.INSTALLED_SOFTWARE),
                     site.id(),
                     soft.id(),
-                    status.dbValue(),
-                    offeredOffset,
-                    installedOffset
+                    status.dbValue()
             ));
         }
         return installs;
@@ -697,14 +684,12 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "InstalledSoftware", List.of("InstalledSoftwareID", "SiteID", "SoftwareID", "Status", "OfferedDate", "InstalledDate"), installedSoftware.stream()
+        appendInsert(sb, "InstalledSoftware", List.of("InstalledSoftwareID", "SiteID", "SoftwareID", "Status"), installedSoftware.stream()
                 .map(install -> row(
                         str(install.id()),
                         str(install.siteId()),
                         str(install.softwareId()),
-                        str(install.status()),
-                        dateOffsetNullable(install.offeredOffset()),
-                        dateOffsetNullable(install.installedOffset())
+                        str(install.status())
                 ))
                 .collect(Collectors.toList()));
 
@@ -793,13 +778,6 @@ public final class SeedDataGenerator {
         return new SqlValue("DATEADD('DAY', " + daysOffset + ", CURRENT_DATE)", false);
     }
 
-    private static SqlValue dateOffsetNullable(Integer daysOffset) {
-        if (daysOffset == null) {
-            return new SqlValue("NULL", false);
-        }
-        return dateOffset(daysOffset);
-    }
-
     private record SqlValue(String value, boolean quoted) {
         private String render() {
             if (!quoted) {
@@ -848,8 +826,7 @@ public final class SeedDataGenerator {
     private record PhoneIntegration(String id, String clientId, String type, String brand, String serial, String firmware) {
     }
 
-    private record InstalledSoftware(String id, String siteId, String softwareId, String status,
-                                     Integer offeredOffset, Integer installedOffset) {
+    private record InstalledSoftware(String id, String siteId, String softwareId, String status) {
     }
 
     private record UpgradePlan(String id, String siteId, String softwareId, int windowStartOffset, int windowEndOffset, String status, int createdOffset, String createdBy) {

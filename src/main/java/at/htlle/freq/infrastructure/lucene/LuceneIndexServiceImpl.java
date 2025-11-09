@@ -473,9 +473,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         toStringOrNull(item.getInstalledSoftwareID()),
                         toStringOrNull(item.getSiteID()),
                         toStringOrNull(item.getSoftwareID()),
-                        item.getStatus(),
-                        item.getOfferedDate(),
-                        item.getInstalledDate()
+                        item.getStatus()
                 );
             }
             for (PhoneIntegration integration : phoneIntegrations) {
@@ -824,8 +822,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status,
-                                       String offeredDate, String installedDate) {
+    public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status) {
         InstalledSoftwareStatus resolved;
         try {
             resolved = InstalledSoftwareStatus.from(status);
@@ -836,13 +833,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         String statusValue = resolved.dbValue();
         String statusLabel = resolved.label();
         String statusToken = tokenWithPrefix("status", statusValue);
-        String offeredToken = tokenWithPrefix("offered", offeredDate);
-        String installedToken = tokenWithPrefix("installed", installedDate);
-        indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE,
-                statusValue, statusLabel, statusToken,
-                safe(offeredDate), offeredToken,
-                safe(installedDate), installedToken,
-                siteId, softwareId);
+        indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE, statusValue, statusLabel, statusToken, siteId, softwareId);
     }
 
     @Override
