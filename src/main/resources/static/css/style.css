@@ -43,13 +43,56 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 .filterable-select.is-disabled .filterable-select-dropdown{display:none!important;}
 
 /* ===============  Search  =============== */
-#search-bar{display:flex;gap:.5rem;margin-bottom:1rem}
+#search-bar{display:flex;gap:.5rem;align-items:stretch}
+#search-bar label{margin:0}
 #search-input{flex:1 1 auto;padding:.45rem;font-size:1rem}
 /* Safari/Chrome: hide datalist dropdown icon inside the field */
 #search-input::-webkit-calendar-picker-indicator{display:none}
 #search-input::-webkit-list-button{display:none}
 #search-input::-ms-clear{display:none}
 #search-btn{padding:.45rem 1rem;cursor:pointer}
+.search-shell{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:.4rem;margin-bottom:1rem}
+.search-scope-badge{
+    background:#0b4c9c;
+    color:#fff;
+    border:none;
+    border-radius:999px;
+    padding:.2rem .8rem;
+    font-size:.75rem;
+    font-weight:600;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    cursor:default;
+    line-height:1.4;
+    box-shadow:0 0 0 1px rgba(11,76,156,.25);
+}
+.search-scope-badge.is-filtered{
+    background:#0b4c9c;
+    box-shadow:0 0 0 1px rgba(255,255,255,.25),0 0 0 2px rgba(11,76,156,.4);
+}
+.search-scope-badge[aria-pressed="true"],
+.search-scope-badge:focus-visible{
+    outline:2px solid #003a70;
+    outline-offset:2px;
+}
+.search-scope-badge.is-resettable{cursor:pointer}
+.search-type-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:999px;
+    border:1px solid rgba(11,76,156,.3);
+    background:rgba(11,76,156,.08);
+    color:#0b4c9c;
+    font-size:.8rem;
+    font-weight:600;
+    padding:.1rem .6rem;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    cursor:pointer;
+}
+.search-type-pill:hover{background:rgba(11,76,156,.15)}
+.search-type-pill:focus-visible{outline:2px solid #0b4c9c;outline-offset:2px}
 
 /* ===============  Blue button styling (for reindex) ====== */
 .btn-primary,
