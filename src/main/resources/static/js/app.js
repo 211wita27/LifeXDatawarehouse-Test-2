@@ -11,6 +11,7 @@ const API = {
 const resultArea  = document.getElementById('resultArea');
 const searchInput = document.getElementById('search-input');
 const searchBtn   = document.getElementById('search-btn');
+const searchScopeIndicator = document.getElementById('search-scope-indicator');
 
 const idxBox  = document.getElementById('idx-box');
 const idxBar  = document.querySelector('#idx-bar > span');
@@ -18,6 +19,15 @@ const idxText = document.getElementById('idx-text');
 const idxBtnSide = document.getElementById('idx-reindex-side');
 
 const sugList = document.getElementById('sug');
+
+const SEARCH_SCOPE_OPTIONS = {
+    all:     { key: 'all', label: 'All',     type: null },
+    country: { key: 'country', label: 'Country', type: 'country' },
+    city:    { key: 'city', label: 'City',    type: 'city' },
+    account: { key: 'account', label: 'Account', type: 'account' },
+};
+
+let searchScopeKey = 'all';
 
 /* ===================== Utils ===================== */
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
@@ -28,6 +38,76 @@ function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<'
 function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','true') : el.removeAttribute('aria-busy'); }
 
 const shortcutCache = new Map();
+
+function normalizeScopeKey(value) {
+    const key = (value ?? '').toString().trim().toLowerCase();
+    return SEARCH_SCOPE_OPTIONS[key] ? key : 'all';
+}
+
+function getScopeOption(key) {
+    return SEARCH_SCOPE_OPTIONS[normalizeScopeKey(key)] || SEARCH_SCOPE_OPTIONS.all;
+}
+
+function getScopeTypeValue() {
+    return getScopeOption(searchScopeKey).type;
+}
+
+function isScopeSelectable(value) {
+    const key = normalizeScopeKey(value);
+    return key !== 'all' && !!SEARCH_SCOPE_OPTIONS[key];
+}
+
+function updateScopeIndicator() {
+    if (!searchScopeIndicator) return;
+    const option = getScopeOption(searchScopeKey);
+    searchScopeIndicator.textContent = option.label;
+    const filtered = option.type !== null;
+    searchScopeIndicator.classList.toggle('is-filtered', filtered);
+    searchScopeIndicator.classList.toggle('is-resettable', filtered);
+    searchScopeIndicator.setAttribute('aria-pressed', filtered ? 'true' : 'false');
+    searchScopeIndicator.dataset.scope = option.key;
+    if (filtered) {
+        searchScopeIndicator.title = 'Click to reset the filter';
+    } else {
+        searchScopeIndicator.removeAttribute('title');
+    }
+}
+
+function setSearchScope(nextKey, options = {}) {
+    const normalized = normalizeScopeKey(nextKey);
+    const changed = normalized !== searchScopeKey;
+    if (changed) {
+        searchScopeKey = normalized;
+    }
+    updateScopeIndicator();
+    if (options.syncUrl !== false) {
+        updateUrlState(options.queryOverride);
+    }
+    return changed;
+}
+
+function updateUrlState(overrideQuery) {
+    if (typeof window === 'undefined' || !window?.history?.replaceState) return;
+    const params = new URLSearchParams(window.location.search);
+    const query = (overrideQuery !== undefined && overrideQuery !== null)
+        ? String(overrideQuery)
+        : (searchInput ? searchInput.value : '');
+    const trimmed = query.trim();
+    if (trimmed) {
+        params.set('q', trimmed);
+    } else {
+        params.delete('q');
+    }
+    const scopeOption = getScopeOption(searchScopeKey);
+    if (scopeOption.type) {
+        params.set('type', scopeOption.key);
+    } else {
+        params.delete('type');
+    }
+    const newQuery = params.toString();
+    const newUrl = `${window.location.pathname}${newQuery ? '?' + newQuery : ''}`;
+    window.history.replaceState(null, '', newUrl);
+}
 
 const shortcutStorage = (() => {
     const prefix = 'sc:';
@@ -72,6 +152,17 @@ if (resultArea) {
             target = target.parentElement;
         }
         if (!target || typeof target.closest !== 'function') return;
+        const typeButton = target.closest('.search-type-pill');
+        if (typeButton) {
+            const type = typeButton.dataset.searchType;
+            event.preventDefault();
+            setSearchScope(type, { syncUrl: false });
+            if (searchInput && typeof searchInput.focus === 'function') {
+                searchInput.focus();
+            }
+            runSearch(searchInput ? searchInput.value : '', { skipUrlUpdate: false });
+            return;
+        }
         const button = target.closest('.table-quick-filter');
         if (!button) return;
         const query = button.dataset.query;
@@ -282,6 +373,19 @@ function buildUserQuery(raw){
     if (!s) return s;
     if (looksLikeLucene(s)) return s;
     return s.split(/\s+/).map(tok => /[*?]$/.test(tok) ? tok : (tok + '*')).join(' ');
+}
+
+function buildScopedQuery(raw, scopeType) {
+    const prepared = buildUserQuery(raw);
+    const query = (prepared ?? '').trim();
+    if (!scopeType) {
+        return query;
+    }
+    const typeClause = `type:${scopeType}`;
+    if (!query) {
+        return typeClause;
+    }
+    return `${typeClause} AND (${query})`;
 }
 
 /* ===================== Result preview (enrichment) ===================== */
@@ -518,6 +622,15 @@ function wireEvents() {
     // Primary search (button)
     searchBtn.onclick = () => runSearch(searchInput.value);
 
+    if (searchScopeIndicator) {
+        searchScopeIndicator.addEventListener('click', () => {
+            if (searchScopeKey !== 'all') {
+                setSearchScope('all');
+                runSearch(searchInput ? searchInput.value : '', { skipUrlUpdate: false });
+            }
+        });
+    }
+
     // Enter → search | Tab → accept top suggestion + search immediately
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -558,7 +671,33 @@ function wireEvents() {
     // Initialize shortcuts including ARIA
     setupShortcuts();
 }
-document.addEventListener('DOMContentLoaded', wireEvents);
+
+function bootstrapSearchFromUrl() {
+    updateScopeIndicator();
+    if (typeof window === 'undefined' || !window?.location) return;
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const typeParam = params.get('type');
+        const queryParam = params.get('q');
+        const hasQuery = !!(queryParam && queryParam.trim());
+        const scopeChanged = typeParam ? setSearchScope(typeParam, { syncUrl: false }) : false;
+        if (hasQuery && searchInput) {
+            searchInput.value = queryParam;
+            runSearch(queryParam, { skipUrlUpdate: true });
+        } else if (scopeChanged && searchScopeKey !== 'all') {
+            runSearch('', { skipUrlUpdate: true });
+        } else if (!typeParam) {
+            updateScopeIndicator();
+        }
+    } catch {
+        updateScopeIndicator();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    bootstrapSearchFromUrl();
+    wireEvents();
+});
 
 // Find/apply top suggestion (case-insensitive); true = applied
 function completeFromSuggestions(){
@@ -685,9 +824,21 @@ function setupShortcuts() {
 }
 
 /* ===================== Search ===================== */
-function runSearch(raw){
-    const prepared = buildUserQuery(raw);
-    runLucene(prepared);
+function runSearch(raw, options = {}) {
+    const text = (raw ?? '').toString();
+    if (options.updateInput !== false && searchInput) {
+        searchInput.value = text;
+    }
+    const scopeType = getScopeTypeValue();
+    const prepared = buildScopedQuery(text, scopeType);
+    if (!prepared) {
+        if (!options.skipUrlUpdate) updateUrlState(text);
+        return;
+    }
+    if (!options.skipUrlUpdate) {
+        updateUrlState(text);
+    }
+    runLucene(prepared, scopeType);
 }
 
 function shortUuid(value) {
@@ -722,19 +873,47 @@ function renderIdDisplay(value) {
     return { inner: safeText, title: fallback };
 }
 
-async function runLucene(q) {
+function renderTypeCell(typeValue) {
+    const normalized = normalizeTypeKey(typeValue);
+    if (isScopeSelectable(normalized)) {
+        const option = getScopeOption(normalized);
+        const label = option.label;
+        return `<button type="button" class="search-type-pill" data-search-type="${option.key}">${escapeHtml(label)}</button>`;
+    }
+    return escapeHtml(typeValue ?? '');
+}
+
+function filterHitsByScope(hits, scopeType) {
+    if (!Array.isArray(hits)) return [];
+    const normalizedScope = scopeType ? normalizeTypeKey(scopeType) : '';
+    if (!normalizedScope) return hits;
+    return hits.filter(hit => normalizeTypeKey(hit.type) === normalizedScope);
+}
+
+async function runLucene(q, scopeType) {
     const query = (q ?? '').trim();
-    if (!query) return;
+    if (!query) {
+        resultArea.textContent = '(no matches)';
+        return;
+    }
     try {
         setBusy(resultArea, true);
-        const res  = await fetch(`${API.search}?q=${encodeURIComponent(query)}`);
+        const url = (typeof window !== 'undefined' && window?.location)
+            ? new URL(API.search, window.location.origin)
+            : new URL(API.search, 'http://localhost');
+        url.searchParams.set('q', query);
+        if (scopeType) {
+            url.searchParams.set('type', normalizeScopeKey(scopeType));
+        }
+        const res  = await fetch(url.toString());
         const hits = await res.json();
-        if (!Array.isArray(hits) || !hits.length) {
+        const filteredHits = filterHitsByScope(hits, scopeType);
+        if (!Array.isArray(filteredHits) || !filteredHits.length) {
             resultArea.textContent = '(no matches)';
             return;
         }
 
-        const rows = hits.map((h, i) => {
+        const rows = filteredHits.map((h, i) => {
             const snippet = (h.snippet ?? '').trim();
             const snippetHtml = snippet ? `<div class="hit-snippet"><small>${escapeHtml(snippet)}</small></div>` : '';
             const typeArg = JSON.stringify(h.type ?? '');
@@ -742,7 +921,7 @@ async function runLucene(q) {
             const idDisplay = renderIdDisplay(h.id);
             return `
       <tr onclick='toDetails(${typeArg},${idArg})' style="cursor:pointer">
-        <td>${escapeHtml(h.type)}</td>
+        <td>${renderTypeCell(h.type)}</td>
         <td title="${escapeHtml(idDisplay.title)}">${idDisplay.inner}</td>
         <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
         <td id="info-${i}"></td>
@@ -757,7 +936,7 @@ async function runLucene(q) {
         </table>
       </div>`;
 
-        enrichRows(hits);
+        enrichRows(filteredHits);
 
     } catch (e) {
         resultArea.innerHTML = `<p id="error" role="alert">Error: ${e}</p>`;
@@ -853,7 +1032,11 @@ async function showTable(name) {
         const cols = Object.keys(rows[0]);
         const hdr  = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('');
         const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
-        const { typeToken } = getTableTypeInfo(name);
+        const tableTypeInfo = getTableTypeInfo(name);
+        if (tableTypeInfo.detailType && isScopeSelectable(tableTypeInfo.detailType)) {
+            setSearchScope(tableTypeInfo.detailType);
+        }
+        const { typeToken } = tableTypeInfo;
         const safeName = escapeHtml(name);
         const titleQuery = typeToken ? escapeHtml(typeToken) : null;
         const titleControl = titleQuery

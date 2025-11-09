@@ -39,6 +39,22 @@ class SmartQueryBuilderTest {
     }
 
     @Test
+    void buildWithTypeAddsMandatoryFilterClause() {
+        Query query = builder.build("Vienna", "account");
+        String lucene = query.toString();
+        assertTrue(lucene.contains("content:vienna"));
+        assertTrue(lucene.contains("type:account"));
+    }
+
+    @Test
+    void buildWithTypeAndBlankQueryStillScopesByType() {
+        Query query = builder.build("   ", "city");
+        String lucene = query.toString();
+        assertTrue(lucene.contains("type:city"));
+        assertTrue(lucene.contains("*:*"));
+    }
+
+    @Test
     void buildWrapsParserExceptions() {
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> builder.build("\"unterminated"));

@@ -113,12 +113,15 @@
             <div id="idx-text"></div>
         </div>
 
-        <div id="search-bar">
-            <label for="search-input" class="visually-hidden">Global search</label>
-            <!-- Keep the datalist for autocomplete; hide the native icon via CSS -->
-            <input id="search-input" placeholder="Global search (Lucene or plain)" list="sug" autocomplete="off">
-            <datalist id="sug"></datalist>
-            <button id="search-btn">Search</button>
+        <div class="search-shell">
+            <button type="button" id="search-scope-indicator" class="search-scope-badge" aria-live="polite" aria-label="Active search scope">All</button>
+            <div id="search-bar">
+                <label for="search-input" class="visually-hidden">Global search</label>
+                <!-- Keep the datalist for autocomplete; hide the native icon via CSS -->
+                <input id="search-input" placeholder="Global search (Lucene or plain)" list="sug" autocomplete="off">
+                <datalist id="sug"></datalist>
+                <button id="search-btn">Search</button>
+            </div>
         </div>
 
         <div id="resultArea" role="status" aria-live="polite" aria-atomic="true">

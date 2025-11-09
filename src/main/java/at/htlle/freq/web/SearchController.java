@@ -45,20 +45,46 @@ public class SearchController {
     @GetMapping("/search")
     public ResponseEntity<List<SearchHit>> query(
             @RequestParam(name = "q", required = false) String q,
+            @RequestParam(name = "type", required = false) String type,
             @RequestParam(name = "raw", defaultValue = "false") boolean raw
     ) {
-        if (q == null || q.isBlank()) {
+        String normalizedType = normalizeType(type);
+        boolean hasQuery = q != null && !q.isBlank();
+        if (!hasQuery && normalizedType == null) {
             return ResponseEntity.ok(List.of());
         }
 
         // Run the Lucene query verbatim when 'raw' is true or the input already uses Lucene syntax.
         if (raw || SmartQueryBuilder.looksLikeLucene(q)) {
-            return ResponseEntity.ok(lucene.search(q));
+            String luceneQuery = appendTypeFilter(q, normalizedType);
+            return ResponseEntity.ok(lucene.search(luceneQuery));
         }
 
         // Otherwise build a Lucene query from the user-friendly input and use the Query overload.
-        Query built = smart.build(q);
+        Query built = smart.build(q, normalizedType);
         return ResponseEntity.ok(lucene.search(built));
+    }
+
+    private static String normalizeType(String type) {
+        if (type == null) {
+            return null;
+        }
+        String trimmed = type.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        return trimmed.toLowerCase();
+    }
+
+    private static String appendTypeFilter(String query, String normalizedType) {
+        if (normalizedType == null) {
+            return query;
+        }
+        String typeClause = "type:" + normalizedType;
+        if (query == null || query.isBlank()) {
+            return typeClause;
+        }
+        return typeClause + " AND (" + query.trim() + ")";
     }
 
     // Autocomplete/Suggest
