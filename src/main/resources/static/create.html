@@ -64,7 +64,6 @@
             <option value="WorkingPosition">Client (WorkingPosition)</option>
             <option value="Country">Country</option>
             <option value="DeploymentVariant">DeploymentVariant</option>
-            <option value="InstalledSoftware">InstalledSoftware</option>
             <option value="PhoneIntegration">PhoneIntegration</option>
             <option value="Project">Project</option>
             <option value="Radio">Radio</option>
@@ -97,7 +96,6 @@
         WorkingPosition:'Create client',
         Country:'Create country',
         DeploymentVariant:'Create deployment variant',
-        InstalledSoftware:'Create installed software',
         PhoneIntegration:'Create phone integration',
         Project:'Create project',
         Radio:'Create radio',
@@ -1231,18 +1229,6 @@
                     context.siteId=siteId;
                 }
                 break;
-            case 'InstalledSoftware':
-                if(accountId) context.accountId=accountId;
-                if(projectId) context.projectId=projectId;
-                if(siteId){
-                    await ensureAsyncValue('siteID', siteId, {lock:true});
-                    context.siteId=siteId;
-                }
-                if(softwareId){
-                    await ensureAsyncValue('softwareID', softwareId, {lock:true});
-                    context.softwareId=softwareId;
-                }
-                break;
             case 'UpgradePlan':
                 if(accountId) context.accountId=accountId;
                 if(projectId) context.projectId=projectId;
@@ -1417,14 +1403,6 @@
                     CityID: cityId,
                     CityName: v('cityName'),
                     CountryCode: country
-                };
-                break;
-
-            case 'InstalledSoftware':
-                url='/row/installedsoftware';
-                p={
-                    SiteID: v('siteID'),
-                    SoftwareID: v('softwareID')
                 };
                 break;
 

@@ -83,7 +83,6 @@
         Address: 'AddressID',
         DeploymentVariant: 'VariantID',
         Software: 'SoftwareID',
-        InstalledSoftware: 'InstalledSoftwareID',
         UpgradePlan: 'UpgradePlanID',
         ServiceContract: 'ContractID'
     };
@@ -240,7 +239,6 @@
             case 'address': return 'Address';
             case 'deploymentvariant': return 'DeploymentVariant';
             case 'software': return 'Software';
-            case 'installedsoftware': return 'InstalledSoftware';
             case 'upgradeplan': return 'UpgradePlan';
             case 'servicecontract': return 'ServiceContract';
             default: return t;
@@ -720,7 +718,6 @@
             case 'address': return `${val(row,'Street') ?? 'Address'}`;
             case 'deploymentvariant': return `${val(row,'VariantName') ?? 'DeploymentVariant'}`;
             case 'software': return `${val(row,'Name') ?? 'Software'}`;
-            case 'installedsoftware': return `${val(row,'InstalledSoftwareID') ?? 'InstalledSoftware'}`;
             case 'upgradeplan': return `${val(row,'UpgradePlanID') ?? 'UpgradePlan'}`;
             case 'servicecontract': return `${val(row,'ContractNumber') ?? 'ServiceContract'}`;
             default:        return '';
@@ -1676,7 +1673,7 @@
                 if (site) pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
             }
             if (pills.length) sections.push({ title: 'Belongs to', pills });
-        } else if (type === 'InstalledSoftware' || type === 'UpgradePlan') {
+        } else if (type === 'UpgradePlan') {
             const pills = [];
 
             const siteId = val(row,'SiteID');
@@ -1847,26 +1844,6 @@
                 return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
             }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId, projectId, siteId: id } });
 
-            const installedRows = await fetchJson(`/table/installedsoftware?limit=200`);
-            const installed = Array.isArray(installedRows)
-                ? installedRows.filter(isw => (val(isw,'SiteID') ?? '').toString() === (id ?? '').toString())
-                : [];
-            addSection(box, 'Installed Software', installed, isw => {
-                const installId = val(isw,'InstalledSoftwareID');
-                const label = labelFor('installedsoftware', isw);
-                const status = val(isw,'Status');
-                const softwareId = val(isw,'SoftwareID');
-                const descParts = [];
-                if(status) descParts.push(status);
-                if(softwareId) descParts.push(`Software ${shortId(softwareId).replace(/^##/, '#')}`);
-                return pillLink(
-                    `/details.html?type=installedsoftware&id=${encodeURIComponent(installId)}`,
-                    label,
-                    installId,
-                    descParts.join(' · ')
-                );
-            }, { entity: 'InstalledSoftware', label: 'Installed Software', params: { siteId: id } });
-
             const upgradeRows = await fetchJson(`/table/upgradeplan?limit=200`);
             const plans = Array.isArray(upgradeRows)
                 ? upgradeRows.filter(plan => (val(plan,'SiteID') ?? '').toString() === (id ?? '').toString())
@@ -1905,10 +1882,6 @@
             }, { entity: 'PhoneIntegration', label: 'PhoneIntegration', params: { clientId: id, siteId: val(row,'SiteID') } });
         }
         else if(type==='Software'){
-            const installedRows = await fetchJson(`/table/installedsoftware?limit=200`);
-            const installed = Array.isArray(installedRows)
-                ? installedRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
-                : [];
             const softwareContextLabel = (() => {
                 const name = val(row,'Name');
                 const release = val(row,'Release');
@@ -1916,22 +1889,6 @@
                 const parts = [name, release, revision].map(part => (part ?? '').toString().trim()).filter(Boolean);
                 return parts.length ? parts.join(' ') : '';
             })();
-            addSection(box, 'Installations', installed, isw => {
-                const installId = val(isw,'InstalledSoftwareID');
-                const label = labelFor('installedsoftware', isw);
-                const siteId = val(isw,'SiteID');
-                const descParts = [];
-                if(siteId){
-                    descParts.push(`Site ${shortId(siteId)}`);
-                }
-                return pillLink(`/details.html?type=installedsoftware&id=${encodeURIComponent(installId)}`, label, installId, descParts.join(' · '));
-            }, {
-                entity: 'InstalledSoftware',
-                label: 'InstalledSoftware',
-                params: { softwareId: id },
-                softwareLabel: softwareContextLabel
-            });
-
             const planRows = await fetchJson(`/table/upgradeplan?limit=200`);
             const plans = Array.isArray(planRows)
                 ? planRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
