@@ -21,11 +21,11 @@ const idxBtnSide = document.getElementById('idx-reindex-side');
 const sugList = document.getElementById('sug');
 
 const SEARCH_SCOPE_OPTIONS = {
-    all:     { key: 'all', label: 'All',     type: null },
-    country: { key: 'country', label: 'Country', type: 'country' },
-    city:    { key: 'city', label: 'City',    type: 'city' },
-    account: { key: 'account', label: 'Account', type: 'account' },
+    all: { key: 'all', label: 'All', type: null },
 };
+
+const SCOPE_ALIAS_LOOKUP = new Map();
+SCOPE_ALIAS_LOOKUP.set('all', 'all');
 
 let searchScopeKey = 'all';
 
@@ -39,22 +39,35 @@ function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','
 
 const shortcutCache = new Map();
 
+function resolveScopeKey(value) {
+    const normalized = normalizeTypeKey(value);
+    if (!normalized) return null;
+    if (SEARCH_SCOPE_OPTIONS[normalized]) return normalized;
+    const aliasTarget = SCOPE_ALIAS_LOOKUP.get(normalized);
+    if (aliasTarget && SEARCH_SCOPE_OPTIONS[aliasTarget]) return aliasTarget;
+    return null;
+}
+
 function normalizeScopeKey(value) {
-    const key = (value ?? '').toString().trim().toLowerCase();
-    return SEARCH_SCOPE_OPTIONS[key] ? key : 'all';
+    return resolveScopeKey(value) || 'all';
 }
 
 function getScopeOption(key) {
-    return SEARCH_SCOPE_OPTIONS[normalizeScopeKey(key)] || SEARCH_SCOPE_OPTIONS.all;
+    const resolved = resolveScopeKey(key);
+    if (resolved && SEARCH_SCOPE_OPTIONS[resolved]) {
+        return SEARCH_SCOPE_OPTIONS[resolved];
+    }
+    return SEARCH_SCOPE_OPTIONS.all;
 }
 
 function getScopeTypeValue() {
-    return getScopeOption(searchScopeKey).type;
+    const option = getScopeOption(searchScopeKey);
+    return option ? option.type : null;
 }
 
 function isScopeSelectable(value) {
-    const key = normalizeScopeKey(value);
-    return key !== 'all' && !!SEARCH_SCOPE_OPTIONS[key];
+    const resolved = resolveScopeKey(value);
+    return !!resolved && resolved !== 'all' && !!SEARCH_SCOPE_OPTIONS[resolved];
 }
 
 function updateScopeIndicator() {
@@ -400,53 +413,194 @@ function normalizeTypeKey(value) {
 }
 
 const ENTITY_TYPE_MAP = entityTypeRegistry?.ENTITY_TYPE_MAP || {
-    account: { detailType: 'account', typeToken: 'type:account', table: 'Account', aliases: ['account', 'accounts'] },
-    project: { detailType: 'project', typeToken: 'type:project', table: 'Project', aliases: ['project', 'projects'] },
-    site:    { detailType: 'site',    typeToken: 'type:site',    table: 'Site',    aliases: ['site', 'sites'] },
-    server:  { detailType: 'server',  typeToken: 'type:server',  table: 'Server',  aliases: ['server', 'servers'] },
-    client:  { detailType: 'client',  typeToken: 'type:client',  table: 'WorkingPosition', aliases: ['client', 'clients', 'workingposition'] },
-    radio:   { detailType: 'radio',   typeToken: 'type:radio',   table: 'Radio',   aliases: ['radio', 'radios'] },
-    audio:   { detailType: 'audio',   typeToken: 'type:audio',   table: 'AudioDevice', aliases: ['audio', 'audiodevice', 'audiodevices'] },
-    phone:   { detailType: 'phone',   typeToken: 'type:phone',   table: 'PhoneIntegration', aliases: ['phone', 'phoneintegration', 'phoneintegrations'] },
-    country: { detailType: 'country', typeToken: 'type:country', table: 'Country', aliases: ['country', 'countries'] },
-    city:    { detailType: 'city',    typeToken: 'type:city',    table: 'City',    aliases: ['city', 'cities'] },
-    address: { detailType: 'address', typeToken: 'type:address', table: 'Address', aliases: ['address', 'addresses'] },
+    account: {
+        detailType: 'account',
+        typeToken: 'type:account',
+        table: 'Account',
+        detailTable: 'Account',
+        aliases: ['account', 'accounts'],
+    },
+    project: {
+        detailType: 'project',
+        typeToken: 'type:project',
+        table: 'Project',
+        detailTable: 'Project',
+        aliases: ['project', 'projects'],
+    },
+    site: {
+        detailType: 'site',
+        typeToken: 'type:site',
+        table: 'Site',
+        detailTable: 'Site',
+        aliases: ['site', 'sites'],
+    },
+    server: {
+        detailType: 'server',
+        typeToken: 'type:server',
+        table: 'Server',
+        detailTable: 'Server',
+        aliases: ['server', 'servers'],
+    },
+    client: {
+        detailType: 'client',
+        typeToken: 'type:client',
+        table: 'WorkingPosition',
+        detailTable: 'Clients',
+        aliases: ['client', 'clients', 'workingposition', 'workingpositions'],
+    },
+    radio: {
+        detailType: 'radio',
+        typeToken: 'type:radio',
+        table: 'Radio',
+        detailTable: 'Radio',
+        aliases: ['radio', 'radios'],
+    },
+    audio: {
+        detailType: 'audio',
+        typeToken: 'type:audio',
+        table: 'AudioDevice',
+        detailTable: 'AudioDevice',
+        aliases: ['audio', 'audiodevice', 'audiodevices'],
+    },
+    phone: {
+        detailType: 'phone',
+        typeToken: 'type:phone',
+        table: 'PhoneIntegration',
+        detailTable: 'PhoneIntegration',
+        aliases: ['phone', 'phoneintegration', 'phoneintegrations'],
+    },
+    country: {
+        detailType: 'country',
+        typeToken: 'type:country',
+        table: 'Country',
+        detailTable: 'Country',
+        aliases: ['country', 'countries'],
+    },
+    city: {
+        detailType: 'city',
+        typeToken: 'type:city',
+        table: 'City',
+        detailTable: 'City',
+        aliases: ['city', 'cities'],
+    },
+    address: {
+        detailType: 'address',
+        typeToken: 'type:address',
+        table: 'Address',
+        detailTable: 'Address',
+        aliases: ['address', 'addresses'],
+    },
     deploymentvariant: {
         detailType: 'deploymentvariant',
         typeToken: 'type:deploymentvariant',
         table: 'DeploymentVariant',
-        aliases: ['deploymentvariant', 'variant', 'deploymentvariants', 'variants']
+        detailTable: 'DeploymentVariant',
+        aliases: ['deploymentvariant', 'variant', 'deploymentvariants', 'variants'],
     },
     software: {
         detailType: 'software',
         typeToken: 'type:software',
         table: 'Software',
-        aliases: ['software', 'softwares']
+        detailTable: 'Software',
+        aliases: ['software', 'softwares'],
     },
     installedsoftware: {
         detailType: 'installedsoftware',
         typeToken: 'type:installedsoftware',
         table: 'InstalledSoftware',
-        aliases: ['installedsoftware', 'installations']
+        detailTable: 'InstalledSoftware',
+        aliases: ['installedsoftware', 'installations'],
     },
     upgradeplan: {
         detailType: 'upgradeplan',
         typeToken: 'type:upgradeplan',
         table: 'UpgradePlan',
-        aliases: ['upgradeplan', 'upgradeplans']
+        detailTable: 'UpgradePlan',
+        aliases: ['upgradeplan', 'upgradeplans'],
     },
     servicecontract: {
         detailType: 'servicecontract',
         typeToken: 'type:servicecontract',
         table: 'ServiceContract',
-        aliases: ['servicecontract', 'servicecontracts', 'contract', 'contracts']
+        detailTable: 'ServiceContract',
+        aliases: ['servicecontract', 'servicecontracts', 'contract', 'contracts'],
     },
 };
+
+initializeScopeOptionsFromEntityTypes();
+
+function initializeScopeOptionsFromEntityTypes() {
+    if (!ENTITY_TYPE_MAP) return;
+    Object.entries(ENTITY_TYPE_MAP).forEach(([entryKey, info]) => {
+        if (!info) return;
+        const canonicalKey = normalizeTypeKey(info.detailType || entryKey);
+        if (!canonicalKey || canonicalKey === 'all') return;
+        const backendType = info.detailType || canonicalKey;
+        const label = deriveScopeLabel(info, entryKey);
+        SEARCH_SCOPE_OPTIONS[canonicalKey] = {
+            key: canonicalKey,
+            label,
+            type: backendType,
+        };
+        registerScopeAlias(canonicalKey, canonicalKey);
+        registerScopeAlias(entryKey, canonicalKey);
+        registerScopeAlias(info.detailType, canonicalKey);
+        registerScopeAlias(info.typeToken, canonicalKey);
+        registerScopeAlias(info.table, canonicalKey);
+        registerScopeAlias(info.detailTable, canonicalKey);
+        if (Array.isArray(info.aliases)) {
+            info.aliases.forEach(alias => registerScopeAlias(alias, canonicalKey));
+        }
+    });
+}
+
+function registerScopeAlias(value, canonicalKey) {
+    if (!canonicalKey) return;
+    const normalized = normalizeTypeKey(value);
+    if (normalized && normalized !== 'all') {
+        const existing = SCOPE_ALIAS_LOOKUP.get(normalized);
+        if (!existing) {
+            SCOPE_ALIAS_LOOKUP.set(normalized, canonicalKey);
+        } else if (existing !== canonicalKey) {
+            return;
+        }
+    }
+    if (value === undefined || value === null) return;
+    const raw = String(value).trim();
+    if (!raw || raw.startsWith('type:')) return;
+    const luceneAlias = normalizeTypeKey(`type:${raw}`);
+    if (luceneAlias && !SCOPE_ALIAS_LOOKUP.has(luceneAlias)) {
+        SCOPE_ALIAS_LOOKUP.set(luceneAlias, canonicalKey);
+    }
+}
+
+function deriveScopeLabel(info, fallbackKey) {
+    const labelSource = info?.detailTable || info?.table || info?.detailType || fallbackKey;
+    const label = humanizeScopeLabel(labelSource);
+    if (label) return label;
+    const fallback = humanizeScopeLabel(fallbackKey);
+    return fallback || (fallbackKey ? String(fallbackKey) : '');
+}
+
+function humanizeScopeLabel(value) {
+    if (value === undefined || value === null) return '';
+    const trimmed = String(value).trim();
+    if (!trimmed) return '';
+    const spaced = trimmed
+        .replace(/[_\s]+/g, ' ')
+        .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2');
+    return spaced
+        .split(' ')
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ');
+}
 
 const TABLE_NAME_LOOKUP = entityTypeRegistry?.TABLE_NAME_LOOKUP || (() => {
     const lookup = {};
     Object.entries(ENTITY_TYPE_MAP).forEach(([key, info]) => {
-        const aliases = new Set([key, info.table, info.detailType, ...(info.aliases || [])]);
+        const aliases = new Set([key, info.table, info.detailType, info.detailTable, ...(info.aliases || [])]);
         aliases.forEach(alias => {
             const normalized = normalizeTypeKey(alias);
             if (normalized) lookup[normalized] = info;
@@ -829,7 +983,8 @@ function runSearch(raw, options = {}) {
     if (options.updateInput !== false && searchInput) {
         searchInput.value = text;
     }
-    const scopeType = getScopeTypeValue();
+    const scopeOption = getScopeOption(searchScopeKey);
+    const scopeType = scopeOption ? scopeOption.type : null;
     const prepared = buildScopedQuery(text, scopeType);
     if (!prepared) {
         if (!options.skipUrlUpdate) updateUrlState(text);
@@ -838,7 +993,7 @@ function runSearch(raw, options = {}) {
     if (!options.skipUrlUpdate) {
         updateUrlState(text);
     }
-    runLucene(prepared, scopeType);
+    runLucene(prepared, scopeOption);
 }
 
 function shortUuid(value) {
@@ -874,23 +1029,25 @@ function renderIdDisplay(value) {
 }
 
 function renderTypeCell(typeValue) {
-    const normalized = normalizeTypeKey(typeValue);
-    if (isScopeSelectable(normalized)) {
-        const option = getScopeOption(normalized);
-        const label = option.label;
-        return `<button type="button" class="search-type-pill" data-search-type="${option.key}">${escapeHtml(label)}</button>`;
+    const resolved = resolveScopeKey(typeValue);
+    if (resolved && resolved !== 'all') {
+        const option = getScopeOption(resolved);
+        if (option && option.key !== 'all') {
+            const label = option.label;
+            return `<button type="button" class="search-type-pill" data-search-type="${option.key}">${escapeHtml(label)}</button>`;
+        }
     }
     return escapeHtml(typeValue ?? '');
 }
 
-function filterHitsByScope(hits, scopeType) {
+function filterHitsByScope(hits, scopeKey) {
     if (!Array.isArray(hits)) return [];
-    const normalizedScope = scopeType ? normalizeTypeKey(scopeType) : '';
-    if (!normalizedScope) return hits;
-    return hits.filter(hit => normalizeTypeKey(hit.type) === normalizedScope);
+    const canonicalScope = resolveScopeKey(scopeKey);
+    if (!canonicalScope || canonicalScope === 'all') return hits;
+    return hits.filter(hit => resolveScopeKey(hit?.type) === canonicalScope);
 }
 
-async function runLucene(q, scopeType) {
+async function runLucene(q, scopeOption) {
     const query = (q ?? '').trim();
     if (!query) {
         resultArea.textContent = '(no matches)';
@@ -902,12 +1059,16 @@ async function runLucene(q, scopeType) {
             ? new URL(API.search, window.location.origin)
             : new URL(API.search, 'http://localhost');
         url.searchParams.set('q', query);
+        const scopeType = scopeOption?.type || null;
+        const scopeKey = scopeOption?.key || null;
         if (scopeType) {
-            url.searchParams.set('type', normalizeScopeKey(scopeType));
+            url.searchParams.set('type', scopeType);
+        } else {
+            url.searchParams.delete('type');
         }
         const res  = await fetch(url.toString());
         const hits = await res.json();
-        const filteredHits = filterHitsByScope(hits, scopeType);
+        const filteredHits = filterHitsByScope(hits, scopeKey);
         if (!Array.isArray(filteredHits) || !filteredHits.length) {
             resultArea.textContent = '(no matches)';
             return;
