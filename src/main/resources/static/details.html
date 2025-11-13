@@ -28,6 +28,9 @@
         .status-badge--active{background:#ecfdf5;border-color:#a7f3d0;color:#047857;}
         .status-badge--maintenance{background:#fff7ed;border-color:#fed7aa;color:#c2410c;}
         .status-badge--retired{background:#f5f5f5;border-color:#d4d4d4;color:#52525b;}
+        .status-badge--offered{background:#f0f9ff;border-color:#bae6fd;color:#0369a1;}
+        .status-badge--installed{background:#ecfdf5;border-color:#bbf7d0;color:#047857;}
+        .status-badge--rejected{background:#fef2f2;border-color:#fecaca;color:#b91c1c;}
         .nav-buttons{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center}
         .nav-buttons a{
             display:inline-flex;align-items:center;gap:.4rem;padding:.48rem 1.05rem;border-radius:.55rem;
@@ -36,6 +39,20 @@
             box-shadow:0 2px 4px rgba(15,23,42,.12);
         }
         .nav-buttons a:focus,.nav-buttons a:hover{background:#0054a6;color:#fff;outline:2px solid transparent;outline-offset:2px;box-shadow:0 0 0 2px rgba(0,103,194,.2)}
+        .software-overview{display:grid;gap:1rem;margin-top:.5rem}
+        .software-overview__item{border:1px solid #e5e7eb;border-radius:.75rem;padding:1rem;background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+        .software-overview__header{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}
+        .software-overview__name{font-weight:600;font-size:1.05rem;color:#111827;text-decoration:none}
+        .software-overview__name:hover,.software-overview__name:focus{text-decoration:underline}
+        .software-overview__version{color:#4b5563;font-size:.9rem}
+        .software-overview__status-text{font-weight:600;color:#374151}
+        .software-overview__meta{margin:.75rem 0 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;font-size:.9rem;color:#4b5563}
+        .software-overview__meta li{display:flex;align-items:center;gap:.35rem}
+        .software-overview__meta-label{font-weight:600;color:#1f2937;position:relative}
+        .software-overview__meta-label::after{content:':';margin-left:.1rem;color:#6b7280}
+        .software-overview__meta a{color:#1d4ed8;text-decoration:none}
+        .software-overview__meta a:hover,.software-overview__meta a:focus{text-decoration:underline}
+        .software-overview__notes{margin:.75rem 0 0 0;color:#4b5563;font-size:.9rem;line-height:1.4}
     </style>
 </head>
 <body>
@@ -83,7 +100,6 @@
         Address: 'AddressID',
         DeploymentVariant: 'VariantID',
         Software: 'SoftwareID',
-        InstalledSoftware: 'InstalledSoftwareID',
         UpgradePlan: 'UpgradePlanID',
         ServiceContract: 'ContractID'
     };
@@ -93,6 +109,12 @@
         ACTIVE: { label: 'Active', tone: 'active' },
         MAINTENANCE: { label: 'Maintenance', tone: 'maintenance' },
         RETIRED: { label: 'Retired', tone: 'retired' }
+    };
+
+    const INSTALL_STATUS_DISPLAY = {
+        OFFERED: { label: 'Offered', tone: 'offered' },
+        INSTALLED: { label: 'Installed', tone: 'installed' },
+        REJECTED: { label: 'Rejected', tone: 'rejected' }
     };
 
     const ALLOWED_AUDIO_DEVICE_TYPES = new Set(['HEADSET','SPEAKER','MIC']);
@@ -109,6 +131,21 @@
             return escapeHtml(raw);
         }
         return `<span class="status-badge status-badge--${entry.tone}">${escapeHtml(entry.label)}</span>`;
+    }
+
+    function normalizeInstallStatus(value){
+        return (value ?? '').toString().trim().toUpperCase();
+    }
+
+    function renderInstallStatusBadge(value, displayLabel){
+        const normalized = normalizeInstallStatus(value);
+        const entry = INSTALL_STATUS_DISPLAY[normalized];
+        if(!entry){
+            const raw = displayLabel ?? value;
+            return raw === undefined || raw === null ? '' : escapeHtml(String(raw));
+        }
+        const label = displayLabel ?? entry.label;
+        return `<span class="status-badge status-badge--${entry.tone}">${escapeHtml(label)}</span>`;
     }
 
 
@@ -240,7 +277,6 @@
             case 'address': return 'Address';
             case 'deploymentvariant': return 'DeploymentVariant';
             case 'software': return 'Software';
-            case 'installedsoftware': return 'InstalledSoftware';
             case 'upgradeplan': return 'UpgradePlan';
             case 'servicecontract': return 'ServiceContract';
             default: return t;
@@ -720,7 +756,6 @@
             case 'address': return `${val(row,'Street') ?? 'Address'}`;
             case 'deploymentvariant': return `${val(row,'VariantName') ?? 'DeploymentVariant'}`;
             case 'software': return `${val(row,'Name') ?? 'Software'}`;
-            case 'installedsoftware': return `${val(row,'InstalledSoftwareID') ?? 'InstalledSoftware'}`;
             case 'upgradeplan': return `${val(row,'UpgradePlanID') ?? 'UpgradePlan'}`;
             case 'servicecontract': return `${val(row,'ContractNumber') ?? 'ServiceContract'}`;
             default:        return '';
@@ -821,6 +856,354 @@
         list.forEach(it => wrap.appendChild(toLink(it)));
         sec.appendChild(wrap);
         container.appendChild(sec);
+    }
+
+    const SOFTWARE_OVERVIEW_ENDPOINT_BUILDERS = [
+        (ctx = {}) => {
+            const params = new URLSearchParams();
+            if(ctx.siteId) params.set('siteId', ctx.siteId);
+            if(ctx.softwareId) params.set('softwareId', ctx.softwareId);
+            const query = params.toString();
+            return `/api/software-overview${query ? `?${query}` : ''}`;
+        },
+        (ctx = {}) => ctx.siteId ? `/sites/${encodeURIComponent(ctx.siteId)}/software/overview` : null,
+        (ctx = {}) => ctx.siteId ? `/sites/${encodeURIComponent(ctx.siteId)}/software` : null,
+        (ctx = {}) => ctx.siteId ? `/api/sites/${encodeURIComponent(ctx.siteId)}/software/overview` : null,
+        (ctx = {}) => ctx.siteId ? `/api/sites/${encodeURIComponent(ctx.siteId)}/software` : null,
+        (ctx = {}) => ctx.softwareId ? `/software/${encodeURIComponent(ctx.softwareId)}/deployments` : null,
+        (ctx = {}) => ctx.softwareId ? `/software/${encodeURIComponent(ctx.softwareId)}/sites` : null,
+        (ctx = {}) => ctx.softwareId ? `/api/software/${encodeURIComponent(ctx.softwareId)}/deployments` : null,
+        (ctx = {}) => ctx.softwareId ? `/api/software/${encodeURIComponent(ctx.softwareId)}/sites` : null,
+    ];
+
+    async function fetchSoftwareOverview(context = {}){
+        const seen = new Set();
+        for(const builder of SOFTWARE_OVERVIEW_ENDPOINT_BUILDERS){
+            let url = null;
+            try {
+                url = builder(context);
+            } catch {
+                url = null;
+            }
+            if(!url || seen.has(url)) continue;
+            seen.add(url);
+            try {
+                const data = await fetchJson(url);
+                if(Array.isArray(data)){
+                    return data;
+                }
+            } catch {
+                // ignore failed endpoint attempts
+            }
+        }
+        return [];
+    }
+
+    function normalizeSoftwareOverviewEntry(item){
+        if(!item || typeof item !== 'object') return null;
+
+        const softwareId = val(item,'SoftwareID','softwareID','softwareId','SoftwareId','Id','ID');
+        const siteId = val(item,'SiteID','siteID','siteId','SiteId');
+
+        const rawSoftwareName = (val(item,'SoftwareName','softwareName','Software','software','SoftwareLabel','softwareLabel','Name','name','Label','label','Title','title') ?? '').toString().trim();
+        const rawSiteName = (val(item,'SiteName','siteName','Site','site','SiteLabel','siteLabel','Location','location') ?? '').toString().trim();
+
+        const softwareDisplayName = rawSoftwareName || (softwareId ? `Software ${shortId(softwareId).replace(/^##/, '#')}` : 'Software');
+        const siteDisplayName = rawSiteName || (siteId ? `Site ${shortId(siteId).replace(/^##/, '#')}` : 'Site');
+
+        const primaryStatus = val(item,'Status','status','State','state','InstallStatus','installStatus');
+        const statusLabel = val(item,'StatusLabel','statusLabel','StatusText','statusText');
+        const lifecycleStatus = val(item,'LifecycleStatus','lifecycleStatus');
+        const supportPhase = val(item,'SupportPhase','supportPhase');
+        const phase = val(item,'Phase','phase');
+        const fallbackStatus = primaryStatus ?? lifecycleStatus ?? supportPhase ?? phase ?? null;
+
+        return {
+            softwareId,
+            siteId,
+            softwareDisplayName,
+            siteDisplayName,
+            rawSoftwareName,
+            rawSiteName,
+            release: val(item,'Release','release','Version','version'),
+            revision: val(item,'Revision','revision'),
+            status: primaryStatus,
+            fallbackStatus,
+            statusLabel,
+            statusSince: val(item,'StatusSince','statusSince','StatusDate','statusDate','StatusChangedAt','statusChangedAt','StatusUpdatedAt','statusUpdatedAt'),
+            installedAt: val(item,'InstalledAt','installedAt','InstalledOn','installedOn'),
+            offeredAt: val(item,'OfferedAt','offeredAt','OfferedOn','offeredOn'),
+            plannedStart: val(item,'PlannedWindowStart','plannedWindowStart','NextWindowStart','nextWindowStart','PlannedStart','plannedStart','WindowStart','windowStart'),
+            plannedEnd: val(item,'PlannedWindowEnd','plannedWindowEnd','NextWindowEnd','nextWindowEnd','PlannedEnd','plannedEnd','WindowEnd','windowEnd'),
+            createdAt: val(item,'CreatedAt','createdAt'),
+            updatedAt: val(item,'UpdatedAt','updatedAt','LastUpdated','lastUpdated'),
+            supportStart: val(item,'SupportStartDate','supportStartDate'),
+            supportEnd: val(item,'SupportEndDate','supportEndDate'),
+            supportPhase,
+            lifecycleStatus,
+            licenseModel: val(item,'LicenseModel','licenseModel'),
+            thirdParty: val(item,'ThirdParty','thirdParty','IsThirdParty','isThirdParty'),
+            vendorName: val(item,'Vendor','vendor','Manufacturer','manufacturer','Supplier','supplier'),
+            notes: val(item,'Notes','notes','Comment','comment','Remarks','remarks','Description','description'),
+            projectId: val(item,'ProjectID','projectID','projectId','ProjectId'),
+            projectName: (val(item,'ProjectName','projectName') ?? '').toString().trim(),
+            accountId: val(item,'AccountID','accountID','accountId','AccountId'),
+            accountName: (val(item,'AccountName','accountName') ?? '').toString().trim(),
+            fireZone: val(item,'FireZone','fireZone','Zone','zone'),
+            tenantCount: val(item,'TenantCount','tenantCount'),
+        };
+    }
+
+    function buildStatusBadgeHtml(statusValue, statusLabel){
+        const base = statusValue ?? statusLabel;
+        if(!base && !statusLabel) return '';
+        const normalizedInstall = normalizeInstallStatus(base);
+        if(INSTALL_STATUS_DISPLAY[normalizedInstall]){
+            return renderInstallStatusBadge(base, statusLabel ?? INSTALL_STATUS_DISPLAY[normalizedInstall].label);
+        }
+        const normalizedLifecycle = normalizeLifecycleStatus(base);
+        if(LIFECYCLE_STATUS_DISPLAY[normalizedLifecycle]){
+            const label = statusLabel ?? LIFECYCLE_STATUS_DISPLAY[normalizedLifecycle].label;
+            return `<span class="status-badge status-badge--${LIFECYCLE_STATUS_DISPLAY[normalizedLifecycle].tone}">${escapeHtml(label)}</span>`;
+        }
+        const label = statusLabel ?? base;
+        return label ? `<span class="software-overview__status-text">${escapeHtml(label)}</span>` : '';
+    }
+
+    function appendStatusBadgeElement(container, entry){
+        if(!container || !entry) return;
+        const statusValue = entry.status ?? entry.fallbackStatus;
+        const badgeHtml = buildStatusBadgeHtml(statusValue, entry.statusLabel);
+        if(!badgeHtml) return;
+        const wrapper = document.createElement('span');
+        wrapper.innerHTML = badgeHtml;
+        while(wrapper.firstChild){
+            container.appendChild(wrapper.firstChild);
+        }
+    }
+
+    function normalizeBoolean(value){
+        if(value === undefined || value === null) return null;
+        if(typeof value === 'boolean') return value;
+        const normalized = value.toString().trim().toLowerCase();
+        if(!normalized) return null;
+        if(['true','1','yes','y','ja','on'].includes(normalized)) return true;
+        if(['false','0','no','n','nein','off'].includes(normalized)) return false;
+        return null;
+    }
+
+    function describeVendor(entry){
+        if(!entry) return '';
+        if(entry.vendorName){
+            const label = entry.vendorName.toString().trim();
+            if(label) return label;
+        }
+        const bool = normalizeBoolean(entry.thirdParty);
+        if(bool === null) return '';
+        return bool ? 'Third-party' : 'First-party';
+    }
+
+    function createEntityLink(type, id, label){
+        if(!id) return null;
+        const link = document.createElement('a');
+        link.href = `/details.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+        link.textContent = (label ?? '').toString().trim() || `${type.charAt(0).toUpperCase()}${type.slice(1)} ${shortId(id).replace(/^##/, '#')}`;
+        return link;
+    }
+
+    function appendMeta(metaList, label, value, options = {}){
+        if(!metaList || !label) return;
+        if(options.node instanceof Node){
+            const li = document.createElement('li');
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'software-overview__meta-label';
+            labelSpan.textContent = label;
+            li.appendChild(labelSpan);
+            li.appendChild(options.node);
+            metaList.appendChild(li);
+            return;
+        }
+        if(options.html){
+            if(!value) return;
+            const li = document.createElement('li');
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'software-overview__meta-label';
+            labelSpan.textContent = label;
+            li.appendChild(labelSpan);
+            const wrapper = document.createElement('span');
+            wrapper.innerHTML = value;
+            if(!wrapper.hasChildNodes()){
+                const text = wrapper.textContent.trim();
+                if(!text) return;
+                const textNode = document.createElement('span');
+                textNode.textContent = text;
+                li.appendChild(textNode);
+            } else {
+                while(wrapper.firstChild){
+                    li.appendChild(wrapper.firstChild);
+                }
+            }
+            metaList.appendChild(li);
+            return;
+        }
+        if(value === undefined || value === null) return;
+        const str = value.toString().trim();
+        if(!str) return;
+        const li = document.createElement('li');
+        const labelSpan = document.createElement('span');
+        labelSpan.className = 'software-overview__meta-label';
+        labelSpan.textContent = label;
+        li.appendChild(labelSpan);
+        const valueSpan = document.createElement('span');
+        valueSpan.textContent = str;
+        li.appendChild(valueSpan);
+        metaList.appendChild(li);
+    }
+
+    function buildSoftwareOverviewItem(entry, context){
+        const item = document.createElement('div');
+        item.className = 'software-overview__item';
+
+        const header = document.createElement('div');
+        header.className = 'software-overview__header';
+
+        const isSoftwareContext = context === 'software';
+        const linkType = isSoftwareContext ? 'site' : 'software';
+        const linkId = isSoftwareContext ? entry.siteId : entry.softwareId;
+        const displayName = (isSoftwareContext ? entry.siteDisplayName : entry.softwareDisplayName) || (isSoftwareContext ? entry.rawSiteName : entry.rawSoftwareName);
+        const fallbackName = isSoftwareContext
+            ? (entry.siteId ? `Site ${shortId(entry.siteId).replace(/^##/, '#')}` : 'Site')
+            : (entry.softwareId ? `Software ${shortId(entry.softwareId).replace(/^##/, '#')}` : 'Software');
+        const finalName = (displayName || '').toString().trim() || fallbackName;
+
+        if(linkId){
+            const anchor = document.createElement('a');
+            anchor.className = 'software-overview__name';
+            anchor.href = `/details.html?type=${encodeURIComponent(linkType)}&id=${encodeURIComponent(linkId)}`;
+            anchor.textContent = finalName;
+            header.appendChild(anchor);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'software-overview__name';
+            span.textContent = finalName;
+            header.appendChild(span);
+        }
+
+        const chipHtml = formatIdChip(linkId);
+        if(chipHtml){
+            const chipWrapper = document.createElement('span');
+            chipWrapper.innerHTML = chipHtml;
+            if(chipWrapper.firstChild){
+                header.appendChild(chipWrapper.firstChild);
+            }
+        }
+
+        if(!isSoftwareContext){
+            const versionParts = [];
+            if(entry.release) versionParts.push(`Release ${entry.release}`);
+            if(entry.revision) versionParts.push(`Rev ${entry.revision}`);
+            if(versionParts.length){
+                const version = document.createElement('span');
+                version.className = 'software-overview__version';
+                version.textContent = versionParts.join(' · ');
+                header.appendChild(version);
+            }
+        }
+
+        appendStatusBadgeElement(header, entry);
+
+        item.appendChild(header);
+
+        const meta = document.createElement('ul');
+        meta.className = 'software-overview__meta';
+
+        appendMeta(meta, 'Status since', formatDateLabel(entry.statusSince));
+        appendMeta(meta, 'Installed', formatDateLabel(entry.installedAt));
+        appendMeta(meta, 'Offered', formatDateLabel(entry.offeredAt));
+        appendMeta(meta, 'Planned window', formatDateRange(entry.plannedStart, entry.plannedEnd));
+        appendMeta(meta, 'Support window', formatDateRange(entry.supportStart, entry.supportEnd));
+
+        if(entry.supportPhase){
+            const badge = renderLifecycleStatusBadge(entry.supportPhase);
+            if(badge) appendMeta(meta, 'Support phase', badge, { html: true });
+        }
+
+        const vendor = describeVendor(entry);
+        if(vendor) appendMeta(meta, 'Vendor', vendor);
+
+        if(entry.licenseModel) appendMeta(meta, 'License', entry.licenseModel);
+        appendMeta(meta, 'Updated', formatDateLabel(entry.updatedAt));
+        appendMeta(meta, 'Created', formatDateLabel(entry.createdAt));
+
+        if(isSoftwareContext){
+            if(entry.release || entry.revision){
+                const versionBits = [];
+                if(entry.release) versionBits.push(`Release ${entry.release}`);
+                if(entry.revision) versionBits.push(`Rev ${entry.revision}`);
+                appendMeta(meta, 'Version', versionBits.join(' · '));
+            }
+            if(entry.fireZone) appendMeta(meta, 'Fire zone', entry.fireZone);
+            if(entry.tenantCount !== undefined && entry.tenantCount !== null){
+                appendMeta(meta, 'Tenants', entry.tenantCount);
+            }
+            if(entry.projectId || entry.projectName){
+                const projectLink = createEntityLink('project', entry.projectId, entry.projectName);
+                if(projectLink) appendMeta(meta, 'Project', null, { node: projectLink });
+                else if(entry.projectName) appendMeta(meta, 'Project', entry.projectName);
+            }
+            if(entry.accountId || entry.accountName){
+                const accountLink = createEntityLink('account', entry.accountId, entry.accountName);
+                if(accountLink) appendMeta(meta, 'Account', null, { node: accountLink });
+                else if(entry.accountName) appendMeta(meta, 'Account', entry.accountName);
+            }
+        }
+
+        if(meta.childNodes.length){
+            item.appendChild(meta);
+        }
+
+        const notes = (entry.notes ?? '').toString().trim();
+        if(notes){
+            const noteEl = document.createElement('p');
+            noteEl.className = 'software-overview__notes';
+            noteEl.textContent = notes;
+            item.appendChild(noteEl);
+        }
+
+        return item;
+    }
+
+    function renderSoftwareOverviewSection(container, config = {}){
+        const context = config.context === 'software' ? 'software' : 'site';
+        const title = config.title ?? 'Software Overview';
+        const emptyMessage = config.emptyMessage ?? '(no entries)';
+        const sourceItems = Array.isArray(config.items) ? config.items : [];
+
+        const normalized = sourceItems
+            .map(normalizeSoftwareOverviewEntry)
+            .filter(entry => entry && (context === 'software' ? (entry.siteDisplayName || entry.siteId) : (entry.softwareDisplayName || entry.softwareId)));
+
+        const section = document.createElement('div');
+        section.className = 'section';
+
+        const heading = document.createElement('h2');
+        heading.innerHTML = `${escapeHtml(title)} <span class="count">(${normalized.length})</span>`;
+        section.appendChild(heading);
+
+        if(!normalized.length){
+            const empty = document.createElement('div');
+            empty.className = 'empty';
+            empty.textContent = emptyMessage;
+            section.appendChild(empty);
+            container.appendChild(section);
+            return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'software-overview';
+        normalized.forEach(entry => list.appendChild(buildSoftwareOverviewItem(entry, context)));
+        section.appendChild(list);
+        container.appendChild(section);
     }
 
     function resetDetailRefs(){
@@ -1676,7 +2059,7 @@
                 if (site) pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
             }
             if (pills.length) sections.push({ title: 'Belongs to', pills });
-        } else if (type === 'InstalledSoftware' || type === 'UpgradePlan') {
+        } else if (type === 'UpgradePlan') {
             const pills = [];
 
             const siteId = val(row,'SiteID');
@@ -1847,25 +2230,13 @@
                 return pillLink(`/details.html?type=servicecontract&id=${encodeURIComponent(cid)}`, labelFor('servicecontract', sc), cid, desc);
             }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId, projectId, siteId: id } });
 
-            const installedRows = await fetchJson(`/table/installedsoftware?limit=200`);
-            const installed = Array.isArray(installedRows)
-                ? installedRows.filter(isw => (val(isw,'SiteID') ?? '').toString() === (id ?? '').toString())
-                : [];
-            addSection(box, 'Installed Software', installed, isw => {
-                const installId = val(isw,'InstalledSoftwareID');
-                const label = labelFor('installedsoftware', isw);
-                const status = val(isw,'Status');
-                const softwareId = val(isw,'SoftwareID');
-                const descParts = [];
-                if(status) descParts.push(status);
-                if(softwareId) descParts.push(`Software ${shortId(softwareId).replace(/^##/, '#')}`);
-                return pillLink(
-                    `/details.html?type=installedsoftware&id=${encodeURIComponent(installId)}`,
-                    label,
-                    installId,
-                    descParts.join(' · ')
-                );
-            }, { entity: 'InstalledSoftware', label: 'Installed Software', params: { siteId: id } });
+            const softwareOverview = await fetchSoftwareOverview({ siteId: id });
+            renderSoftwareOverviewSection(box, {
+                title: 'Software Overview',
+                items: softwareOverview,
+                context: 'site',
+                emptyMessage: 'No software assignments recorded yet.'
+            });
 
             const upgradeRows = await fetchJson(`/table/upgradeplan?limit=200`);
             const plans = Array.isArray(upgradeRows)
@@ -1905,10 +2276,6 @@
             }, { entity: 'PhoneIntegration', label: 'PhoneIntegration', params: { clientId: id, siteId: val(row,'SiteID') } });
         }
         else if(type==='Software'){
-            const installedRows = await fetchJson(`/table/installedsoftware?limit=200`);
-            const installed = Array.isArray(installedRows)
-                ? installedRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
-                : [];
             const softwareContextLabel = (() => {
                 const name = val(row,'Name');
                 const release = val(row,'Release');
@@ -1916,20 +2283,13 @@
                 const parts = [name, release, revision].map(part => (part ?? '').toString().trim()).filter(Boolean);
                 return parts.length ? parts.join(' ') : '';
             })();
-            addSection(box, 'Installations', installed, isw => {
-                const installId = val(isw,'InstalledSoftwareID');
-                const label = labelFor('installedsoftware', isw);
-                const siteId = val(isw,'SiteID');
-                const descParts = [];
-                if(siteId){
-                    descParts.push(`Site ${shortId(siteId)}`);
-                }
-                return pillLink(`/details.html?type=installedsoftware&id=${encodeURIComponent(installId)}`, label, installId, descParts.join(' · '));
-            }, {
-                entity: 'InstalledSoftware',
-                label: 'InstalledSoftware',
-                params: { softwareId: id },
-                softwareLabel: softwareContextLabel
+
+            const deploymentOverview = await fetchSoftwareOverview({ softwareId: id });
+            renderSoftwareOverviewSection(box, {
+                title: 'Deployments',
+                items: deploymentOverview,
+                context: 'software',
+                emptyMessage: 'No deployments recorded for this software.'
             });
 
             const planRows = await fetchJson(`/table/upgradeplan?limit=200`);
