@@ -22,6 +22,13 @@ public class SiteController {
     private final NamedParameterJdbcTemplate jdbc;
     private static final Logger log = LoggerFactory.getLogger(SiteController.class);
     private static final String TABLE = "Site";
+    private static final Set<String> ALLOWED_COLUMNS = Set.of(
+            "SiteName",
+            "ProjectID",
+            "AddressID",
+            "FireZone",
+            "TenantCount"
+    );
 
     public SiteController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -121,6 +128,8 @@ public class SiteController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
 
+        validateColumns(body.keySet());
+
         StringBuilder sql = new StringBuilder("UPDATE Site SET ");
         List<String> sets = new ArrayList<>();
         for (String key : body.keySet()) {
@@ -158,6 +167,14 @@ public class SiteController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no site deleted");
         }
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("SiteID", id));
+    }
+
+    private void validateColumns(Collection<String> keys) {
+        for (String key : keys) {
+            if (!ALLOWED_COLUMNS.contains(key)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown column: " + key);
+            }
+        }
     }
 
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
