@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Generic table-based CRUD controller.
@@ -29,6 +30,8 @@ public class GenericCrudController {
     // -------- Whitelist of allowed tables and aliases --------
     private static final Map<String, String> TABLES;
     private static final Map<String, String> PKS;
+    private static final Map<String, Set<String>> COLUMNS;
+    private static final Pattern COLUMN_PATTERN = Pattern.compile("[A-Za-z0-9_]+");
 
     static {
         Map<String, String> t = new LinkedHashMap<>();
@@ -70,6 +73,25 @@ public class GenericCrudController {
         p.put("UpgradePlan", "UpgradePlanID");
         p.put("ServiceContract", "ContractID");
         PKS = Collections.unmodifiableMap(p);
+
+        Map<String, Set<String>> c = new HashMap<>();
+        c.put("Account", Set.of("AccountID", "AccountName", "ContactName", "ContactEmail", "ContactPhone", "VATNumber", "Country"));
+        c.put("Project", Set.of("ProjectID", "ProjectSAPID", "ProjectName", "DeploymentVariantID", "BundleType", "CreateDateTime", "LifecycleStatus", "AccountID", "AddressID"));
+        c.put("Site", Set.of("SiteID", "SiteName", "ProjectID", "AddressID", "FireZone", "TenantCount"));
+        c.put("Server", Set.of("ServerID", "SiteID", "ServerName", "ServerBrand", "ServerSerialNr", "ServerOS", "PatchLevel", "VirtualPlatform", "VirtualVersion", "HighAvailability"));
+        c.put("Clients", Set.of("ClientID", "SiteID", "ClientName", "ClientBrand", "ClientSerialNr", "ClientOS", "PatchLevel", "InstallType"));
+        c.put("Radio", Set.of("RadioID", "SiteID", "AssignedClientID", "RadioBrand", "RadioSerialNr", "Mode", "DigitalStandard"));
+        c.put("AudioDevice", Set.of("AudioDeviceID", "ClientID", "AudioDeviceBrand", "DeviceSerialNr", "AudioDeviceFirmware", "DeviceType"));
+        c.put("PhoneIntegration", Set.of("PhoneIntegrationID", "ClientID", "PhoneType", "PhoneBrand", "PhoneSerialNr", "PhoneFirmware"));
+        c.put("Country", Set.of("CountryCode", "CountryName"));
+        c.put("City", Set.of("CityID", "CityName", "CountryCode"));
+        c.put("Address", Set.of("AddressID", "Street", "CityID"));
+        c.put("DeploymentVariant", Set.of("VariantID", "VariantCode", "VariantName", "Description", "IsActive"));
+        c.put("Software", Set.of("SoftwareID", "Name", "Release", "Revision", "SupportPhase", "LicenseModel", "ThirdParty", "EndOfSalesDate", "SupportStartDate", "SupportEndDate"));
+        c.put("InstalledSoftware", Set.of("InstalledSoftwareID", "SiteID", "SoftwareID", "Status"));
+        c.put("UpgradePlan", Set.of("UpgradePlanID", "SiteID", "SoftwareID", "PlannedWindowStart", "PlannedWindowEnd", "Status", "CreatedAt", "CreatedBy"));
+        c.put("ServiceContract", Set.of("ContractID", "AccountID", "ProjectID", "SiteID", "ContractNumber", "Status", "StartDate", "EndDate"));
+        COLUMNS = Collections.unmodifiableMap(c);
     }
 
     private String normalizeTable(String name) {
@@ -84,6 +106,30 @@ public class GenericCrudController {
 
     private static boolean pkIsString(String table) {
         return "Country".equals(table) || "City".equals(table);
+    }
+
+    private Map<String, Object> sanitizeColumns(String table, Map<String, Object> body) {
+        Set<String> allowed = COLUMNS.get(table);
+        if (allowed == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no columns known for table " + table);
+        }
+
+        Map<String, Object> sanitized = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : body.entrySet()) {
+            String column = entry.getKey();
+            if (!COLUMN_PATTERN.matcher(column).matches()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + column);
+            }
+            if (!allowed.contains(column)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "column not allowed: " + column);
+            }
+            sanitized.put(column, entry.getValue());
+        }
+
+        if (sanitized.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        return sanitized;
     }
 
     // -------- READ --------
@@ -146,22 +192,24 @@ public class GenericCrudController {
         String table = normalizeTable(name);
         if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
 
-        var columns = String.join(", ", body.keySet());
-        var values = ":" + String.join(", :", body.keySet());
+        Map<String, Object> sanitized = sanitizeColumns(table, body);
+
+        var columns = String.join(", ", sanitized.keySet());
+        var values = ":" + String.join(", :", sanitized.keySet());
 
         String sql = "INSERT INTO " + table + " (" + columns + ") VALUES (" + values + ")";
-        jdbc.update(sql, new MapSqlParameterSource(body));
+        jdbc.update(sql, new MapSqlParameterSource(sanitized));
 
         String pk = PKS.get(table);
         Object recordId = null;
         if (pk != null) {
-            recordId = body.get(pk);
+            recordId = sanitized.get(pk);
         }
         if (recordId == null) {
-            recordId = body.getOrDefault("id", body.getOrDefault("ID", "(unknown)"));
+            recordId = sanitized.getOrDefault("id", sanitized.getOrDefault("ID", "(unknown)"));
         }
 
-        log.info("Inserted {} {} with fields {}", table, recordId, body.keySet());
+        log.info("Inserted {} {} with fields {}", table, recordId, sanitized.keySet());
     }
 
     // -------- UPDATE --------
@@ -184,18 +232,20 @@ public class GenericCrudController {
 
         if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
 
+        Map<String, Object> sanitized = sanitizeColumns(table, body);
+
         var setClauses = new ArrayList<String>();
-        for (String col : body.keySet()) {
+        for (String col : sanitized.keySet()) {
             setClauses.add(col + " = :" + col);
         }
         String sql = "UPDATE " + table + " SET " + String.join(", ", setClauses) + " WHERE " + pk + " = :id";
-        var params = new MapSqlParameterSource(body).addValue("id", id);
+        var params = new MapSqlParameterSource(sanitized).addValue("id", id);
 
         int count = jdbc.update(sql, params);
         if (count == 0)
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no record updated");
 
-        log.info("Updated {} {} with fields {}", table, id, body.keySet());
+        log.info("Updated {} {} with fields {}", table, id, sanitized.keySet());
     }
 
     // -------- DELETE --------
