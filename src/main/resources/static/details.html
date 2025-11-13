@@ -1459,6 +1459,9 @@
 </table>`;
 
         const configKey = configKeyForTable(currentTable);
+        if(detailBox){
+            detailBox.classList.toggle('card--wide', configKey === 'Site');
+        }
         if(configKey === 'Site'){
             detailBodyEl.innerHTML = '';
             const layout = document.createElement('div');
@@ -1498,6 +1501,9 @@
         const pkName = currentTable ? PKS[currentTable] : null;
 
         const configKey = configKeyForTable(currentTable);
+        if(detailBox){
+            detailBox.classList.toggle('card--wide', configKey === 'Site');
+        }
         const configFields = formConfig.getFields(configKey) || [];
         const usedKeys = new Set();
         let html = '';
