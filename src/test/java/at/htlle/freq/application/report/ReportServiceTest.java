@@ -123,4 +123,47 @@ class ReportServiceTest {
         assertEquals("Critical", firstRow.get("severity"));
         assertEquals("Up to date", firstRow.get("compliance"));
     }
+
+    @Test
+    void differenceReportMarksExpiringSupportAsRiskInKpiHint() throws SQLException {
+        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
+        ReportService service = new ReportService(jdbc);
+
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString("ProjectName")).thenReturn("Project Y");
+        when(row.getString("ProjectSAPID")).thenReturn("SAP-Y");
+        when(row.getString("SiteName")).thenReturn("Site Beta");
+        when(row.getString("VariantCode")).thenReturn("VAR-2");
+        when(row.getString("software_name")).thenReturn("Core");
+        when(row.getString("current_release")).thenReturn("2024");
+        when(row.getString("current_revision")).thenReturn("1");
+        when(row.getString("target_release")).thenReturn("2024");
+        when(row.getString("target_revision")).thenReturn("1");
+        when(row.getString("install_status")).thenReturn("Installed");
+        LocalDate now = LocalDate.now();
+        when(row.getObject("support_end")).thenReturn(Date.valueOf(now.plusDays(30)));
+
+        when(jdbc.query(anyString(), anyMap(), any(RowMapper.class))).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            RowMapper<Map<String, Object>> mapper = (RowMapper<Map<String, Object>>) invocation.getArgument(2);
+            List<Map<String, Object>> mappedRows = new ArrayList<>();
+            try {
+                mappedRows.add(mapper.mapRow(row, 0));
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+            return mappedRows;
+        });
+
+        ReportFilter filter = new ReportFilter(ReportType.DIFFERENCE, null, null, null, null, null, null);
+        ReportResponse response = service.getReport(filter);
+
+        Kpi criticalKpi = response.kpis().stream()
+                .filter(kpi -> "critical".equals(kpi.key()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("act immediately", criticalKpi.hint());
+        assertEquals("1", criticalKpi.value());
+    }
 }
