@@ -7,12 +7,14 @@ import at.htlle.freq.infrastructure.search.SuggestService;
 import org.apache.lucene.search.Query;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.mockito.ArgumentCaptor;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class SearchControllerTest {
@@ -77,6 +79,18 @@ class SearchControllerTest {
         String luceneQuery = captor.getValue().toString();
         assertTrue(luceneQuery.contains("content:integration"));
         assertTrue(luceneQuery.contains("type:account"));
+    }
+
+    @Test
+    void queryReturnsBadRequestWhenBuilderRejectsQuery() {
+        IllegalArgumentException failure = new IllegalArgumentException("Invalid query syntax");
+        doThrow(failure).when(smart).build(eq("???"), any());
+
+        var response = controller.query("???", null, false);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Invalid query syntax", response.getBody());
+        verifyNoInteractions(lucene);
     }
 
     @Test
