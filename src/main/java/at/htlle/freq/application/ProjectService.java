@@ -89,6 +89,8 @@ public class ProjectService {
             incoming.setLifecycleStatus(ProjectLifecycleStatus.ACTIVE);
         }
 
+        validateRequiredIdentifiers(incoming);
+
         Project saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
@@ -119,6 +121,8 @@ public class ProjectService {
             existing.setLifecycleStatus(patch.getLifecycleStatus() != null ? patch.getLifecycleStatus() : existing.getLifecycleStatus());
             existing.setAccountID(patch.getAccountID() != null ? patch.getAccountID() : existing.getAccountID());
             existing.setAddressID(patch.getAddressID() != null ? patch.getAddressID() : existing.getAddressID());
+
+            validateRequiredIdentifiers(existing);
 
             Project saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
@@ -156,6 +160,18 @@ public class ProjectService {
                 indexToLucene(p);
             }
         });
+    }
+
+    private void validateRequiredIdentifiers(Project project) {
+        if (project.getDeploymentVariantID() == null) {
+            throw new IllegalArgumentException("DeploymentVariantID is required");
+        }
+        if (project.getAccountID() == null) {
+            throw new IllegalArgumentException("AccountID is required");
+        }
+        if (project.getAddressID() == null) {
+            throw new IllegalArgumentException("AddressID is required");
+        }
     }
 
     private void indexToLucene(Project p) {
