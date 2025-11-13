@@ -84,6 +84,8 @@ public class SiteService {
             throw new IllegalArgumentException("SiteName is required");
         if (incoming.getProjectID() == null)
             throw new IllegalArgumentException("ProjectID is required");
+        if (incoming.getAddressID() == null)
+            throw new IllegalArgumentException("AddressID is required");
 
         Site saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
