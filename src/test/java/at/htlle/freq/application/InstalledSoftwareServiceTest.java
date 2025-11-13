@@ -1,8 +1,10 @@
 package at.htlle.freq.application;
 
 import at.htlle.freq.domain.InstalledSoftware;
+import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.InstalledSoftwareRepository;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
+import at.htlle.freq.domain.SiteSoftwareOverview;
 import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,37 @@ class InstalledSoftwareServiceTest {
     @Test
     void getInstalledSoftwareBySiteRejectsNull() {
         assertThrows(NullPointerException.class, () -> service.getInstalledSoftwareBySite(null));
+    }
+
+    @Test
+    void getSiteSoftwareOverviewRejectsNull() {
+        assertThrows(NullPointerException.class, () -> service.getSiteSoftwareOverview(null));
+    }
+
+    @Test
+    void getSiteSoftwareOverviewNormalizesStatus() {
+        SiteSoftwareOverview row = new SiteSoftwareOverview(
+                UUID.randomUUID(),
+                UUID4,
+                "Site",
+                UUID5,
+                "CRM",
+                "1.0",
+                "rev1",
+                "installed",
+                "2024-01-01",
+                "2024-02-02",
+                null
+        );
+        when(repo.findOverviewBySite(UUID4)).thenReturn(List.of(row));
+
+        List<SiteSoftwareOverviewEntry> result = service.getSiteSoftwareOverview(UUID4);
+        assertEquals(1, result.size());
+        SiteSoftwareOverviewEntry entry = result.get(0);
+        assertEquals("Installed", entry.status());
+        assertEquals("Installed", entry.statusLabel());
+        assertEquals("2024-02-02", entry.installedAt());
+        verify(repo).findOverviewBySite(UUID4);
     }
 
     @Test

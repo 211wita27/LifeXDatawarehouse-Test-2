@@ -2,6 +2,7 @@ package at.htlle.freq.web;
 
 import at.htlle.freq.application.InstalledSoftwareService;
 import at.htlle.freq.application.SiteService;
+import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.Site;
 import at.htlle.freq.web.dto.SiteSoftwareAssignmentDto;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
@@ -15,8 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -135,5 +135,35 @@ class SiteControllerTest {
 
         verify(installedSoftwareService).replaceAssignmentsForSite(eq(siteId),
                 argThat(list -> list.size() == 1 && software.equals(list.get(0).getSoftwareID())));
+    }
+
+    @Test
+    void softwareOverviewDelegatesToService() {
+        UUID siteId = UUID.randomUUID();
+        List<SiteSoftwareOverviewEntry> entries = List.of(new SiteSoftwareOverviewEntry(
+                UUID.randomUUID(),
+                siteId,
+                "Site",
+                UUID.randomUUID(),
+                "CRM",
+                "1.0",
+                "rev1",
+                "Installed",
+                "Installed",
+                "2024-01-01",
+                "2024-02-02",
+                null
+        ));
+        when(installedSoftwareService.getSiteSoftwareOverview(siteId)).thenReturn(entries);
+
+        List<SiteSoftwareOverviewEntry> result = controller.softwareOverview(siteId.toString());
+        assertSame(entries, result);
+        verify(installedSoftwareService).getSiteSoftwareOverview(siteId);
+    }
+
+    @Test
+    void softwareOverviewRejectsInvalidId() {
+        assertThrows(ResponseStatusException.class, () -> controller.softwareOverview("invalid"));
+        verifyNoInteractions(installedSoftwareService);
     }
 }

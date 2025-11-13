@@ -2,7 +2,7 @@ package at.htlle.freq.web;
 
 import at.htlle.freq.application.InstalledSoftwareService;
 import at.htlle.freq.application.SiteService;
-import at.htlle.freq.domain.InstalledSoftwareStatus;
+import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.Site;
 import at.htlle.freq.web.dto.SiteSoftwareSummary;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
@@ -125,6 +125,12 @@ public class SiteController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Site not found");
         }
         return rows.get(0);
+    }
+
+    @GetMapping({"/{id}/software", "/{id}/software/overview"})
+    public List<SiteSoftwareOverviewEntry> softwareOverview(@PathVariable String id) {
+        UUID siteId = parseUuid(id, "SiteID");
+        return installedSoftwareService.getSiteSoftwareOverview(siteId);
     }
 
     // CREATE operations
