@@ -3,6 +3,8 @@ package at.htlle.freq.application;
 import at.htlle.freq.domain.InstalledSoftware;
 import at.htlle.freq.domain.InstalledSoftwareRepository;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
+import at.htlle.freq.domain.SiteSoftwareOverview;
+import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +71,20 @@ public class InstalledSoftwareService {
     public List<InstalledSoftware> getInstalledSoftwareBySite(UUID siteId) {
         Objects.requireNonNull(siteId, "siteId must not be null");
         return repo.findBySite(siteId);
+    }
+
+    /**
+     * Loads installed software assignments for a site with software metadata and normalized status labels.
+     *
+     * @param siteId identifier of the site
+     * @return list of overview entries enriched with software information
+     */
+    public List<SiteSoftwareOverviewEntry> getSiteSoftwareOverview(UUID siteId) {
+        Objects.requireNonNull(siteId, "siteId must not be null");
+
+        return repo.findOverviewBySite(siteId).stream()
+                .map(this::mapOverviewRow)
+                .toList();
     }
 
     /**
@@ -291,5 +307,32 @@ public class InstalledSoftwareService {
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException("Invalid date value: " + value, ex);
         }
+    }
+
+    private SiteSoftwareOverviewEntry mapOverviewRow(SiteSoftwareOverview row) {
+        String normalizedStatus = row.status();
+        String statusLabel = row.status();
+        try {
+            InstalledSoftwareStatus statusEnum = InstalledSoftwareStatus.from(row.status());
+            normalizedStatus = statusEnum.dbValue();
+            statusLabel = statusEnum.dbValue();
+        } catch (IllegalArgumentException ex) {
+            log.warn("Unknown installed software status '{}' for installation {}", row.status(), row.installedSoftwareId());
+        }
+
+        return new SiteSoftwareOverviewEntry(
+                row.installedSoftwareId(),
+                row.siteId(),
+                row.siteName(),
+                row.softwareId(),
+                row.softwareName(),
+                row.release(),
+                row.revision(),
+                normalizedStatus,
+                statusLabel,
+                row.offeredDate(),
+                row.installedDate(),
+                row.rejectedDate()
+        );
     }
 }

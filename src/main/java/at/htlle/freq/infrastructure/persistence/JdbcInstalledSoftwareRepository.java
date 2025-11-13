@@ -2,6 +2,7 @@ package at.htlle.freq.infrastructure.persistence;
 
 import at.htlle.freq.domain.InstalledSoftware;
 import at.htlle.freq.domain.InstalledSoftwareRepository;
+import at.htlle.freq.domain.SiteSoftwareOverview;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.*;
 import org.springframework.stereotype.Repository;
@@ -33,6 +34,20 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
         return entity;
     };
 
+    private final RowMapper<SiteSoftwareOverview> overviewMapper = (rs, n) -> new SiteSoftwareOverview(
+            rs.getObject("InstalledSoftwareID", UUID.class),
+            rs.getObject("SiteID", UUID.class),
+            rs.getString("SiteName"),
+            rs.getObject("SoftwareID", UUID.class),
+            rs.getString("SoftwareName"),
+            rs.getString("Release"),
+            rs.getString("Revision"),
+            rs.getString("Status"),
+            toIso(rs.getObject("OfferedDate", LocalDate.class)),
+            toIso(rs.getObject("InstalledDate", LocalDate.class)),
+            toIso(rs.getObject("RejectedDate", LocalDate.class))
+    );
+
     @Override
     public Optional<InstalledSoftware> findById(UUID id) {
         String sql = """
@@ -52,6 +67,29 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
             FROM InstalledSoftware WHERE SiteID = :sid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("sid", siteId), mapper);
+    }
+
+    @Override
+    public List<SiteSoftwareOverview> findOverviewBySite(UUID siteId) {
+        String sql = """
+            SELECT isw.InstalledSoftwareID,
+                   isw.SiteID,
+                   site.SiteName,
+                   isw.SoftwareID,
+                   sw.Name AS SoftwareName,
+                   sw.Release,
+                   sw.Revision,
+                   isw.Status,
+                   isw.OfferedDate,
+                   isw.InstalledDate,
+                   isw.RejectedDate
+            FROM InstalledSoftware isw
+            LEFT JOIN Software sw ON sw.SoftwareID = isw.SoftwareID
+            LEFT JOIN Site site ON site.SiteID = isw.SiteID
+            WHERE isw.SiteID = :sid
+            ORDER BY sw.Name, sw.Release, sw.Revision
+            """;
+        return jdbc.query(sql, new MapSqlParameterSource("sid", siteId), overviewMapper);
     }
 
     @Override

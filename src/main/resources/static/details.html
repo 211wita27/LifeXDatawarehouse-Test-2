@@ -859,6 +859,10 @@
     }
 
     const SOFTWARE_OVERVIEW_ENDPOINT_BUILDERS = [
+        (ctx = {}) => ctx.siteId ? `/sites/${encodeURIComponent(ctx.siteId)}/software` : null,
+        (ctx = {}) => ctx.siteId ? `/sites/${encodeURIComponent(ctx.siteId)}/software/overview` : null,
+        (ctx = {}) => ctx.siteId ? `/api/sites/${encodeURIComponent(ctx.siteId)}/software` : null,
+        (ctx = {}) => ctx.siteId ? `/api/sites/${encodeURIComponent(ctx.siteId)}/software/overview` : null,
         (ctx = {}) => {
             const params = new URLSearchParams();
             if(ctx.siteId) params.set('siteId', ctx.siteId);
@@ -866,15 +870,57 @@
             const query = params.toString();
             return `/api/software-overview${query ? `?${query}` : ''}`;
         },
-        (ctx = {}) => ctx.siteId ? `/sites/${encodeURIComponent(ctx.siteId)}/software/overview` : null,
-        (ctx = {}) => ctx.siteId ? `/sites/${encodeURIComponent(ctx.siteId)}/software` : null,
-        (ctx = {}) => ctx.siteId ? `/api/sites/${encodeURIComponent(ctx.siteId)}/software/overview` : null,
-        (ctx = {}) => ctx.siteId ? `/api/sites/${encodeURIComponent(ctx.siteId)}/software` : null,
         (ctx = {}) => ctx.softwareId ? `/software/${encodeURIComponent(ctx.softwareId)}/deployments` : null,
         (ctx = {}) => ctx.softwareId ? `/software/${encodeURIComponent(ctx.softwareId)}/sites` : null,
         (ctx = {}) => ctx.softwareId ? `/api/software/${encodeURIComponent(ctx.softwareId)}/deployments` : null,
         (ctx = {}) => ctx.softwareId ? `/api/software/${encodeURIComponent(ctx.softwareId)}/sites` : null,
     ];
+
+    function mapSoftwareOverviewItems(items){
+        if(!Array.isArray(items)) return [];
+        return items.map(item => {
+            if(!item || typeof item !== 'object') return null;
+            if(item.__normalizedSoftwareOverview) return item;
+            const normalized = normalizeSoftwareOverviewEntry(item);
+            if(!normalized) return null;
+            return {
+                ...item,
+                softwareId: normalized.softwareId,
+                siteId: normalized.siteId,
+                softwareDisplayName: normalized.softwareDisplayName,
+                siteDisplayName: normalized.siteDisplayName,
+                rawSoftwareName: normalized.rawSoftwareName,
+                rawSiteName: normalized.rawSiteName,
+                release: normalized.release,
+                revision: normalized.revision,
+                status: normalized.status,
+                fallbackStatus: normalized.fallbackStatus,
+                statusLabel: normalized.statusLabel,
+                statusSince: normalized.statusSince,
+                installedAt: normalized.installedAt,
+                offeredAt: normalized.offeredAt,
+                plannedStart: normalized.plannedStart,
+                plannedEnd: normalized.plannedEnd,
+                createdAt: normalized.createdAt,
+                updatedAt: normalized.updatedAt,
+                supportStart: normalized.supportStart,
+                supportEnd: normalized.supportEnd,
+                supportPhase: normalized.supportPhase,
+                lifecycleStatus: normalized.lifecycleStatus,
+                licenseModel: normalized.licenseModel,
+                thirdParty: normalized.thirdParty,
+                vendorName: normalized.vendorName,
+                notes: normalized.notes,
+                projectId: normalized.projectId,
+                projectName: normalized.projectName,
+                accountId: normalized.accountId,
+                accountName: normalized.accountName,
+                fireZone: normalized.fireZone,
+                tenantCount: normalized.tenantCount,
+                __normalizedSoftwareOverview: true
+            };
+        }).filter(Boolean);
+    }
 
     async function fetchSoftwareOverview(context = {}){
         const seen = new Set();
@@ -890,7 +936,7 @@
             try {
                 const data = await fetchJson(url);
                 if(Array.isArray(data)){
-                    return data;
+                    return mapSoftwareOverviewItems(data);
                 }
             } catch {
                 // ignore failed endpoint attempts
@@ -1407,10 +1453,31 @@
             }
             return `<tr><th scope="row" class="key">${keyLabel}</th><td>${cellHtml}</td></tr>`;
         }).join('');
-        detailBodyEl.innerHTML = `<table id="kv">
+        const tableHtml = `<table id="kv">
   <caption class="visually-hidden">Fields for ${escapeHtml(captionText)}</caption>
   ${kvRows}
 </table>`;
+
+        const configKey = configKeyForTable(currentTable);
+        if(configKey === 'Site'){
+            detailBodyEl.innerHTML = '';
+            const layout = document.createElement('div');
+            layout.className = 'site-detail-layout';
+
+            const primary = document.createElement('div');
+            primary.className = 'site-detail-layout__primary';
+            primary.innerHTML = tableHtml;
+            layout.appendChild(primary);
+
+            const softwareAside = document.createElement('div');
+            softwareAside.className = 'site-detail-layout__software';
+            softwareAside.id = 'site-software-overview';
+            layout.appendChild(softwareAside);
+
+            detailBodyEl.appendChild(layout);
+        }else{
+            detailBodyEl.innerHTML = tableHtml;
+        }
     }
 
     function renderEditMode(row){
@@ -2231,7 +2298,11 @@
             }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId, projectId, siteId: id } });
 
             const softwareOverview = await fetchSoftwareOverview({ siteId: id });
-            renderSoftwareOverviewSection(box, {
+            const softwareContainer = document.getElementById('site-software-overview');
+            if(softwareContainer){
+                softwareContainer.innerHTML = '';
+            }
+            renderSoftwareOverviewSection(softwareContainer ?? box, {
                 title: 'Software Overview',
                 items: softwareOverview,
                 context: 'site',
