@@ -58,6 +58,15 @@ class SiteServiceTest {
     }
 
     @Test
+    void createSiteRequiresAddressId() {
+        Site value = new Site();
+        value.setSiteName("Site");
+        value.setProjectID(UUID.randomUUID());
+
+        assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateSite(value));
+    }
+
+    @Test
     void createSiteIndexesImmediately() {
         Site value = site();
         when(repo.save(value)).thenReturn(value);
@@ -113,6 +122,22 @@ class SiteServiceTest {
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
         verify(lucene).indexSite(eq(UUID4.toString()), eq(existing.getProjectID().toString()), eq(existing.getAddressID().toString()), eq("NewSite"), eq("NewZone"), eq(42));
+    }
+
+    @Test
+    void updateSiteIgnoresNullAddressPatch() {
+        Site existing = site();
+        when(repo.findById(UUID4)).thenReturn(Optional.of(existing));
+        when(repo.save(existing)).thenReturn(existing);
+
+        Site patch = new Site();
+        patch.setSiteName("NewName");
+
+        Optional<Site> updated = service.updateSite(UUID4, patch);
+        assertTrue(updated.isPresent());
+        assertEquals(UUID5, existing.getAddressID());
+
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(existing.getProjectID().toString()), eq(UUID5.toString()), eq("NewName"), any(), any());
     }
 
     @Test
