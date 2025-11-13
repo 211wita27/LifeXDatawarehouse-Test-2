@@ -614,7 +614,7 @@ public class ReportService {
         }
         sql.append(" ORDER BY s.SiteName");
 
-        int[] totals = new int[4]; // Array indices represent servers, high-availability servers, total clients, and local clients.
+        int[] totals = new int[5]; // Array indices represent servers, high-availability servers, total clients, local clients, and browser clients.
         List<Map<String, Object>> rows = jdbc.query(sql.toString(), params, (rs, rowNum) -> {
             int serverCount = rs.getInt("server_count");
             int haServers = rs.getInt("ha_servers");
@@ -629,6 +629,7 @@ public class ReportService {
             totals[1] += haServers;
             totals[2] += clientCount;
             totals[3] += localClients;
+            totals[4] += browserClients;
 
             LinkedHashMap<String, Object> row = new LinkedHashMap<>();
             row.put("site", rs.getString("SiteName"));
@@ -648,13 +649,13 @@ public class ReportService {
         int totalServers = totals[0];
         int totalClients = totals[2];
         int localClients = totals[3];
-        int browserClients = Math.max(0, totalClients - localClients);
+        int browserClients = totals[4];
         double haShare = totalServers == 0 ? 0.0 : (double) totals[1] / totalServers;
 
         List<Kpi> kpis = List.of(
                 new Kpi("sites", "Sites", formatInt(totalSites), null),
                 new Kpi("servers", "Servers total", formatInt(totalServers), "HA " + formatInt(totals[1])),
-                new Kpi("clients", "Clients total", formatInt(totalClients), "LOCAL " + formatInt(localClients)),
+                new Kpi("clients", "Clients total", formatInt(totalClients), "LOCAL " + formatInt(localClients) + " · BROWSER " + formatInt(browserClients)),
                 new Kpi("haShare", "HA share", formatPercent(haShare), null)
         );
 
