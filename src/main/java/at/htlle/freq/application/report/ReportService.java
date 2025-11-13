@@ -293,10 +293,11 @@ public class ReportService {
         int total = rows.size();
         double compliance = total == 0 ? 1.0 : (double) (total - outdated) / total;
 
+        boolean hasCriticalOrExpiring = (critical + expiring) > 0;
         List<Kpi> kpis = List.of(
                 new Kpi("records", "Records", formatInt(total), null),
                 new Kpi("outdated", "Deviations", formatInt(outdated), outdated > 0 ? "review" : "OK"),
-                new Kpi("critical", "Critical / Expiring", formatInt(critical + expiring), critical > 0 ? "act immediately" : "monitor"),
+                new Kpi("critical", "Critical / Expiring", formatInt(critical + expiring), hasCriticalOrExpiring ? "act immediately" : "monitor"),
                 new Kpi("compliance", "Compliance", formatPercent(compliance), null)
         );
 
