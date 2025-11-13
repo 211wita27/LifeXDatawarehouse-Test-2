@@ -38,6 +38,30 @@ const SITE_SOFTWARE_STATUS_OPTIONS = [
 
 let currentSiteSoftwareStatus = 'Installed';
 
+const appIdUtils = (typeof window !== 'undefined' && window.appIdUtils) || {};
+
+function normalizeSiteIdValue(value) {
+    if (appIdUtils.normalizeUuid) {
+        return appIdUtils.normalizeUuid(value);
+    }
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const str = String(value).trim();
+    return str ? str.toLowerCase() : null;
+}
+
+function getNormalizedSiteId(record) {
+    if (appIdUtils.resolveNormalizedSiteId) {
+        return appIdUtils.resolveNormalizedSiteId(record);
+    }
+    if (!record || typeof record !== 'object') {
+        return null;
+    }
+    const raw = record.SITEID ?? record.siteID ?? record.SiteID ?? record.siteId ?? record.siteid;
+    return normalizeSiteIdValue(raw);
+}
+
 /* ===================== Utils ===================== */
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const debounce = (fn, ms=250) => { let t; return (...a)=>{clearTimeout(t); t=setTimeout(()=>fn(...a),ms);} };
@@ -1177,11 +1201,11 @@ function toSiteSoftwareSummaryMap(entries) {
     }
     entries.forEach(entry => {
         if (!entry) return;
-        const siteId = entry.siteId || entry.SiteID || entry.siteid;
-        if (!siteId) return;
+        const normalizedSiteId = getNormalizedSiteId(entry);
+        if (!normalizedSiteId) return;
         const countRaw = entry.count ?? entry.statusCount ?? entry.total ?? 0;
         const parsed = Number(countRaw);
-        map.set(String(siteId).toLowerCase(), Number.isFinite(parsed) ? parsed : 0);
+        map.set(normalizedSiteId, Number.isFinite(parsed) ? parsed : 0);
     });
     return map;
 }
@@ -1208,9 +1232,8 @@ async function renderSiteTableWithSummary(rows, baseColumns, tableTypeInfo, tabl
             const allColumns = [...baseColumns, columnLabel];
 
             const formattedRows = rows.map(row => {
-                const siteIdRaw = row.SiteID ?? row.siteId ?? row.siteid ?? '';
-                const siteIdKey = String(siteIdRaw).toLowerCase();
-                const count = summaryMap.get(siteIdKey);
+                const siteIdKey = getNormalizedSiteId(row);
+                const count = siteIdKey ? summaryMap.get(siteIdKey) : undefined;
                 let display;
                 if (summaryError) {
                     display = 'Unavailable';
