@@ -232,7 +232,19 @@ public class GenericCrudController {
 
         if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
 
-        Map<String, Object> sanitized = sanitizeColumns(table, body);
+        Map<String, Object> sanitized = new LinkedHashMap<>(sanitizeColumns(table, body));
+
+        Object removedPkValue = sanitized.remove(pk);
+        if (removedPkValue != null) {
+            if (sanitized.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no updatable columns provided");
+            }
+            log.debug("Ignoring primary key column {} in update for table {}", pk, table);
+        }
+
+        if (sanitized.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no updatable columns provided");
+        }
 
         var setClauses = new ArrayList<String>();
         for (String col : sanitized.keySet()) {
