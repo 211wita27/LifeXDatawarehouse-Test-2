@@ -177,7 +177,7 @@
         const attributes={
             id,
             name:config?.name||id,
-            type:config?.type||'text'
+            type:config?.inputType||config?.type||'text'
         };
 
         const wrapperClass=config?.wrapperClass||'form-field';
@@ -675,7 +675,7 @@
         const dateMarkup=SOFTWARE_DATE_FIELDS.map(field=>{
             const fieldId=`${baseId}-${field.idSuffix}`;
             entry.dataset[`${field.prop}Field`]=fieldId;
-            return add(fieldId,field.label,{inputType:'date',name:field.prop,wrapperClass:'software-entry__field'});
+            return add(fieldId,field.label,{inputType:'date',required:false,name:field.prop,wrapperClass:'software-entry__field'});
         }).join('');
         const softwareHtml=renderAsyncSelect(softwareFieldId,'Software','software',{allowManual:false,placeholder:'Select software',name:'softwareId',wrapperClass:'software-entry__field'});
         const statusHtml=addSel(statusFieldId,'Status',SOFTWARE_STATUS_OPTIONS,{placeholder:'Select status',name:'status',wrapperClass:'software-entry__field'});
@@ -753,6 +753,7 @@
         if(entryNodes.length===0){
             return {entries:[]};
         }
+        const isoDatePattern=/^\d{4}-\d{2}-\d{2}$/;
         const entries=[];
         for(let i=0;i<entryNodes.length;i+=1){
             const entry=entryNodes[i];
@@ -769,6 +770,16 @@
             const offered=getValue(entry.dataset.offeredDateField);
             const installed=getValue(entry.dataset.installedDateField);
             const rejected=getValue(entry.dataset.rejectedDateField);
+            const dateChecks=[
+                {value:offered,label:'Offered date'},
+                {value:installed,label:'Installed date'},
+                {value:rejected,label:'Rejected date'}
+            ];
+            for(const {value,label} of dateChecks){
+                if(value && !isoDatePattern.test(value)){
+                    return {error:`${label} for entry #${position} must be a valid date in YYYY-MM-DD format.`};
+                }
+            }
             if(offered && installed && offered>installed){
                 return {error:`Offered date must be on or before the installed date for entry #${position}.`};
             }

@@ -181,6 +181,15 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 .sc-item-primary{display:block;font-weight:600;color:#003a70}
 .sc-item-secondary{display:block;font-size:.85rem;color:#444;margin-top:.18rem}
 
+/* ===============  Site software summary toggle  =============== */
+.site-software-toggle{display:inline-flex;align-items:center;gap:.4rem;background:#e6f0ff;padding:.35rem;border-radius:999px;margin:.75rem 0 1rem 0;box-shadow:inset 0 0 0 1px rgba(0,58,112,.1)}
+.site-software-toggle__btn{border:1px solid rgba(0,58,112,.35);background:#fff;color:#0b4c9c;border-radius:999px;padding:.25rem .9rem;font-size:.85rem;font-weight:600;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+.site-software-toggle__btn:hover{background:#dbeafe}
+.site-software-toggle__btn.is-active{background:#0067c2;color:#fff;box-shadow:0 0 0 1px rgba(0,103,194,.35),0 2px 6px rgba(0,58,112,.25)}
+.site-software-toggle__btn:focus-visible{outline:2px solid #003a70;outline-offset:2px}
+.site-software-toggle__status{margin:-.35rem 0 .85rem 0;font-size:.85rem;font-weight:600;color:#0b4c9c}
+.site-software-toggle__status--error{color:#b91c1c}
+
 /* ===============  Table list  =============== */
 .tables ul{list-style:none;padding:0;margin:0}
 .tables li{background:#eee;margin:.35rem 0;padding:.55rem;border-radius:4px;cursor:pointer}

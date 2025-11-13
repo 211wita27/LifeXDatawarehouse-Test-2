@@ -4,6 +4,7 @@ import at.htlle.freq.application.InstalledSoftwareService;
 import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.Site;
+import at.htlle.freq.web.dto.SiteSoftwareSummary;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,46 @@ public class SiteController {
         this.jdbc = jdbc;
         this.siteService = siteService;
         this.installedSoftwareService = installedSoftwareService;
+    }
+
+    /**
+     * Returns software aggregation information per site for the requested status.
+     *
+     * <p>Path: {@code GET /sites/software-summary?status=Installed}</p>
+     *
+     * @param status optional installed software status (defaults to {@code Installed}).
+     * @return list of summary rows.
+     */
+    @GetMapping("/software-summary")
+    public List<SiteSoftwareSummary> getSoftwareSummary(
+            @RequestParam(name = "status", required = false) String status) {
+        InstalledSoftwareStatus resolved;
+        try {
+            resolved = (status == null || status.isBlank())
+                    ? InstalledSoftwareStatus.INSTALLED
+                    : InstalledSoftwareStatus.from(status);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+
+        String sql = """
+            SELECT s.SiteID   AS site_id,
+                   s.SiteName AS site_name,
+                   COUNT(isw.InstalledSoftwareID) AS status_count
+            FROM Site s
+            LEFT JOIN InstalledSoftware isw
+                   ON isw.SiteID = s.SiteID
+                  AND LOWER(isw.Status) = LOWER(:status)
+            GROUP BY s.SiteID, s.SiteName
+            ORDER BY s.SiteName NULLS LAST, s.SiteID
+            """;
+
+        return jdbc.query(sql, new MapSqlParameterSource("status", resolved.dbValue()),
+                (rs, rowNum) -> new SiteSoftwareSummary(
+                        rs.getObject("site_id", UUID.class),
+                        rs.getString("site_name"),
+                        rs.getInt("status_count"),
+                        resolved.dbValue()));
     }
 
     // READ operations: list all sites or filter by project
