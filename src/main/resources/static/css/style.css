@@ -186,6 +186,30 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 .tables li{background:#eee;margin:.35rem 0;padding:.55rem;border-radius:4px;cursor:pointer}
 .tables li:hover{background:#d5e4ff}
 
+/* ===============  Dynamic software list on create form  =============== */
+.form-field.form-field--block{display:block}
+.form-field.form-field--block .form-field__label{display:block;margin-bottom:.5rem}
+.software-list{display:flex;flex-direction:column;gap:.75rem;padding:.85rem;background:#f8fafc;border:1px solid #dbeafe;border-radius:8px}
+.software-list__hint{margin:0;font-size:.95rem;color:#1f3d7a}
+.software-list__empty{margin:0;font-size:.9rem;color:#475569;font-style:italic}
+.software-list__items{display:flex;flex-direction:column;gap:.75rem}
+.software-list__add{align-self:flex-start;background:#0067c2;color:#fff;border:none;border-radius:6px;padding:.45rem .9rem;font-weight:600;cursor:pointer;transition:background .2s ease-in-out}
+.software-list__add:hover{background:#0054a6}
+.software-entry{border:1px solid #cbd5e1;border-radius:8px;padding:.75rem;background:#fff;display:flex;flex-direction:column;gap:.6rem;box-shadow:0 1px 2px rgba(15,23,42,.05)}
+.software-entry__grid{display:grid;gap:.6rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.software-entry__field{display:flex;flex-direction:column;gap:.35rem}
+.software-entry__field .form-field__label{font-size:.9rem;color:#0f172a;font-weight:600}
+.software-entry__actions{display:flex;justify-content:flex-end}
+.software-entry__remove{background:none;border:1px solid #ef4444;color:#b91c1c;border-radius:6px;padding:.35rem .75rem;font-weight:600;cursor:pointer;transition:background .2s ease-in-out,color .2s}
+.software-entry__remove:hover{background:rgba(239,68,68,.08);color:#991b1b}
+.software-entry__remove:focus-visible{outline:2px solid #ef4444;outline-offset:2px}
+
+@media (max-width:720px){
+    .software-entry__grid{grid-template-columns:1fr}
+    .software-list__add{width:100%;text-align:center}
+    .software-entry__actions{justify-content:flex-start}
+}
+
 /* ===============  Result table  =============== */
 .table-scroll{overflow-x:auto}
 table{border-collapse:collapse;width:100%;min-width:650px}
