@@ -81,9 +81,10 @@ public interface LuceneIndexService {
     void indexDeploymentVariant(String variantId, String variantCode, String variantName, String description, boolean active);
 
     /**
-     * Indexes installed software references for a site, reflecting current rollout status.
+     * Indexes installed software references for a site, reflecting current rollout status including lifecycle timestamps.
      */
-    void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status);
+    void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status,
+                                String offeredDate, String installedDate, String rejectedDate);
 
     /**
      * Indexes phone integration hardware assigned to clients for operational tracking.

@@ -473,7 +473,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         toStringOrNull(item.getInstalledSoftwareID()),
                         toStringOrNull(item.getSiteID()),
                         toStringOrNull(item.getSoftwareID()),
-                        item.getStatus()
+                        item.getStatus(),
+                        item.getOfferedDate(),
+                        item.getInstalledDate(),
+                        item.getRejectedDate()
                 );
             }
             for (PhoneIntegration integration : phoneIntegrations) {
@@ -840,7 +843,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status) {
+    public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status,
+                                       String offeredDate, String installedDate, String rejectedDate) {
         InstalledSoftwareStatus resolved;
         try {
             resolved = InstalledSoftwareStatus.from(status);
@@ -851,7 +855,17 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         String statusValue = resolved.dbValue();
         String statusLabel = resolved.label();
         String statusToken = tokenWithPrefix("status", statusValue);
-        indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE, statusValue, statusLabel, statusToken, siteId, softwareId);
+        String offeredSafe = safe(offeredDate);
+        String installedSafe = safe(installedDate);
+        String rejectedSafe = safe(rejectedDate);
+        String offeredToken = tokenWithPrefix("offered", offeredSafe);
+        String installedToken = tokenWithPrefix("installed", installedSafe);
+        String rejectedToken = tokenWithPrefix("rejected", rejectedSafe);
+        indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE,
+                statusValue, statusLabel, statusToken,
+                offeredSafe, installedSafe, rejectedSafe,
+                offeredToken, installedToken, rejectedToken,
+                siteId, softwareId);
     }
 
     @Override

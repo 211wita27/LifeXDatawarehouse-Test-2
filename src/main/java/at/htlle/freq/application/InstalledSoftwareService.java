@@ -1,4 +1,3 @@
-// src/main/java/at/htlle/freq/application/InstalledSoftwareService.java
 package at.htlle.freq.application;
 
 import at.htlle.freq.domain.InstalledSoftware;
@@ -12,7 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Manages installed software states, validates status values, and keeps the Lucene index up to date.
@@ -97,13 +99,14 @@ public class InstalledSoftwareService {
         if (incoming.getSoftwareID() == null)
             throw new IllegalArgumentException("SoftwareID is required");
 
-        incoming.setStatus(normalizeStatus(incoming.getStatus()));
+        normalizeStatusAndDates(incoming);
 
         InstalledSoftware saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
 
-        log.info("InstalledSoftware saved: id={} site={} software={} status={}",
-                saved.getInstalledSoftwareID(), saved.getSiteID(), saved.getSoftwareID(), saved.getStatus());
+        log.info("InstalledSoftware saved: id={} site={} software={} status={} offered={} installed={} rejected={}",
+                saved.getInstalledSoftwareID(), saved.getSiteID(), saved.getSoftwareID(), saved.getStatus(),
+                saved.getOfferedDate(), saved.getInstalledDate(), saved.getRejectedDate());
         return saved;
     }
 
@@ -123,18 +126,88 @@ public class InstalledSoftwareService {
             existing.setSiteID(patch.getSiteID() != null ? patch.getSiteID() : existing.getSiteID());
             existing.setSoftwareID(patch.getSoftwareID() != null ? patch.getSoftwareID() : existing.getSoftwareID());
             if (patch.getStatus() != null) {
-                existing.setStatus(normalizeStatus(patch.getStatus()));
-            } else if (existing.getStatus() == null) {
-                existing.setStatus(normalizeStatus(null));
+                existing.setStatus(patch.getStatus());
             }
+            if (patch.getOfferedDate() != null) {
+                existing.setOfferedDate(patch.getOfferedDate());
+            }
+            if (patch.getInstalledDate() != null) {
+                existing.setInstalledDate(patch.getInstalledDate());
+            }
+            if (patch.getRejectedDate() != null) {
+                existing.setRejectedDate(patch.getRejectedDate());
+            }
+            normalizeStatusAndDates(existing);
 
             InstalledSoftware saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
 
-            log.info("InstalledSoftware updated: id={} site={} software={} status={}",
-                    id, saved.getSiteID(), saved.getSoftwareID(), saved.getStatus());
+            log.info("InstalledSoftware updated: id={} site={} software={} status={} offered={} installed={} rejected={}",
+                    id, saved.getSiteID(), saved.getSoftwareID(), saved.getStatus(),
+                    saved.getOfferedDate(), saved.getInstalledDate(), saved.getRejectedDate());
             return saved;
         });
+    }
+
+    /**
+     * Synchronises the installation records of a site with the provided collection. Missing records
+     * are removed while new or changed records are persisted through the usual validation pipeline.
+     *
+     * @param siteId       identifier of the site
+     * @param assignments  desired set of installations (may be {@code null} for none)
+     * @return list of persisted installations after the operation
+     */
+    @Transactional
+    public List<InstalledSoftware> replaceAssignmentsForSite(UUID siteId, List<InstalledSoftware> assignments) {
+        Objects.requireNonNull(siteId, "siteId must not be null");
+
+        List<InstalledSoftware> desired = assignments == null ? List.of() : assignments;
+        List<InstalledSoftware> existing = repo.findBySite(siteId);
+        Map<UUID, InstalledSoftware> existingById = existing.stream()
+                .filter(isw -> isw.getInstalledSoftwareID() != null)
+                .collect(Collectors.toMap(InstalledSoftware::getInstalledSoftwareID, isw -> isw));
+
+        Set<UUID> processed = new HashSet<>();
+        List<InstalledSoftware> stored = new ArrayList<>();
+
+        for (InstalledSoftware incoming : desired) {
+            Objects.requireNonNull(incoming, "assignment must not be null");
+            incoming.setSiteID(siteId);
+            if (incoming.getSoftwareID() == null) {
+                throw new IllegalArgumentException("SoftwareID is required for installed software assignments");
+            }
+
+            UUID identifier = incoming.getInstalledSoftwareID();
+            if (identifier == null) {
+                stored.add(createOrUpdateInstalledSoftware(incoming));
+                continue;
+            }
+
+            if (!existingById.containsKey(identifier)) {
+                throw new IllegalArgumentException("InstalledSoftwareID " + identifier + " is not associated with site " + siteId);
+            }
+
+            InstalledSoftware patch = new InstalledSoftware();
+            patch.setSiteID(siteId);
+            patch.setSoftwareID(incoming.getSoftwareID());
+            patch.setStatus(incoming.getStatus());
+            patch.setOfferedDate(incoming.getOfferedDate());
+            patch.setInstalledDate(incoming.getInstalledDate());
+            patch.setRejectedDate(incoming.getRejectedDate());
+
+            Optional<InstalledSoftware> updated = updateInstalledSoftware(identifier, patch);
+            updated.ifPresent(stored::add);
+            processed.add(identifier);
+        }
+
+        for (InstalledSoftware stale : existing) {
+            UUID id = stale.getInstalledSoftwareID();
+            if (id != null && !processed.contains(id)) {
+                deleteInstalledSoftware(id);
+            }
+        }
+
+        return stored;
     }
 
     /**
@@ -174,7 +247,10 @@ public class InstalledSoftwareService {
                     isw.getInstalledSoftwareID() != null ? isw.getInstalledSoftwareID().toString() : null,
                     isw.getSiteID() != null ? isw.getSiteID().toString() : null,
                     isw.getSoftwareID() != null ? isw.getSoftwareID().toString() : null,
-                    isw.getStatus()
+                    isw.getStatus(),
+                    isw.getOfferedDate(),
+                    isw.getInstalledDate(),
+                    isw.getRejectedDate()
             );
             log.debug("InstalledSoftware indexed in Lucene: id={}", isw.getInstalledSoftwareID());
         } catch (Exception e) {
@@ -182,11 +258,38 @@ public class InstalledSoftwareService {
         }
     }
 
-    private String normalizeStatus(String status) {
+    private InstalledSoftwareStatus normalizeStatusAndDates(InstalledSoftware entity) {
+        InstalledSoftwareStatus status;
         try {
-            return InstalledSoftwareStatus.from(status).dbValue();
+            status = InstalledSoftwareStatus.from(entity.getStatus());
         } catch (IllegalArgumentException ex) {
             throw new IllegalArgumentException(ex.getMessage(), ex);
+        }
+
+        entity.setStatus(status.dbValue());
+        entity.setOfferedDate(normalizeDate(entity.getOfferedDate()));
+        entity.setInstalledDate(normalizeDate(entity.getInstalledDate()));
+        entity.setRejectedDate(normalizeDate(entity.getRejectedDate()));
+
+        switch (status) {
+            case OFFERED -> {
+                entity.setInstalledDate(null);
+                entity.setRejectedDate(null);
+            }
+            case INSTALLED -> entity.setRejectedDate(null);
+            case REJECTED -> entity.setInstalledDate(null);
+        }
+        return status;
+    }
+
+    private String normalizeDate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(value.trim()).toString();
+        } catch (DateTimeParseException ex) {
+            throw new IllegalArgumentException("Invalid date value: " + value, ex);
         }
     }
 }

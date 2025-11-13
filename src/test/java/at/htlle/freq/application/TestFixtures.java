@@ -67,7 +67,8 @@ final class TestFixtures {
     }
 
     static InstalledSoftware installedSoftware() {
-        return new InstalledSoftware(UUID2, UUID4, UUID5, InstalledSoftwareStatus.OFFERED.dbValue());
+        return new InstalledSoftware(UUID2, UUID4, UUID5, InstalledSoftwareStatus.OFFERED.dbValue(),
+                "2024-01-10", null, null);
     }
 
     static ServiceContract serviceContract() {
