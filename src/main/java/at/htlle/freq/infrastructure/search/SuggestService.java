@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,7 @@ public class SuggestService {
     /** Returns up to {@code max} suggestions whose terms begin with the provided {@code prefix}. */
     public List<String> suggest(String prefix, int max) {
         if (prefix == null) return List.of();
-        String pfx = prefix.toLowerCase();
+        String pfx = prefix.toLowerCase(Locale.ROOT);
         if (pfx.length() < 2) return List.of();
         if (max <= 0) return List.of();
 
@@ -60,7 +61,7 @@ public class SuggestService {
                     while ((br = te.next()) != null) {
                         String term = br.utf8ToString();
                         // Perform a case-insensitive comparison but return the original value
-                        if (term.toLowerCase().startsWith(pfx)) {
+                        if (term.toLowerCase(Locale.ROOT).startsWith(pfx)) {
                             out.add(term);
                             if (out.size() >= max) break outer;
                         }
