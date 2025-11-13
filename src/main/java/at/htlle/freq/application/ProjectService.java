@@ -137,6 +137,7 @@ public class ProjectService {
     public void deleteProject(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(p -> {
+            repo.deleteById(id);
             log.info("Project deleted: id={} name='{}'", id, p.getProjectName());
             // Optionally remove the entry from Lucene once delete support exists.
         });

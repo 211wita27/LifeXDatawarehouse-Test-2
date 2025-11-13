@@ -57,6 +57,12 @@ public class JdbcServiceContractRepository implements ServiceContractRepository 
             """, mapper);
     }
 
+    @Override
+    public void deleteById(UUID id) {
+        String sql = "DELETE FROM ServiceContract WHERE ContractID = :id";
+        jdbc.update(sql, new MapSqlParameterSource("id", id));
+    }
+
     /**
      * Persists service contracts via INSERT or UPDATE operations on the {@code ServiceContract}
      * table.

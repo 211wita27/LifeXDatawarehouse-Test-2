@@ -129,6 +129,7 @@ public class SiteService {
     public void deleteSite(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(s -> {
+            repo.deleteById(id);
             log.info("Site deleted: id={} name='{}'", id, s.getSiteName());
             // Optionally remove the entry from Lucene once delete support exists.
         });

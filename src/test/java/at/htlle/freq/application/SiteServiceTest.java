@@ -6,6 +6,7 @@ import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
+import org.mockito.InOrder;
 
 import java.util.List;
 import java.util.Optional;
@@ -121,9 +122,11 @@ class SiteServiceTest {
     }
 
     @Test
-    void deleteSiteLoadsOptional() {
+    void deleteSiteDeletesWhenPresent() {
         when(repo.findById(UUID4)).thenReturn(Optional.of(site()));
         service.deleteSite(UUID4);
-        verify(repo).findById(UUID4);
+        InOrder order = inOrder(repo);
+        order.verify(repo).findById(UUID4);
+        order.verify(repo).deleteById(UUID4);
     }
 }

@@ -62,6 +62,12 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
             """, mapper);
     }
 
+    @Override
+    public void deleteById(UUID id) {
+        String sql = "DELETE FROM InstalledSoftware WHERE InstalledSoftwareID = :id";
+        jdbc.update(sql, new MapSqlParameterSource("id", id));
+    }
+
     /**
      * Persists installation records in the {@code InstalledSoftware} table.
      * <p>

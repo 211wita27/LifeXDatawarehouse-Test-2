@@ -44,4 +44,11 @@ public interface InstalledSoftwareRepository {
      * @return list of all entries
      */
     List<InstalledSoftware> findAll();
+
+    /**
+     * Deletes an installed software relationship by its identifier.
+     *
+     * @param id primary key
+     */
+    void deleteById(UUID id);
 }

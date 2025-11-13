@@ -63,6 +63,12 @@ public class JdbcServerRepository implements ServerRepository {
         return jdbc.query(sql, mapper);
     }
 
+    @Override
+    public void deleteById(UUID id) {
+        String sql = "DELETE FROM Server WHERE ServerID = :id";
+        jdbc.update(sql, new MapSqlParameterSource("id", id));
+    }
+
     /**
      * Stores server entries via INSERT or UPDATE statements against the {@code Server} table.
      * <p>

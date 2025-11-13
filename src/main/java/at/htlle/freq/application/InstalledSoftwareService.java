@@ -146,6 +146,7 @@ public class InstalledSoftwareService {
     public void deleteInstalledSoftware(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(isw -> {
+            repo.deleteById(id);
             log.info("InstalledSoftware deleted: id={} site={} software={} status={}",
                     id, isw.getSiteID(), isw.getSoftwareID(), isw.getStatus());
             // Optionally remove the entry from Lucene once delete support exists.
