@@ -255,6 +255,9 @@ public class ReportService {
                 sw.Revision AS current_revision,
                 sw.SupportEndDate AS support_end,
                 ins.Status AS install_status,
+                ins.OfferedDate AS offered_date,
+                ins.InstalledDate AS installed_date,
+                ins.RejectedDate AS rejected_date,
                 ld.target_release,
                 ld.target_revision,
                 ld.target_support_end,
@@ -310,6 +313,7 @@ public class ReportService {
                 new ReportColumn("targetVersion", "Target version", "left"),
                 new ReportColumn("supportEnd", "Support end", "left"),
                 new ReportColumn("status", "Installation status", "left"),
+                new ReportColumn("statusDates", "Status timeline", "left"),
                 new ReportColumn("compliance", "Match status", "left"),
                 new ReportColumn("severity", "Severity", "left"),
                 new ReportColumn("notes", "Note", "left")
@@ -352,6 +356,9 @@ public class ReportService {
             installStatusEnum = InstalledSoftwareStatus.OFFERED;
         }
         String installStatus = installStatusEnum.dbValue();
+        LocalDate offeredDate = getLocalDate(rs, "offered_date");
+        LocalDate installedDate = getLocalDate(rs, "installed_date");
+        LocalDate rejectedDate = getLocalDate(rs, "rejected_date");
         LocalDate targetSupport = getLocalDate(rs, "target_support_end");
         LocalDate nextWindow = getLocalDate(rs, "next_window");
 
@@ -401,6 +408,7 @@ public class ReportService {
         row.put("targetVersion", versionString(targetRelease, targetRevision));
         row.put("supportEnd", supportEnd != null ? formatDate(supportEnd) : "—");
         row.put("status", installStatus);
+        row.put("statusDates", buildStatusTimeline(offeredDate, installedDate, rejectedDate));
         row.put("compliance", compliance);
         row.put("severity", severity);
         row.put("notes", notes.toString());
@@ -851,6 +859,23 @@ public class ReportService {
             return date.toLocalDate();
         }
         return null;
+    }
+
+    private String buildStatusTimeline(LocalDate offered, LocalDate installed, LocalDate rejected) {
+        List<String> parts = new ArrayList<>();
+        if (offered != null) {
+            parts.add("Offered " + formatDate(offered));
+        }
+        if (installed != null) {
+            parts.add("Installed " + formatDate(installed));
+        }
+        if (rejected != null) {
+            parts.add("Rejected " + formatDate(rejected));
+        }
+        if (parts.isEmpty()) {
+            return "—";
+        }
+        return String.join(" | ", parts);
     }
 
     private String formatDate(LocalDate date) {

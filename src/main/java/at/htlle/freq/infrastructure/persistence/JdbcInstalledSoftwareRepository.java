@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.*;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -19,17 +20,24 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
 
     public JdbcInstalledSoftwareRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
-    private final RowMapper<InstalledSoftware> mapper = (rs, n) -> new InstalledSoftware(
-            rs.getObject("InstalledSoftwareID", UUID.class),
-            rs.getObject("SiteID", UUID.class),
-            rs.getObject("SoftwareID", UUID.class),
-            rs.getString("Status")
-    );
+    private final RowMapper<InstalledSoftware> mapper = (rs, n) -> {
+        InstalledSoftware entity = new InstalledSoftware(
+                rs.getObject("InstalledSoftwareID", UUID.class),
+                rs.getObject("SiteID", UUID.class),
+                rs.getObject("SoftwareID", UUID.class),
+                rs.getString("Status")
+        );
+        entity.setOfferedDate(toIso(rs.getObject("OfferedDate", LocalDate.class)));
+        entity.setInstalledDate(toIso(rs.getObject("InstalledDate", LocalDate.class)));
+        entity.setRejectedDate(toIso(rs.getObject("RejectedDate", LocalDate.class)));
+        return entity;
+    };
 
     @Override
     public Optional<InstalledSoftware> findById(UUID id) {
         String sql = """
-            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status
+            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status,
+                   OfferedDate, InstalledDate, RejectedDate
             FROM InstalledSoftware WHERE InstalledSoftwareID = :id
             """;
         try { return Optional.ofNullable(jdbc.queryForObject(sql, new MapSqlParameterSource("id", id), mapper)); }
@@ -39,7 +47,8 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
     @Override
     public List<InstalledSoftware> findBySite(UUID siteId) {
         String sql = """
-            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status
+            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status,
+                   OfferedDate, InstalledDate, RejectedDate
             FROM InstalledSoftware WHERE SiteID = :sid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("sid", siteId), mapper);
@@ -48,7 +57,8 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
     @Override
     public List<InstalledSoftware> findBySoftware(UUID softwareId) {
         String sql = """
-            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status
+            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status,
+                   OfferedDate, InstalledDate, RejectedDate
             FROM InstalledSoftware WHERE SoftwareID = :sw
             """;
         return jdbc.query(sql, new MapSqlParameterSource("sw", softwareId), mapper);
@@ -57,7 +67,8 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
     @Override
     public List<InstalledSoftware> findAll() {
         return jdbc.query("""
-            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status
+            SELECT InstalledSoftwareID, SiteID, SoftwareID, Status,
+                   OfferedDate, InstalledDate, RejectedDate
             FROM InstalledSoftware
             """, mapper);
     }
@@ -85,26 +96,42 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
         boolean isNew = isw.getInstalledSoftwareID() == null;
         if (isNew) {
             String sql = """
-                INSERT INTO InstalledSoftware (SiteID, SoftwareID, Status)
-                VALUES (:site, :sw, :status)
+                INSERT INTO InstalledSoftware (SiteID, SoftwareID, Status, OfferedDate, InstalledDate, RejectedDate)
+                VALUES (:site, :sw, :status, :offered, :installed, :rejected)
                 RETURNING InstalledSoftwareID
                 """;
             UUID id = jdbc.queryForObject(sql, new MapSqlParameterSource()
                     .addValue("site", isw.getSiteID())
                     .addValue("sw", isw.getSoftwareID())
-                    .addValue("status", isw.getStatus()), UUID.class);
+                    .addValue("status", isw.getStatus())
+                    .addValue("offered", parseDate(isw.getOfferedDate()))
+                    .addValue("installed", parseDate(isw.getInstalledDate()))
+                    .addValue("rejected", parseDate(isw.getRejectedDate())), UUID.class);
             isw.setInstalledSoftwareID(id);
         } else {
             String sql = """
-                UPDATE InstalledSoftware SET SiteID = :site, SoftwareID = :sw, Status = :status
+                UPDATE InstalledSoftware SET SiteID = :site, SoftwareID = :sw, Status = :status,
+                                            OfferedDate = :offered, InstalledDate = :installed,
+                                            RejectedDate = :rejected
                 WHERE InstalledSoftwareID = :id
                 """;
             jdbc.update(sql, new MapSqlParameterSource()
                     .addValue("id", isw.getInstalledSoftwareID())
                     .addValue("site", isw.getSiteID())
                     .addValue("sw", isw.getSoftwareID())
-                    .addValue("status", isw.getStatus()));
+                    .addValue("status", isw.getStatus())
+                    .addValue("offered", parseDate(isw.getOfferedDate()))
+                    .addValue("installed", parseDate(isw.getInstalledDate()))
+                    .addValue("rejected", parseDate(isw.getRejectedDate())));
         }
         return isw;
+    }
+
+    private String toIso(LocalDate value) {
+        return value != null ? value.toString() : null;
+    }
+
+    private LocalDate parseDate(String iso) {
+        return (iso == null || iso.isBlank()) ? null : LocalDate.parse(iso);
     }
 }

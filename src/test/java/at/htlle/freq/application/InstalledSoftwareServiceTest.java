@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static at.htlle.freq.application.TestFixtures.UUID2;
+import static at.htlle.freq.application.TestFixtures.UUID3;
 import static at.htlle.freq.application.TestFixtures.UUID4;
 import static at.htlle.freq.application.TestFixtures.UUID5;
 import static at.htlle.freq.application.TestFixtures.installedSoftware;
@@ -71,7 +72,7 @@ class InstalledSoftwareServiceTest {
         InstalledSoftware saved = service.createOrUpdateInstalledSoftware(value);
         assertSame(value, saved);
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(UUID4.toString()), eq(UUID5.toString()),
-                eq(InstalledSoftwareStatus.OFFERED.dbValue()));
+                eq(InstalledSoftwareStatus.OFFERED.dbValue()), eq("2024-01-10"), isNull(), isNull());
     }
 
     @Test
@@ -84,19 +85,20 @@ class InstalledSoftwareServiceTest {
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(UUID4.toString()), eq(UUID5.toString()),
-                eq(InstalledSoftwareStatus.OFFERED.dbValue()));
+                eq(InstalledSoftwareStatus.OFFERED.dbValue()), eq("2024-01-10"), isNull(), isNull());
     }
 
     @Test
     void createInstalledSoftwareContinuesWhenLuceneFails() {
         InstalledSoftware value = installedSoftware();
         when(repo.save(value)).thenReturn(value);
-        doThrow(new RuntimeException("Lucene error")).when(lucene).indexInstalledSoftware(any(), any(), any(), any());
+        doThrow(new RuntimeException("Lucene error")).when(lucene)
+                .indexInstalledSoftware(any(), any(), any(), any(), any(), any(), any());
 
         InstalledSoftware saved = service.createOrUpdateInstalledSoftware(value);
         assertSame(value, saved);
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(UUID4.toString()), eq(UUID5.toString()),
-                eq(InstalledSoftwareStatus.OFFERED.dbValue()));
+                eq(InstalledSoftwareStatus.OFFERED.dbValue()), eq("2024-01-10"), isNull(), isNull());
     }
 
     @Test
@@ -113,13 +115,21 @@ class InstalledSoftwareServiceTest {
         InstalledSoftware saved = service.createOrUpdateInstalledSoftware(value);
         assertEquals(InstalledSoftwareStatus.OFFERED.dbValue(), saved.getStatus());
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(UUID4.toString()), eq(UUID5.toString()),
-                eq(InstalledSoftwareStatus.OFFERED.dbValue()));
+                eq(InstalledSoftwareStatus.OFFERED.dbValue()), isNull(), isNull(), isNull());
     }
 
     @Test
     void createInstalledSoftwareRejectsInvalidStatus() {
         InstalledSoftware value = installedSoftware();
         value.setStatus("Invalid");
+        assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateInstalledSoftware(value));
+        verifyNoInteractions(repo);
+    }
+
+    @Test
+    void createInstalledSoftwareRejectsInvalidDate() {
+        InstalledSoftware value = installedSoftware();
+        value.setOfferedDate("2024-13-40");
         assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateInstalledSoftware(value));
         verifyNoInteractions(repo);
     }
@@ -143,7 +153,8 @@ class InstalledSoftwareServiceTest {
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(existing.getSiteID().toString()),
-                eq(existing.getSoftwareID().toString()), eq(InstalledSoftwareStatus.OFFERED.dbValue()));
+                eq(existing.getSoftwareID().toString()), eq(InstalledSoftwareStatus.OFFERED.dbValue()),
+                eq("2024-01-10"), isNull(), isNull());
     }
 
     @Test
@@ -163,7 +174,8 @@ class InstalledSoftwareServiceTest {
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(existing.getSiteID().toString()),
-                eq(existing.getSoftwareID().toString()), eq(InstalledSoftwareStatus.REJECTED.dbValue()));
+                eq(existing.getSoftwareID().toString()), eq(InstalledSoftwareStatus.REJECTED.dbValue()),
+                eq("2024-01-10"), isNull(), isNull());
     }
 
     @Test
@@ -179,5 +191,53 @@ class InstalledSoftwareServiceTest {
         InOrder order = inOrder(repo);
         order.verify(repo).findById(UUID2);
         order.verify(repo).deleteById(UUID2);
+    }
+
+    @Test
+    void replaceAssignmentsForSiteSynchronizesRecords() {
+        InstalledSoftware existing = installedSoftware();
+        InstalledSoftware stale = new InstalledSoftware(UUID3, UUID4, UUID.randomUUID(),
+                InstalledSoftwareStatus.INSTALLED.dbValue(), "2024-01-01", "2024-01-15", null);
+
+        when(repo.findBySite(UUID4)).thenReturn(List.of(existing, stale));
+        when(repo.findById(UUID2)).thenReturn(Optional.of(existing));
+        when(repo.findById(UUID3)).thenReturn(Optional.of(stale));
+        when(repo.save(any())).thenAnswer(invocation -> {
+            InstalledSoftware arg = invocation.getArgument(0);
+            if (arg.getInstalledSoftwareID() == null) {
+                arg.setInstalledSoftwareID(UUID.randomUUID());
+            }
+            return arg;
+        });
+
+        InstalledSoftware updated = new InstalledSoftware();
+        updated.setInstalledSoftwareID(UUID2);
+        updated.setSoftwareID(existing.getSoftwareID());
+        updated.setStatus("Installed");
+        updated.setOfferedDate("2024-01-05");
+        updated.setInstalledDate("2024-02-02");
+        updated.setRejectedDate("2024-03-03");
+
+        InstalledSoftware created = new InstalledSoftware();
+        created.setSoftwareID(UUID.randomUUID());
+        created.setStatus("Rejected");
+        created.setOfferedDate("2024-04-01");
+        created.setInstalledDate("2024-04-05");
+        created.setRejectedDate("2024-04-10");
+
+        List<InstalledSoftware> result = service.replaceAssignmentsForSite(UUID4, List.of(updated, created));
+
+        assertEquals(2, result.size());
+        InstalledSoftware updatedResult = result.stream()
+                .filter(isw -> UUID2.equals(isw.getInstalledSoftwareID()))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(InstalledSoftwareStatus.INSTALLED.dbValue(), updatedResult.getStatus());
+        assertEquals("2024-01-05", updatedResult.getOfferedDate());
+        assertEquals("2024-02-02", updatedResult.getInstalledDate());
+        assertNull(updatedResult.getRejectedDate());
+
+        verify(repo).deleteById(stale.getInstalledSoftwareID());
+        verify(lucene, atLeastOnce()).indexInstalledSoftware(any(), any(), any(), any(), any(), any(), any());
     }
 }

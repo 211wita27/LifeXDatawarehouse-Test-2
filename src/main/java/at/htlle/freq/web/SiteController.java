@@ -1,5 +1,9 @@
 package at.htlle.freq.web;
 
+import at.htlle.freq.application.InstalledSoftwareService;
+import at.htlle.freq.application.SiteService;
+import at.htlle.freq.domain.Site;
+import at.htlle.freq.web.dto.SiteUpsertRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -20,18 +24,16 @@ import java.util.*;
 public class SiteController {
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final SiteService siteService;
+    private final InstalledSoftwareService installedSoftwareService;
     private static final Logger log = LoggerFactory.getLogger(SiteController.class);
     private static final String TABLE = "Site";
-    private static final Set<String> ALLOWED_COLUMNS = Set.of(
-            "SiteName",
-            "ProjectID",
-            "AddressID",
-            "FireZone",
-            "TenantCount"
-    );
 
-    public SiteController(NamedParameterJdbcTemplate jdbc) {
+    public SiteController(NamedParameterJdbcTemplate jdbc, SiteService siteService,
+                          InstalledSoftwareService installedSoftwareService) {
         this.jdbc = jdbc;
+        this.siteService = siteService;
+        this.installedSoftwareService = installedSoftwareService;
     }
 
     // READ operations: list all sites or filter by project
@@ -96,18 +98,27 @@ public class SiteController {
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public void create(@RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
+    public void create(@RequestBody SiteUpsertRequest request) {
+        if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
 
-        String sql = """
-            INSERT INTO Site (SiteName, ProjectID, AddressID, FireZone, TenantCount)
-            VALUES (:siteName, :projectID, :addressID, :fireZone, :tenantCount)
-            """;
+        try {
+            request.validateForCreate();
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
 
-        jdbc.update(sql, new MapSqlParameterSource(body));
-        log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
+        Site saved;
+        try {
+            saved = siteService.createOrUpdateSite(request.toSite());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+
+        persistAssignments(saved.getSiteID(), request);
+        log.info("[{}] create succeeded: id={} assignments={}", TABLE, saved.getSiteID(),
+                request.normalizedAssignments().size());
     }
 
     // UPDATE operations
@@ -123,27 +134,34 @@ public class SiteController {
      * @throws ResponseStatusException 400 if the body is empty, 404 if nothing was updated.
      */
     @PutMapping("/{id}")
-    public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
+    public void update(@PathVariable String id, @RequestBody SiteUpsertRequest request) {
+        UUID siteId = parseUuid(id, "SiteID");
+        if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
 
-        validateColumns(body.keySet());
-
-        StringBuilder sql = new StringBuilder("UPDATE Site SET ");
-        List<String> sets = new ArrayList<>();
-        for (String key : body.keySet()) {
-            sets.add(key + " = :" + key);
+        try {
+            request.validateForUpdate();
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
-        sql.append(String.join(", ", sets)).append(" WHERE SiteID = :id");
 
-        var params = new MapSqlParameterSource(body).addValue("id", id);
-        int updated = jdbc.update(sql.toString(), params);
-        if (updated == 0) {
-            log.warn("[{}] update failed: identifiers={}, payloadKeys={}", TABLE, Map.of("SiteID", id), body.keySet());
+        Site patch = request.toSite();
+        Optional<Site> updated;
+        try {
+            updated = siteService.updateSite(siteId, patch);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
+
+        if (updated.isEmpty()) {
+            log.warn("[{}] update failed: identifiers={} ", TABLE, Map.of("SiteID", siteId));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no site updated");
         }
-        log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("SiteID", id), body.keySet());
+
+        persistAssignments(siteId, request);
+        log.info("[{}] update succeeded: id={} assignments={} keys={}", TABLE, siteId,
+                request.normalizedAssignments().size(), summarizeUpdatedFields(patch));
     }
 
     // DELETE operations
@@ -169,21 +187,30 @@ public class SiteController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("SiteID", id));
     }
 
-    private void validateColumns(Collection<String> keys) {
-        for (String key : keys) {
-            if (!ALLOWED_COLUMNS.contains(key)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown column: " + key);
-            }
+    private void persistAssignments(UUID siteId, SiteUpsertRequest request) {
+        try {
+            installedSoftwareService.replaceAssignmentsForSite(siteId, request.toInstalledSoftware(siteId));
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
     }
 
-    private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
-        Map<String, Object> ids = new LinkedHashMap<>();
-        body.forEach((key, value) -> {
-            if (key != null && key.toLowerCase(Locale.ROOT).endsWith("id")) {
-                ids.put(key, value);
-            }
-        });
-        return ids;
+    private UUID parseUuid(String raw, String fieldName) {
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    fieldName + " must be a valid UUID", ex);
+        }
+    }
+
+    private Set<String> summarizeUpdatedFields(Site patch) {
+        Set<String> fields = new LinkedHashSet<>();
+        if (patch.getSiteName() != null) fields.add("SiteName");
+        if (patch.getProjectID() != null) fields.add("ProjectID");
+        if (patch.getAddressID() != null) fields.add("AddressID");
+        if (patch.getFireZone() != null) fields.add("FireZone");
+        if (patch.getTenantCount() != null) fields.add("TenantCount");
+        return fields;
     }
 }

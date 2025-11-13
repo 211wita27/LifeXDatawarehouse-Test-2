@@ -88,7 +88,8 @@ public class GenericCrudController {
         c.put("Address", Set.of("AddressID", "Street", "CityID"));
         c.put("DeploymentVariant", Set.of("VariantID", "VariantCode", "VariantName", "Description", "IsActive"));
         c.put("Software", Set.of("SoftwareID", "Name", "Release", "Revision", "SupportPhase", "LicenseModel", "ThirdParty", "EndOfSalesDate", "SupportStartDate", "SupportEndDate"));
-        c.put("InstalledSoftware", Set.of("InstalledSoftwareID", "SiteID", "SoftwareID", "Status"));
+        c.put("InstalledSoftware", Set.of("InstalledSoftwareID", "SiteID", "SoftwareID", "Status",
+                "OfferedDate", "InstalledDate", "RejectedDate"));
         c.put("UpgradePlan", Set.of("UpgradePlanID", "SiteID", "SoftwareID", "PlannedWindowStart", "PlannedWindowEnd", "Status", "CreatedAt", "CreatedBy"));
         c.put("ServiceContract", Set.of("ContractID", "AccountID", "ProjectID", "SiteID", "ContractNumber", "Status", "StartDate", "EndDate"));
         COLUMNS = Collections.unmodifiableMap(c);
