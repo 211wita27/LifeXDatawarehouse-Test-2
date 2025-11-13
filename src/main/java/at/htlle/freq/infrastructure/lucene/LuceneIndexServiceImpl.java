@@ -668,6 +668,24 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         }
     }
 
+    @Override
+    public void deleteDocument(String id) {
+        String safeId = safe(id);
+        if (safeId.isEmpty()) {
+            log.warn("Ignoring Lucene delete for empty id");
+            return;
+        }
+        try {
+            withWriter(writer -> {
+                writer.deleteDocuments(new Term("id", safeId));
+                writer.commit();
+            });
+            log.info("Deleted document from Lucene index: {}", safeId);
+        } catch (Exception e) {
+            log.error("Failed to delete document {} from Lucene", safeId, e);
+        }
+    }
+
     @FunctionalInterface
     private interface WriterCallback {
         void execute(IndexWriter writer) throws IOException;

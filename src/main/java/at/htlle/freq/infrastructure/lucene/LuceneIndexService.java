@@ -44,6 +44,13 @@ public interface LuceneIndexService {
     void indexAccount(String accountId, String accountName, String country, String contactEmail);
 
     /**
+     * Removes a previously indexed document from the Lucene index using its identifier.
+     * Implementations should silently ignore unknown identifiers while ensuring the delete
+     * operation is committed so search results remain in sync immediately after a transaction.
+     */
+    void deleteDocument(String id);
+
+    /**
      * Indexes an address document linking it to the respective city reference for search operations.
      */
     void indexAddress(String addressId, String street, String cityId);
