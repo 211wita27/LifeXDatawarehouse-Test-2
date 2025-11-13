@@ -138,6 +138,7 @@ public class ServerService {
     public void deleteServer(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
         repo.findById(id).ifPresent(s -> {
+            repo.deleteById(id);
             log.info("Server deleted: id={} name='{}' brand='{}'", id, s.getServerName(), s.getServerBrand());
             // Optionally remove the entry from Lucene once delete support exists.
         });

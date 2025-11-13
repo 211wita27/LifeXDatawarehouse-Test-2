@@ -33,7 +33,7 @@ final class TestFixtures {
     }
 
     static DeploymentVariant deploymentVariant() {
-        return new DeploymentVariant(UUID2, "CODE", "Variant", "Description", true);
+        return new DeploymentVariant(UUID2, "CODE", "Variant", "Description", Boolean.TRUE);
     }
 
     static Project project() {

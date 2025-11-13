@@ -60,6 +60,12 @@ public class JdbcUpgradePlanRepository implements UpgradePlanRepository {
             """, mapper);
     }
 
+    @Override
+    public void deleteById(UUID id) {
+        String sql = "DELETE FROM UpgradePlan WHERE UpgradePlanID = :id";
+        jdbc.update(sql, new MapSqlParameterSource("id", id));
+    }
+
     /**
      * Persists upgrade plans via INSERT or UPDATE operations on the {@code UpgradePlan} table.
      * <p>

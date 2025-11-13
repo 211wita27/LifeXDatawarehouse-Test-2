@@ -6,6 +6,7 @@ import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
+import org.mockito.InOrder;
 
 import java.util.List;
 import java.util.Optional;
@@ -143,9 +144,11 @@ class ServiceContractServiceTest {
     }
 
     @Test
-    void deleteContractLoadsOptional() {
+    void deleteContractDeletesWhenPresent() {
         when(repo.findById(UUID3)).thenReturn(Optional.of(serviceContract()));
         service.deleteContract(UUID3);
-        verify(repo).findById(UUID3);
+        InOrder order = inOrder(repo);
+        order.verify(repo).findById(UUID3);
+        order.verify(repo).deleteById(UUID3);
     }
 }

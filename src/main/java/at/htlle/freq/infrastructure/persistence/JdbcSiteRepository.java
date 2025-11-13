@@ -53,6 +53,12 @@ public class JdbcSiteRepository implements SiteRepository {
         return jdbc.query("SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount FROM Site", mapper);
     }
 
+    @Override
+    public void deleteById(UUID id) {
+        String sql = "DELETE FROM Site WHERE SiteID = :id";
+        jdbc.update(sql, new MapSqlParameterSource("id", id));
+    }
+
     /**
      * Persists sites through INSERT or UPDATE statements executed on the {@code Site} table.
      * <p>
