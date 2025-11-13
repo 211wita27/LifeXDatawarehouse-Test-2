@@ -113,9 +113,9 @@
     ];
 
     const SOFTWARE_DATE_FIELDS=[
-        {idSuffix:'planned',label:'Planned installation date',prop:'plannedInstallDate'},
-        {idSuffix:'installed',label:'Installed on',prop:'installationDate'},
-        {idSuffix:'retired',label:'Retired on',prop:'retireDate'}
+        {idSuffix:'offered',label:'Offered on',prop:'offeredDate'},
+        {idSuffix:'installed',label:'Installed on',prop:'installedDate'},
+        {idSuffix:'rejected',label:'Rejected on',prop:'rejectedDate'}
     ];
 
     function updateCreateHeading(entityKey){
@@ -667,7 +667,7 @@
         const baseId=`${container?.dataset.field||'software'}-${Date.now()}-${softwareEntrySeed++}`;
         const entry=document.createElement('div');
         entry.className='software-entry';
-        const softwareFieldId=`${baseId}-softwareID`;
+        const softwareFieldId=`${baseId}-softwareId`;
         const statusFieldId=`${baseId}-status`;
         entry.dataset.softwareIdField=softwareFieldId;
         entry.dataset.statusField=statusFieldId;
@@ -677,7 +677,7 @@
             entry.dataset[`${field.prop}Field`]=fieldId;
             return add(fieldId,field.label,{inputType:'date',name:field.prop,wrapperClass:'software-entry__field'});
         }).join('');
-        const softwareHtml=renderAsyncSelect(softwareFieldId,'Software','software',{allowManual:false,placeholder:'Select software',name:'softwareID',wrapperClass:'software-entry__field'});
+        const softwareHtml=renderAsyncSelect(softwareFieldId,'Software','software',{allowManual:false,placeholder:'Select software',name:'softwareId',wrapperClass:'software-entry__field'});
         const statusHtml=addSel(statusFieldId,'Status',SOFTWARE_STATUS_OPTIONS,{placeholder:'Select status',name:'status',wrapperClass:'software-entry__field'});
         entry.innerHTML=`
             <div class="software-entry__grid">
@@ -766,24 +766,24 @@
             if(!status){
                 return {error:`Status is required for entry #${position}.`};
             }
-            const planned=getValue(entry.dataset.plannedInstallDateField);
-            const installed=getValue(entry.dataset.installationDateField);
-            const retired=getValue(entry.dataset.retireDateField);
-            if(planned && installed && planned>installed){
-                return {error:`Planned installation date must be on or before the installed date for entry #${position}.`};
+            const offered=getValue(entry.dataset.offeredDateField);
+            const installed=getValue(entry.dataset.installedDateField);
+            const rejected=getValue(entry.dataset.rejectedDateField);
+            if(offered && installed && offered>installed){
+                return {error:`Offered date must be on or before the installed date for entry #${position}.`};
             }
-            if(installed && retired && installed>retired){
-                return {error:`Installed date must be on or before the retired date for entry #${position}.`};
+            if(installed && rejected && installed>rejected){
+                return {error:`Installed date must be on or before the rejected date for entry #${position}.`};
             }
-            if(planned && retired && planned>retired){
-                return {error:`Planned installation date must be on or before the retired date for entry #${position}.`};
+            if(offered && rejected && offered>rejected){
+                return {error:`Offered date must be on or before the rejected date for entry #${position}.`};
             }
             entries.push({
-                softwareID: softwareId,
+                softwareId: softwareId,
                 status,
-                plannedInstallDate: planned||null,
-                installationDate: installed||null,
-                retireDate: retired||null
+                offeredDate: offered||null,
+                installedDate: installed||null,
+                rejectedDate: rejected||null
             });
         }
         return {entries};
@@ -1497,7 +1497,7 @@
                     addressID: v('addrId'),
                     fireZone: toNull(v('zone')),
                     tenantCount,
-                    softwareInstallations: siteSoftwareEntries
+                    softwareAssignments: siteSoftwareEntries
                 };
                 break;
 
