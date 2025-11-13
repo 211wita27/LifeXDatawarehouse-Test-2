@@ -366,8 +366,14 @@ public class ReportService {
             } else {
                 severity = "Monitor";
             }
-        } else if (supportEnd != null && supportEnd.isBefore(now.plusDays(45))) {
-            severity = "Expiry <45 days";
+        } else if (supportEnd != null) {
+            if (supportEnd.isBefore(now)) {
+                severity = "Critical";
+            } else if (supportEnd.isBefore(now.plusDays(45))) {
+                severity = "Expiry <45 days";
+            } else {
+                severity = "OK";
+            }
         } else {
             severity = "OK";
         }

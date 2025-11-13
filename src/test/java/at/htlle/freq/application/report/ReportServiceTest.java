@@ -4,8 +4,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -81,5 +83,44 @@ class ReportServiceTest {
                 .orElse(null);
         assertNotNull(browserSlice, "Browser slice missing");
         assertEquals(4.0, browserSlice.value());
+    }
+
+    @Test
+    void differenceReportTreatsExpiredSupportAsCriticalEvenWhenUpToDate() throws SQLException {
+        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
+        ReportService service = new ReportService(jdbc);
+
+        ResultSet row = mock(ResultSet.class);
+        when(row.getString("ProjectName")).thenReturn("Project X");
+        when(row.getString("ProjectSAPID")).thenReturn("SAP-X");
+        when(row.getString("SiteName")).thenReturn("Site Alpha");
+        when(row.getString("VariantCode")).thenReturn("VAR-1");
+        when(row.getString("software_name")).thenReturn("Core");
+        when(row.getString("current_release")).thenReturn("2024");
+        when(row.getString("current_revision")).thenReturn("1");
+        when(row.getString("target_release")).thenReturn("2024");
+        when(row.getString("target_revision")).thenReturn("1");
+        when(row.getString("install_status")).thenReturn("Installed");
+        LocalDate now = LocalDate.now();
+        when(row.getObject("support_end")).thenReturn(Date.valueOf(now.minusDays(1)));
+
+        when(jdbc.query(anyString(), anyMap(), any(RowMapper.class))).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            RowMapper<Map<String, Object>> mapper = (RowMapper<Map<String, Object>>) invocation.getArgument(2);
+            List<Map<String, Object>> mappedRows = new ArrayList<>();
+            try {
+                mappedRows.add(mapper.mapRow(row, 0));
+            } catch (SQLException ex) {
+                throw new RuntimeException(ex);
+            }
+            return mappedRows;
+        });
+
+        ReportFilter filter = new ReportFilter(ReportType.DIFFERENCE, null, null, null, null, null, null);
+        ReportResponse response = service.getReport(filter);
+
+        Map<String, Object> firstRow = response.table().rows().get(0);
+        assertEquals("Critical", firstRow.get("severity"));
+        assertEquals("Up to date", firstRow.get("compliance"));
     }
 }
