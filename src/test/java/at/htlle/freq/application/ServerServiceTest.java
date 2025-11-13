@@ -143,6 +143,29 @@ class ServerServiceTest {
     }
 
     @Test
+    void updateServerKeepsHighAvailabilityWhenPatchOmitsFlag() {
+        Server existing = server();
+        when(repo.findById(UUID2)).thenReturn(Optional.of(existing));
+        when(repo.save(existing)).thenReturn(existing);
+
+        Server patch = new Server();
+        patch.setServerName("PartialUpdate");
+        patch.setServerBrand("Brand");
+
+        List<TransactionSynchronization> synchronizations = TransactionTestUtils.executeWithinTransaction(() -> {
+            Optional<Server> updated = service.updateServer(UUID2, patch);
+            assertTrue(updated.isPresent());
+            assertTrue(existing.isHighAvailability());
+            assertEquals("PartialUpdate", existing.getServerName());
+        });
+        synchronizations.forEach(TransactionSynchronization::afterCommit);
+
+        verify(lucene).indexServer(eq(UUID2.toString()), eq(existing.getSiteID().toString()), eq("PartialUpdate"), eq("Brand"),
+                eq(existing.getServerSerialNr()), eq(existing.getServerOS()), eq(existing.getPatchLevel()),
+                eq(existing.getVirtualPlatform()), eq(existing.getVirtualVersion()), eq(true));
+    }
+
+    @Test
     void updateServerReturnsEmptyWhenUnknown() {
         when(repo.findById(UUID2)).thenReturn(Optional.empty());
         assertTrue(service.updateServer(UUID2, server()).isEmpty());

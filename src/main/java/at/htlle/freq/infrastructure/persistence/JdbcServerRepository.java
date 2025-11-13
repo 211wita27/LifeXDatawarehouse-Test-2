@@ -29,7 +29,7 @@ public class JdbcServerRepository implements ServerRepository {
             rs.getString("PatchLevel"),
             rs.getString("VirtualPlatform"),
             rs.getString("VirtualVersion"),
-            rs.getBoolean("HighAvailability")
+            rs.getObject("HighAvailability", Boolean.class)
     );
 
     @Override
@@ -100,7 +100,7 @@ public class JdbcServerRepository implements ServerRepository {
                             .addValue("pl", s.getPatchLevel())
                             .addValue("vp", s.getVirtualPlatform())
                             .addValue("vv", s.getVirtualVersion())
-                            .addValue("ha", s.isHighAvailability()),
+                            .addValue("ha", Boolean.TRUE.equals(s.getHighAvailability())),
                     UUID.class);
             s.setServerID(id);
         } else {
@@ -120,7 +120,7 @@ public class JdbcServerRepository implements ServerRepository {
                     .addValue("pl", s.getPatchLevel())
                     .addValue("vp", s.getVirtualPlatform())
                     .addValue("vv", s.getVirtualVersion())
-                    .addValue("ha", s.isHighAvailability()));
+                    .addValue("ha", Boolean.TRUE.equals(s.getHighAvailability())));
         }
         return s;
     }

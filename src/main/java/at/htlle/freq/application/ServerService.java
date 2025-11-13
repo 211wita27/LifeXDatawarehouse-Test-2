@@ -119,7 +119,9 @@ public class ServerService {
             existing.setPatchLevel(nvl(patch.getPatchLevel(), existing.getPatchLevel()));
             existing.setVirtualPlatform(nvl(patch.getVirtualPlatform(), existing.getVirtualPlatform()));
             existing.setVirtualVersion(nvl(patch.getVirtualVersion(), existing.getVirtualVersion()));
-            existing.setHighAvailability(patch.isHighAvailability());
+            if (patch.getHighAvailability() != null) {
+                existing.setHighAvailability(patch.getHighAvailability());
+            }
 
             Server saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
