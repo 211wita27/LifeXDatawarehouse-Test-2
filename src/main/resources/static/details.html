@@ -73,7 +73,12 @@
         <a id="back-history" href="index.html">← Back</a>
         <a id="back-dashboard" href="/index.html">Dashboard</a>
     </div>
-    <div id="view" class="card" role="region" aria-live="polite" aria-busy="true">loading …</div>
+    <div id="detail-layout">
+        <div id="view" class="card" role="region" aria-live="polite" aria-busy="true">loading …</div>
+        <div id="site-software-overview-card" class="card site-software-card" role="region" aria-live="polite" aria-label="Software overview" hidden>
+            <div class="site-software-card__body"></div>
+        </div>
+    </div>
 
     <!-- Parent relationships section -->
     <div id="parents"></div>
@@ -157,6 +162,9 @@
     let isEditing = false;
 
     const detailBox = document.getElementById('view');
+    const detailLayoutEl = document.getElementById('detail-layout');
+    const siteSoftwareOverviewCard = document.getElementById('site-software-overview-card');
+    const siteSoftwareOverviewBody = siteSoftwareOverviewCard?.querySelector('.site-software-card__body') || null;
     const parentsBox = document.getElementById('parents');
     const childrenBox = document.getElementById('children');
 
@@ -1220,6 +1228,7 @@
     }
 
     function renderSoftwareOverviewSection(container, config = {}){
+        if(!container) return;
         const context = config.context === 'software' ? 'software' : 'site';
         const title = config.title ?? 'Software Overview';
         const emptyMessage = config.emptyMessage ?? '(no entries)';
@@ -1459,27 +1468,37 @@
 </table>`;
 
         const configKey = configKeyForTable(currentTable);
+        const isSiteDetail = configKey === 'Site';
         if(detailBox){
-            detailBox.classList.toggle('card--wide', configKey === 'Site');
+            detailBox.classList.toggle('card--wide', isSiteDetail);
         }
-        if(configKey === 'Site'){
-            detailBodyEl.innerHTML = '';
-            const layout = document.createElement('div');
-            layout.className = 'site-detail-layout';
+        if(detailLayoutEl){
+            detailLayoutEl.classList.toggle('detail-layout--with-software', isSiteDetail && !!siteSoftwareOverviewCard && !!siteSoftwareOverviewBody);
+        }
 
-            const primary = document.createElement('div');
-            primary.className = 'site-detail-layout__primary';
-            primary.innerHTML = tableHtml;
-            layout.appendChild(primary);
+        detailBodyEl.innerHTML = tableHtml;
 
-            const softwareAside = document.createElement('div');
-            softwareAside.className = 'site-detail-layout__software';
-            softwareAside.id = 'site-software-overview';
-            layout.appendChild(softwareAside);
-
-            detailBodyEl.appendChild(layout);
+        if(isSiteDetail){
+            if(siteSoftwareOverviewBody){
+                siteSoftwareOverviewBody.innerHTML = '<div class="empty">Loading software overview…</div>';
+            }
+            if(siteSoftwareOverviewCard){
+                if(siteSoftwareOverviewBody){
+                    siteSoftwareOverviewCard.hidden = false;
+                    siteSoftwareOverviewCard.setAttribute('aria-busy', 'true');
+                }else{
+                    siteSoftwareOverviewCard.hidden = true;
+                    siteSoftwareOverviewCard.removeAttribute('aria-busy');
+                }
+            }
         }else{
-            detailBodyEl.innerHTML = tableHtml;
+            if(siteSoftwareOverviewBody){
+                siteSoftwareOverviewBody.innerHTML = '';
+            }
+            if(siteSoftwareOverviewCard){
+                siteSoftwareOverviewCard.hidden = true;
+                siteSoftwareOverviewCard.removeAttribute('aria-busy');
+            }
         }
     }
 
@@ -1503,6 +1522,16 @@
         const configKey = configKeyForTable(currentTable);
         if(detailBox){
             detailBox.classList.toggle('card--wide', configKey === 'Site');
+        }
+        if(detailLayoutEl){
+            detailLayoutEl.classList.remove('detail-layout--with-software');
+        }
+        if(siteSoftwareOverviewBody){
+            siteSoftwareOverviewBody.innerHTML = '';
+        }
+        if(siteSoftwareOverviewCard){
+            siteSoftwareOverviewCard.hidden = true;
+            siteSoftwareOverviewCard.removeAttribute('aria-busy');
         }
         const configFields = formConfig.getFields(configKey) || [];
         const usedKeys = new Set();
@@ -2304,16 +2333,27 @@
             }, { entity: 'ServiceContract', label: 'ServiceContract', params: { accountId, projectId, siteId: id } });
 
             const softwareOverview = await fetchSoftwareOverview({ siteId: id });
-            const softwareContainer = document.getElementById('site-software-overview');
-            if(softwareContainer){
-                softwareContainer.innerHTML = '';
+            const softwareTarget = siteSoftwareOverviewBody || box;
+            if(siteSoftwareOverviewBody){
+                siteSoftwareOverviewBody.innerHTML = '';
             }
-            renderSoftwareOverviewSection(softwareContainer ?? box, {
-                title: 'Software Overview',
-                items: softwareOverview,
-                context: 'site',
-                emptyMessage: 'No software assignments recorded yet.'
-            });
+            if(softwareTarget){
+                renderSoftwareOverviewSection(softwareTarget, {
+                    title: 'Software Overview',
+                    items: softwareOverview,
+                    context: 'site',
+                    emptyMessage: 'No software assignments recorded yet.'
+                });
+            }
+            if(siteSoftwareOverviewCard){
+                if(softwareTarget === siteSoftwareOverviewBody){
+                    siteSoftwareOverviewCard.hidden = false;
+                    siteSoftwareOverviewCard.removeAttribute('aria-busy');
+                }else if(!siteSoftwareOverviewBody){
+                    siteSoftwareOverviewCard.hidden = true;
+                    siteSoftwareOverviewCard.removeAttribute('aria-busy');
+                }
+            }
 
             const upgradeRows = await fetchJson(`/table/upgradeplan?limit=200`);
             const plans = Array.isArray(upgradeRows)
