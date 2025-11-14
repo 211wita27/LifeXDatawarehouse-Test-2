@@ -5,8 +5,10 @@ import at.htlle.freq.domain.InstalledSoftwareRepository;
 import at.htlle.freq.domain.SiteSoftwareOverview;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.*;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 
+import java.nio.ByteBuffer;
 import java.time.LocalDate;
 import java.util.*;
 
@@ -120,10 +122,10 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
     /**
      * Persists installation records in the {@code InstalledSoftware} table.
      * <p>
-     * The {@code RETURNING InstalledSoftwareID} clause retrieves the generated identifier for
-     * INSERT operations, while UPDATE statements bind every column to keep the mapping aligned with
-     * the {@link RowMapper}. Parameters directly pass through the IDs of the referenced
-     * {@code Site} and {@code Software} tables.
+     * INSERT operations retrieve the generated identifier via {@link GeneratedKeyHolder}, while
+     * UPDATE statements bind every column to keep the mapping aligned with the {@link RowMapper}.
+     * Parameters directly pass through the IDs of the referenced {@code Site} and {@code Software}
+     * tables.
      * </p>
      *
      * @param isw installation entity whose properties map to columns of the same name.
@@ -136,15 +138,23 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
             String sql = """
                 INSERT INTO InstalledSoftware (SiteID, SoftwareID, Status, OfferedDate, InstalledDate, RejectedDate)
                 VALUES (:site, :sw, :status, :offered, :installed, :rejected)
-                RETURNING InstalledSoftwareID
                 """;
-            UUID id = jdbc.queryForObject(sql, new MapSqlParameterSource()
+
+            MapSqlParameterSource params = new MapSqlParameterSource()
                     .addValue("site", isw.getSiteID())
                     .addValue("sw", isw.getSoftwareID())
                     .addValue("status", isw.getStatus())
                     .addValue("offered", parseDate(isw.getOfferedDate()))
                     .addValue("installed", parseDate(isw.getInstalledDate()))
-                    .addValue("rejected", parseDate(isw.getRejectedDate())), UUID.class);
+                    .addValue("rejected", parseDate(isw.getRejectedDate()));
+
+            GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+            jdbc.update(sql, params, keyHolder, new String[] { "InstalledSoftwareID" });
+
+            UUID id = Optional.ofNullable(keyHolder.getKeys())
+                    .map(keys -> keys.get("InstalledSoftwareID"))
+                    .map(this::toUuid)
+                    .orElseThrow(() -> new IllegalStateException("Failed to retrieve InstalledSoftwareID"));
             isw.setInstalledSoftwareID(id);
         } else {
             String sql = """
@@ -171,5 +181,21 @@ public class JdbcInstalledSoftwareRepository implements InstalledSoftwareReposit
 
     private LocalDate parseDate(String iso) {
         return (iso == null || iso.isBlank()) ? null : LocalDate.parse(iso);
+    }
+
+    private UUID toUuid(Object value) {
+        if (value instanceof UUID uuid) {
+            return uuid;
+        }
+        if (value instanceof String text) {
+            return UUID.fromString(text);
+        }
+        if (value instanceof byte[] bytes) {
+            ByteBuffer buffer = ByteBuffer.wrap(bytes);
+            long high = buffer.getLong();
+            long low = buffer.getLong();
+            return new UUID(high, low);
+        }
+        throw new IllegalStateException("Unable to convert generated key to UUID: " + value);
     }
 }

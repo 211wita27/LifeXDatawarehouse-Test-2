@@ -90,11 +90,12 @@ class SiteControllerIntegrationTest {
         assertEquals(12, siteRow.get("tenants"));
 
         List<Map<String, Object>> assignments = jdbc.queryForList("""
-                SELECT SoftwareID   AS sw,
-                       Status       AS status,
-                       OfferedDate  AS offered,
-                       InstalledDate AS installed,
-                       RejectedDate AS rejected
+                SELECT InstalledSoftwareID AS id,
+                       SoftwareID          AS sw,
+                       Status              AS status,
+                       OfferedDate         AS offered,
+                       InstalledDate       AS installed,
+                       RejectedDate        AS rejected
                 FROM InstalledSoftware
                 WHERE SiteID = :sid
                 ORDER BY SoftwareID
@@ -107,6 +108,7 @@ class SiteControllerIntegrationTest {
 
         Map<String, Object> installedRow = assignmentsBySoftware.get(softwareInstalled);
         assertNotNull(installedRow, "Installed software assignment missing");
+        assertNotNull(installedRow.get("id"), "Installed software should have an ID");
         assertEquals("Installed", installedRow.get("status"));
         assertEquals("2024-01-01", toIso(installedRow.get("offered")));
         assertEquals("2024-01-10", toIso(installedRow.get("installed")));
@@ -114,6 +116,7 @@ class SiteControllerIntegrationTest {
 
         Map<String, Object> offeredRow = assignmentsBySoftware.get(softwareOffered);
         assertNotNull(offeredRow, "Offered software assignment missing");
+        assertNotNull(offeredRow.get("id"), "Offered software should have an ID");
         assertEquals("Offered", offeredRow.get("status"));
         assertEquals("2024-02-05", toIso(offeredRow.get("offered")));
         assertNull(offeredRow.get("installed"));
