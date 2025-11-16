@@ -8,6 +8,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -31,6 +33,7 @@ public class GenericCrudController {
     private static final Map<String, String> TABLES;
     private static final Map<String, String> PKS;
     private static final Map<String, Set<String>> COLUMNS;
+    private static final Map<String, Set<String>> DATE_COLUMNS;
     private static final Pattern COLUMN_PATTERN = Pattern.compile("[A-Za-z0-9_]+");
 
     static {
@@ -93,6 +96,11 @@ public class GenericCrudController {
         c.put("UpgradePlan", Set.of("UpgradePlanID", "SiteID", "SoftwareID", "PlannedWindowStart", "PlannedWindowEnd", "Status", "CreatedAt", "CreatedBy"));
         c.put("ServiceContract", Set.of("ContractID", "AccountID", "ProjectID", "SiteID", "ContractNumber", "Status", "StartDate", "EndDate"));
         COLUMNS = Collections.unmodifiableMap(c);
+
+        Map<String, Set<String>> d = new HashMap<>();
+        d.put("UpgradePlan", Set.of("PlannedWindowStart", "PlannedWindowEnd", "CreatedAt"));
+        d.put("ServiceContract", Set.of("StartDate", "EndDate"));
+        DATE_COLUMNS = Collections.unmodifiableMap(d);
     }
 
     private String normalizeTable(String name) {
@@ -193,7 +201,7 @@ public class GenericCrudController {
         String table = normalizeTable(name);
         if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
 
-        Map<String, Object> sanitized = sanitizeColumns(table, body);
+        Map<String, Object> sanitized = convertTemporalValues(table, sanitizeColumns(table, body));
 
         var columns = String.join(", ", sanitized.keySet());
         var values = ":" + String.join(", :", sanitized.keySet());
@@ -233,7 +241,7 @@ public class GenericCrudController {
 
         if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
 
-        Map<String, Object> sanitized = new LinkedHashMap<>(sanitizeColumns(table, body));
+        Map<String, Object> sanitized = new LinkedHashMap<>(convertTemporalValues(table, sanitizeColumns(table, body)));
 
         Object removedPkValue = sanitized.remove(pk);
         if (removedPkValue != null) {
@@ -286,5 +294,33 @@ public class GenericCrudController {
         }
 
         log.info("Deleted {} {} with fields {}", table, id, Collections.singleton(pk));
+    }
+
+    private Map<String, Object> convertTemporalValues(String table, Map<String, Object> values) {
+        Set<String> dateColumns = DATE_COLUMNS.get(table);
+        if (dateColumns == null || dateColumns.isEmpty()) {
+            return values;
+        }
+
+        Map<String, Object> converted = new LinkedHashMap<>(values);
+        for (String column : dateColumns) {
+            if (!converted.containsKey(column)) {
+                continue;
+            }
+            Object value = converted.get(column);
+            if (value == null || value instanceof LocalDate) {
+                continue;
+            }
+            if (value instanceof String s) {
+                try {
+                    converted.put(column, LocalDate.parse(s));
+                } catch (DateTimeParseException ex) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid date for " + column + ": " + s);
+                }
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid date type for " + column);
+            }
+        }
+        return converted;
     }
 }

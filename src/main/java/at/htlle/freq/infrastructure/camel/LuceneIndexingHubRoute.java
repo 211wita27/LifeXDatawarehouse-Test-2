@@ -197,16 +197,16 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                     }
 
                     if (body instanceof ServiceContract sc) {
-                        lucene.indexServiceContract(
-                                sc.getContractID() != null ? sc.getContractID().toString() : null,
-                                sc.getAccountID() != null ? sc.getAccountID().toString() : null,
-                                sc.getProjectID() != null ? sc.getProjectID().toString() : null,
-                                sc.getSiteID() != null ? sc.getSiteID().toString() : null,
-                                sc.getContractNumber(),
-                                sc.getStatus(),
-                                sc.getStartDate(),
-                                sc.getEndDate()
-                        );
+                                lucene.indexServiceContract(
+                                        sc.getContractID() != null ? sc.getContractID().toString() : null,
+                                        sc.getAccountID() != null ? sc.getAccountID().toString() : null,
+                                        sc.getProjectID() != null ? sc.getProjectID().toString() : null,
+                                        sc.getSiteID() != null ? sc.getSiteID().toString() : null,
+                                        sc.getContractNumber(),
+                                        sc.getStatus(),
+                                        sc.getStartDate() != null ? sc.getStartDate().toString() : null,
+                                        sc.getEndDate() != null ? sc.getEndDate().toString() : null
+                                );
                         return;
                     }
 
@@ -239,16 +239,16 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                     }
 
                     if (body instanceof UpgradePlan up) {
-                        lucene.indexUpgradePlan(
-                                up.getUpgradePlanID() != null ? up.getUpgradePlanID().toString() : null,
-                                up.getSiteID() != null ? up.getSiteID().toString() : null,
-                                up.getSoftwareID() != null ? up.getSoftwareID().toString() : null,
-                                up.getPlannedWindowStart(),
-                                up.getPlannedWindowEnd(),
-                                up.getStatus(),
-                                up.getCreatedAt(),
-                                up.getCreatedBy()
-                        );
+                                lucene.indexUpgradePlan(
+                                        up.getUpgradePlanID() != null ? up.getUpgradePlanID().toString() : null,
+                                        up.getSiteID() != null ? up.getSiteID().toString() : null,
+                                        up.getSoftwareID() != null ? up.getSoftwareID().toString() : null,
+                                        up.getPlannedWindowStart() != null ? up.getPlannedWindowStart().toString() : null,
+                                        up.getPlannedWindowEnd() != null ? up.getPlannedWindowEnd().toString() : null,
+                                        up.getStatus(),
+                                        up.getCreatedAt() != null ? up.getCreatedAt().toString() : null,
+                                        up.getCreatedBy()
+                                );
                         return;
                     }
 
