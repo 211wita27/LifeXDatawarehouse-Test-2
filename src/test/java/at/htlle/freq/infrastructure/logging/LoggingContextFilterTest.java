@@ -8,21 +8,24 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 
 import java.io.IOException;
 import java.security.Principal;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class LoggingContextFilterTest {
 
     private LoggingContextFilter filter;
     private HttpServletRequest request;
     private HttpServletResponse response;
+    private static final Pattern UUID_PATTERN = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 
     @BeforeEach
     void setUp() {
@@ -37,6 +40,13 @@ class LoggingContextFilterTest {
         FilterChain chain = new CapturingFilterChain(capturedUser);
         filter.doFilterInternal(request, response, chain);
         return capturedUser;
+    }
+
+    private AtomicReference<String> runFilterAndCaptureRequestId() throws ServletException, IOException {
+        AtomicReference<String> capturedRequestId = new AtomicReference<>();
+        FilterChain chain = (req, res) -> capturedRequestId.set(MDC.get("requestId"));
+        filter.doFilterInternal(request, response, chain);
+        return capturedRequestId;
     }
 
     @Test
@@ -78,6 +88,29 @@ class LoggingContextFilterTest {
         AtomicReference<String> capturedUser = runFilterAndCaptureUser();
 
         assertThat(capturedUser.get()).isEqualTo("anonymous");
+    }
+
+    @Test
+    void propagatesValidRequestIdToMdcAndResponse() throws Exception {
+        String validRequestId = "123e4567-e89b-12d3-a456-426614174000";
+        when(request.getHeader("X-Request-Id")).thenReturn(validRequestId);
+
+        AtomicReference<String> capturedRequestId = runFilterAndCaptureRequestId();
+
+        assertThat(capturedRequestId.get()).isEqualTo(validRequestId);
+        verify(response).setHeader("X-Request-Id", validRequestId);
+    }
+
+    @Test
+    void generatesNewRequestIdWhenHeaderIsUnsafe() throws Exception {
+        when(request.getHeader("X-Request-Id")).thenReturn("bad\nvalue");
+
+        AtomicReference<String> capturedRequestId = runFilterAndCaptureRequestId();
+
+        assertThat(capturedRequestId.get()).matches(UUID_PATTERN);
+        ArgumentCaptor<String> headerCaptor = ArgumentCaptor.forClass(String.class);
+        verify(response).setHeader(eq("X-Request-Id"), headerCaptor.capture());
+        assertThat(headerCaptor.getValue()).isEqualTo(capturedRequestId.get());
     }
 
     private static class CapturingFilterChain implements FilterChain {
