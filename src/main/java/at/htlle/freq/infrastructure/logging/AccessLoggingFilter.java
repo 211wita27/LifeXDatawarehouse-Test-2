@@ -92,7 +92,8 @@ public class AccessLoggingFilter extends OncePerRequestFilter {
             this.httpStatus = sc;
         }
 
-        int getStatus() {
+        @Override
+        public int getStatus() {
             return this.httpStatus;
         }
     }
