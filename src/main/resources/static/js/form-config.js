@@ -95,10 +95,8 @@
                 if(!value) return null;
                 const name = pick(item,'name','Name');
                 const release = pick(item,'release','Release');
-                const labelParts = [name, release].filter(Boolean).join(' • ');
-                const short = String(value).split('-')[0];
-                const label = labelParts ? `${labelParts} (${short})` : String(value);
-                return {value, label};
+                const label = [name, release].filter(Boolean).join(' • ');
+                return {value, label, displayLabel: label || String(value)};
             }
         },
         deploymentVariants:{
