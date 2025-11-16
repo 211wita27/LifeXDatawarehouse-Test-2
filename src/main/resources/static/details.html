@@ -2715,11 +2715,22 @@
         const box = childrenBox;
         box.innerHTML = '';
 
-        const loadServiceContracts = async (filterKey, value) => {
-            if (!value) return [];
-            const rows = await fetchJson(`/table/servicecontract?limit=200`);
-            if (!Array.isArray(rows)) return [];
-            return rows.filter(r => (val(r, filterKey) ?? '').toString() === value.toString());
+        const loadServiceContracts = async (filters = {}) => {
+            const params = new URLSearchParams();
+            const addIfPresent = (key, value) => {
+                if (value === null || value === undefined) return;
+                const str = value.toString().trim();
+                if (str) params.set(key, str);
+            };
+
+            addIfPresent('accountId', filters.accountId);
+            addIfPresent('projectId', filters.projectId);
+            addIfPresent('siteId', filters.siteId);
+
+            if (!params.toString()) return [];
+
+            const rows = await fetchJson(`/servicecontracts?${params.toString()}`);
+            return Array.isArray(rows) ? rows : [];
         };
 
         if(type==='Account'){
@@ -2730,7 +2741,7 @@
                 return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, null, pid, name);
             }, { entity: 'Project', label: 'Project', params: { accountId: id } });
 
-            const contracts = await loadServiceContracts('AccountID', id);
+            const contracts = await loadServiceContracts({ accountId: id });
             addSection(box, 'Service Contracts', contracts, sc => {
                 const cid = val(sc,'ContractID');
                 const label = val(sc,'ContractNumber');
@@ -2748,7 +2759,7 @@
                 return pillLink(`/details.html?type=site&id=${encodeURIComponent(sid)}`, null, sid, name);
             }, { entity: 'Site', label: 'Site', params: { projectId: id } });
 
-            const contracts = await loadServiceContracts('ProjectID', id);
+            const contracts = await loadServiceContracts({ accountId: val(row,'AccountID'), projectId: id });
             addSection(box, 'Service Contracts', contracts, sc => {
                 const cid = val(sc,'ContractID');
                 const label = val(sc,'ContractNumber');
@@ -2810,7 +2821,7 @@
                 return pillLink(`/details.html?type=radio&id=${encodeURIComponent(rid)}`, null, rid, brand);
             }, { entity: 'Radio', label: 'Radio', params: { accountId, projectId, siteId: id } });
 
-            const contracts = await loadServiceContracts('SiteID', id);
+            const contracts = await loadServiceContracts({ accountId, projectId, siteId: id });
             addSection(box, 'Service Contracts', contracts, sc => {
                 const cid = val(sc,'ContractID');
                 const label = val(sc,'ContractNumber');
