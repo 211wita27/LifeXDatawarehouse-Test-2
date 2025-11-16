@@ -9,6 +9,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.springframework.stereotype.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 public class SuggestService {
 
     private final LuceneIndexService lucene;
+    private static final Logger log = LoggerFactory.getLogger(SuggestService.class);
 
     public SuggestService(LuceneIndexService lucene) {
         this.lucene = lucene;
@@ -57,20 +60,25 @@ public class SuggestService {
                     if (terms == null) continue;
 
                     TermsEnum te = terms.iterator();
-                    BytesRef br;
-                    while ((br = te.next()) != null) {
+                    BytesRef prefixRef = new BytesRef(pfx);
+                    if (te.seekCeil(prefixRef) == TermsEnum.SeekStatus.END) continue;
+
+                    BytesRef br = te.term();
+                    while (br != null) {
                         String term = br.utf8ToString();
-                        // Perform a case-insensitive comparison but return the original value
-                        if (term.toLowerCase(Locale.ROOT).startsWith(pfx)) {
-                            out.add(term);
-                            if (out.size() >= max) break outer;
+                        if (!term.toLowerCase(Locale.ROOT).startsWith(pfx)) {
+                            break;
                         }
+
+                        out.add(term);
+                        if (out.size() >= max) break outer;
+
+                        br = te.next();
                     }
                 }
             }
-        } catch (IOException ignored) {
-            // Optional: add structured logging if desired
-            // log.warn("SuggestService: Could not read index", ignored);
+        } catch (IOException e) {
+            log.warn("SuggestService: failed to read index at {}", indexPath, e);
         }
 
         return out.stream().limit(max).collect(Collectors.toList());
