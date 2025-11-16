@@ -166,6 +166,27 @@ public class InstalledSoftwareService {
     }
 
     /**
+     * Updates only the status-related information of an installation.
+     *
+     * @param id     installation identifier
+     * @param status new status value (see {@link InstalledSoftwareStatus})
+     * @return persisted installation after the update
+     */
+    @Transactional
+    public InstalledSoftware updateStatus(UUID id, String status) {
+        Objects.requireNonNull(id, "id must not be null");
+        if (status == null || status.isBlank()) {
+            throw new IllegalArgumentException("status is required");
+        }
+
+        InstalledSoftware patch = new InstalledSoftware();
+        patch.setStatus(status);
+
+        return updateInstalledSoftware(id, patch)
+                .orElseThrow(() -> new NoSuchElementException("InstalledSoftware not found: " + id));
+    }
+
+    /**
      * Synchronises the installation records of a site with the provided collection. Missing records
      * are removed while new or changed records are persisted through the usual validation pipeline.
      *
