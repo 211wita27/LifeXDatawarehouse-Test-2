@@ -14,7 +14,7 @@
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
-            <pattern>%d{ISO8601} [%X{requestId:-N/A}] [%X{user:-anonymous}] %-5level %logger ⇒ %msg%n</pattern>
+            <pattern>%d{ISO8601} [%X{requestId:-N/A}] [%X{user:-anonymous}] [%X{httpMethod:-N/A}] [%X{path:-N/A}] [%X{status:-N/A}] [%X{durationMs:-N/A}ms] %-5level %logger ⇒ %msg%n</pattern>
         </encoder>
     </appender>
 
