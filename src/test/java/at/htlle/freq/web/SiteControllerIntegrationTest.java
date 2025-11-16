@@ -20,7 +20,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -121,6 +123,17 @@ class SiteControllerIntegrationTest {
         assertEquals("2024-02-05", toIso(offeredRow.get("offered")));
         assertNull(offeredRow.get("installed"));
         assertNull(offeredRow.get("rejected"));
+    }
+
+    @Test
+    void detailEndpointIncludesAssignments() throws Exception {
+        String siteId = "9356ae01-fce4-4d24-84ca-080000000001";
+
+        mockMvc.perform(get("/sites/{id}/detail", siteId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.SiteID").value(siteId))
+                .andExpect(jsonPath("$.softwareAssignments").isArray())
+                .andExpect(jsonPath("$.softwareAssignments[0].installedSoftwareId").exists());
     }
 
     private String toIso(Object value) {

@@ -170,6 +170,9 @@
     let currentId = null;
     let currentRawType = null;
     let isEditing = false;
+    let currentSiteSoftwareAssignments = [];
+    let softwareOptionCache = null;
+    let softwareOptionLoadError = null;
 
     const detailBox = document.getElementById('view');
     const detailLayoutEl = document.getElementById('detail-layout');
@@ -439,6 +442,9 @@
         if(!field) return '';
         const config={...field,...overrides};
         const component=(config.component||'input').toLowerCase();
+        if(component==='softwarelist'){
+            return '';
+        }
         if(component==='select'){
             if(!config.valueType) config.valueType='text';
         }else if(component==='asyncselect'){
@@ -1401,7 +1407,263 @@
         container.appendChild(section);
     }
 
-    async function renderSiteSoftwareOverview(siteId, targetEl){
+    function normalizeAssignmentEntry(entry){
+        if(!entry || typeof entry !== 'object') return null;
+        const softwareId = val(entry,'softwareId','SoftwareID','softwareID');
+        const installedSoftwareId = val(entry,'installedSoftwareId','InstalledSoftwareID','installationId');
+        const status = val(entry,'status','Status');
+        const offeredDate = val(entry,'offeredDate','offeredAt','OfferedDate','OfferedAt');
+        const installedDate = val(entry,'installedDate','installedAt','InstalledDate','InstalledAt');
+        const rejectedDate = val(entry,'rejectedDate','rejectedAt','RejectedDate','RejectedAt');
+        const release = val(entry,'release','Release');
+        const revision = val(entry,'revision','Revision');
+        const softwareName = (val(entry,'softwareName','SoftwareName','name','Name') ?? '').toString().trim();
+        if(!softwareId && !installedSoftwareId) return null;
+        return { installedSoftwareId, softwareId, status, offeredDate, installedDate, rejectedDate, release, revision, softwareName };
+    }
+
+    function setSiteSoftwareAssignments(assignments){
+        const normalized = Array.isArray(assignments)
+            ? assignments.map(normalizeAssignmentEntry).filter(Boolean)
+            : [];
+        currentSiteSoftwareAssignments = normalized;
+    }
+
+    async function loadSoftwareOptions(){
+        if(softwareOptionCache) return softwareOptionCache;
+        if(softwareOptionLoadError) throw softwareOptionLoadError;
+        const source = formConfig?.asyncSources?.software;
+        if(!source || !source.url) return [];
+        const url = typeof source.url === 'function' ? source.url() : source.url;
+        const res = await fetch(url);
+        if(!res.ok){
+            const err = new Error(`HTTP ${res.status}`);
+            softwareOptionLoadError = err;
+            throw err;
+        }
+        const data = await res.json();
+        const mapped = Array.isArray(data) ? data.map(item => (typeof source.map === 'function' ? source.map(item) : null)).filter(Boolean) : [];
+        softwareOptionCache = mapped;
+        return mapped;
+    }
+
+    async function ensureSoftwareOptionsList(form){
+        if(!form) return;
+        let list = form.querySelector('#software-options-list');
+        if(!list){
+            list = document.createElement('datalist');
+            list.id = 'software-options-list';
+            form.appendChild(list);
+        }
+        try{
+            const options = await loadSoftwareOptions();
+            list.innerHTML = options.map(opt => `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label || opt.value)}</option>`).join('');
+        }catch(err){
+            console.error('Unable to load software options', err);
+            list.innerHTML = '';
+        }
+    }
+
+    function createSoftwareAssignmentRow(entry = {}){
+        const normalized = normalizeAssignmentEntry(entry) || {};
+        const row = document.createElement('div');
+        row.className = 'software-assignment-row';
+        if(normalized.installedSoftwareId){
+            row.dataset.installationId = normalized.installedSoftwareId;
+        }
+
+        const softwareField = document.createElement('div');
+        softwareField.className = 'software-assignment__field';
+        const softwareLabel = document.createElement('label');
+        softwareLabel.textContent = 'Software';
+        const softwareInput = document.createElement('input');
+        softwareInput.type = 'text';
+        softwareInput.name = 'softwareId';
+        softwareInput.required = true;
+        softwareInput.setAttribute('list', 'software-options-list');
+        softwareInput.placeholder = 'Software UUID';
+        softwareInput.value = normalized.softwareId || '';
+        softwareField.appendChild(softwareLabel);
+        softwareField.appendChild(softwareInput);
+        if(normalized.softwareName || normalized.release || normalized.revision){
+            const meta = document.createElement('div');
+            meta.className = 'software-assignment__meta';
+            const parts = [normalized.softwareName, normalized.release, normalized.revision].filter(Boolean);
+            meta.textContent = parts.join(' • ');
+            softwareField.appendChild(meta);
+        }
+
+        const statusField = document.createElement('div');
+        statusField.className = 'software-assignment__field';
+        const statusLabel = document.createElement('label');
+        statusLabel.textContent = 'Status';
+        const statusSelect = document.createElement('select');
+        statusSelect.name = 'status';
+        statusSelect.required = true;
+        statusSelect.innerHTML = '<option value="">Select status…</option>';
+        Object.entries(INSTALL_STATUS_DISPLAY).forEach(([key, meta]) => {
+            const opt = document.createElement('option');
+            opt.value = meta.label;
+            opt.textContent = meta.label;
+            statusSelect.appendChild(opt);
+        });
+        const normalizedStatus = normalizeInstallStatus(normalized.status);
+        const match = INSTALL_STATUS_DISPLAY[normalizedStatus];
+        if(match){
+            statusSelect.value = match.label;
+        }
+        statusField.appendChild(statusLabel);
+        statusField.appendChild(statusSelect);
+
+        const offeredField = document.createElement('div');
+        offeredField.className = 'software-assignment__field';
+        const offeredLabel = document.createElement('label');
+        offeredLabel.textContent = 'Offered';
+        const offeredInput = document.createElement('input');
+        offeredInput.type = 'date';
+        offeredInput.name = 'offeredDate';
+        offeredInput.value = formatInputValue(normalized.offeredDate, 'date');
+        offeredField.appendChild(offeredLabel);
+        offeredField.appendChild(offeredInput);
+
+        const installedField = document.createElement('div');
+        installedField.className = 'software-assignment__field';
+        const installedLabel = document.createElement('label');
+        installedLabel.textContent = 'Installed';
+        const installedInput = document.createElement('input');
+        installedInput.type = 'date';
+        installedInput.name = 'installedDate';
+        installedInput.value = formatInputValue(normalized.installedDate, 'date');
+        installedField.appendChild(installedLabel);
+        installedField.appendChild(installedInput);
+
+        const rejectedField = document.createElement('div');
+        rejectedField.className = 'software-assignment__field';
+        const rejectedLabel = document.createElement('label');
+        rejectedLabel.textContent = 'Rejected';
+        const rejectedInput = document.createElement('input');
+        rejectedInput.type = 'date';
+        rejectedInput.name = 'rejectedDate';
+        rejectedInput.value = formatInputValue(normalized.rejectedDate, 'date');
+        rejectedField.appendChild(rejectedLabel);
+        rejectedField.appendChild(rejectedInput);
+
+        const actions = document.createElement('div');
+        actions.className = 'software-assignment__actions';
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'software-assignment__remove';
+        removeBtn.textContent = 'Remove';
+        removeBtn.addEventListener('click', () => {
+            row.remove();
+        });
+        actions.appendChild(removeBtn);
+
+        const error = document.createElement('div');
+        error.className = 'software-assignment__error';
+
+        row.appendChild(softwareField);
+        row.appendChild(statusField);
+        row.appendChild(offeredField);
+        row.appendChild(installedField);
+        row.appendChild(rejectedField);
+        row.appendChild(actions);
+        row.appendChild(error);
+
+        return row;
+    }
+
+    function renderSoftwareAssignmentEditor(container){
+        if(!container) return;
+        container.innerHTML = '';
+
+        const title = document.createElement('h3');
+        title.textContent = 'Software installations';
+        container.appendChild(title);
+
+        const list = document.createElement('div');
+        list.className = 'software-assignment-list';
+        if(!currentSiteSoftwareAssignments.length){
+            const empty = document.createElement('div');
+            empty.className = 'software-assignment__empty';
+            empty.textContent = 'No software entries added yet.';
+            list.appendChild(empty);
+        }else{
+            currentSiteSoftwareAssignments.forEach(entry => {
+                list.appendChild(createSoftwareAssignmentRow(entry));
+            });
+        }
+        container.appendChild(list);
+
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'btn-secondary software-assignment__add';
+        addBtn.textContent = 'Add software entry';
+        addBtn.addEventListener('click', () => {
+            const emptyState = list.querySelector('.software-assignment__empty');
+            if(emptyState){
+                emptyState.remove();
+            }
+            list.appendChild(createSoftwareAssignmentRow());
+        });
+        container.appendChild(addBtn);
+    }
+
+    function collectSoftwareAssignments(form){
+        const list = form.querySelector('.software-assignment-list');
+        if(!list) return [];
+        const rows = Array.from(list.querySelectorAll('.software-assignment-row'));
+        const assignments = [];
+        let hasError = false;
+
+        rows.forEach(row => {
+            const softwareInput = row.querySelector('input[name="softwareId"]');
+            const statusSelect = row.querySelector('select[name="status"]');
+            const offeredInput = row.querySelector('input[name="offeredDate"]');
+            const installedInput = row.querySelector('input[name="installedDate"]');
+            const rejectedInput = row.querySelector('input[name="rejectedDate"]');
+            const errorEl = row.querySelector('.software-assignment__error');
+            if(errorEl){
+                errorEl.textContent = '';
+            }
+            row.classList.remove('is-error');
+
+            const softwareId = (softwareInput?.value ?? '').trim();
+            const status = (statusSelect?.value ?? '').trim();
+            const offeredDate = (offeredInput?.value ?? '').trim();
+            const installedDate = (installedInput?.value ?? '').trim();
+            const rejectedDate = (rejectedInput?.value ?? '').trim();
+
+            if(!softwareId){
+                if(errorEl) errorEl.textContent = 'Software is required.';
+                row.classList.add('is-error');
+                hasError = true;
+                return;
+            }
+            if(!status){
+                if(errorEl) errorEl.textContent = 'Status is required.';
+                row.classList.add('is-error');
+                hasError = true;
+                return;
+            }
+
+            assignments.push({
+                installedSoftwareId: row.dataset.installationId || null,
+                softwareId,
+                status,
+                offeredDate: offeredDate || null,
+                installedDate: installedDate || null,
+                rejectedDate: rejectedDate || null
+            });
+        });
+
+        if(hasError){
+            return null;
+        }
+        return assignments;
+    }
+
+    async function renderSiteSoftwareOverview(siteId, targetEl, options = {}){
         if(!siteId || !targetEl) return;
         targetEl.innerHTML = '<div class="empty">Loading software overview…</div>';
         if(targetEl === siteSoftwareOverviewBody && siteSoftwareOverviewCard){
@@ -1409,16 +1671,19 @@
             siteSoftwareOverviewCard.setAttribute('aria-busy', 'true');
         }
 
-        let softwareOverview = [];
-        try {
-            softwareOverview = await fetchSoftwareOverview({ siteId });
-        } catch (err){
-            console.error('Software overview unavailable', err);
-            targetEl.innerHTML = '<div class="empty">Software overview unavailable.</div>';
-            if(targetEl === siteSoftwareOverviewBody && siteSoftwareOverviewCard){
-                siteSoftwareOverviewCard.removeAttribute('aria-busy');
+        const prefetched = Array.isArray(options.items) ? options.items : null;
+        let softwareOverview = prefetched ? mapSoftwareOverviewItems(prefetched) : [];
+        if(!prefetched){
+            try {
+                softwareOverview = await fetchSoftwareOverview({ siteId });
+            } catch (err){
+                console.error('Software overview unavailable', err);
+                targetEl.innerHTML = '<div class="empty">Software overview unavailable.</div>';
+                if(targetEl === siteSoftwareOverviewBody && siteSoftwareOverviewCard){
+                    siteSoftwareOverviewCard.removeAttribute('aria-busy');
+                }
+                return;
             }
-            return;
         }
 
         targetEl.innerHTML = '';
@@ -1628,7 +1893,9 @@
         updateEditButton();
         const { captionText } = updateHeading();
         const entries = Object.entries(row || {});
-        const kvRows = entries.map(([k,v]) => {
+        const kvRows = entries
+            .filter(([k]) => (k ?? '').toString().toLowerCase() !== 'softwareassignments')
+            .map(([k,v]) => {
             const keyLabel = escapeHtml(k);
             const normalizedKey = (k ?? '').toString().trim().toLowerCase();
             let cellHtml;
@@ -1821,6 +2088,14 @@
 
         form.appendChild(grid);
 
+        if(configKey === 'Site'){
+            const assignmentPanel = document.createElement('div');
+            assignmentPanel.className = 'software-assignment-panel';
+            renderSoftwareAssignmentEditor(assignmentPanel);
+            form.appendChild(assignmentPanel);
+            ensureSoftwareOptionsList(form);
+        }
+
         const actions = document.createElement('div');
         actions.className = 'detail-form-actions';
 
@@ -1923,6 +2198,13 @@
         }
 
         const entityKey = configKeyForTable(currentTable);
+        const normalizeEmpty = (value) => {
+            if(value === undefined || value === null) return null;
+            const str = String(value);
+            return str === '' ? null : value;
+        };
+        let requestUrl = `/row/${currentTable}/${encodeURIComponent(currentId)}`;
+        let requestPayload = payload;
         const fail = msg => {
             setStatus(msg, 'error');
             return true;
@@ -1953,6 +2235,20 @@
                 }
                 payload.TenantCount = num;
             }
+            const assignments = collectSoftwareAssignments(form);
+            if(assignments === null){
+                setStatus('Please resolve the highlighted software entries.', 'error');
+                return;
+            }
+            requestUrl = `/sites/${encodeURIComponent(currentId)}`;
+            requestPayload = {
+                siteName: normalizeEmpty(payload.SiteName ?? payload.siteName),
+                projectID: normalizeEmpty(payload.ProjectID ?? payload.projectID),
+                addressID: normalizeEmpty(payload.AddressID ?? payload.addressID),
+                fireZone: normalizeEmpty(payload.FireZone ?? payload.fireZone),
+                tenantCount: payload.TenantCount ?? payload.tenantCount ?? null,
+                softwareAssignments: assignments
+            };
         }else if(entityKey === 'UpgradePlan'){
             const start = payload.PlannedWindowStart;
             const end = payload.PlannedWindowEnd;
@@ -1985,10 +2281,10 @@
         if(editButtonEl) editButtonEl.disabled = true;
 
         try{
-            const res = await fetch(`/row/${currentTable}/${encodeURIComponent(currentId)}`, {
+            const res = await fetch(requestUrl, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(requestPayload)
             });
             if(!res.ok){
                 const text = await res.text();
@@ -2008,27 +2304,42 @@
     async function loadData(options){
         if(!currentTable || !currentId) return;
         const preserveStatus = options && options.preserveStatus;
+        currentSiteSoftwareAssignments = [];
 
         detailBox.setAttribute('aria-busy', 'true');
         try{
-            const res = await fetch(`/row/${currentTable}/${encodeURIComponent(currentId)}`);
-            if(!res.ok){
-                resetDetailRefs();
-                if(res.status === 404){
-                    detailBox.textContent = 'Entry not found.';
-                }else{
-                    detailBox.textContent = 'Error loading data.';
+            const configKey = configKeyForTable(currentTable);
+            if(configKey === 'Site'){
+                const res = await fetch(`/sites/${encodeURIComponent(currentId)}/detail`);
+                if(!res.ok){
+                    resetDetailRefs();
+                    detailBox.textContent = res.status === 404 ? 'Entry not found.' : 'Error loading data.';
+                    return;
                 }
-                return;
+                const detail = await res.json();
+                setSiteSoftwareAssignments(detail?.softwareAssignments);
+                const { softwareAssignments, ...siteRow } = detail || {};
+                currentRow = siteRow;
+            }else{
+                const res = await fetch(`/row/${currentTable}/${encodeURIComponent(currentId)}`);
+                if(!res.ok){
+                    resetDetailRefs();
+                    if(res.status === 404){
+                        detailBox.textContent = 'Entry not found.';
+                    }else{
+                        detailBox.textContent = 'Error loading data.';
+                    }
+                    return;
+                }
+                const row = await res.json();
+                currentRow = row;
             }
-            const row = await res.json();
-            currentRow = row;
             if(!preserveStatus) clearStatus();
             renderDetail();
 
             const typeKey = (currentTable === 'Clients') ? 'Client' : currentTable;
-            await loadParents(typeKey, currentId, row);
-            await loadChildren(typeKey, currentId, row);
+            await loadParents(typeKey, currentId, currentRow);
+            await loadChildren(typeKey, currentId, currentRow);
         }catch(e){
             resetDetailRefs();
             detailBox.textContent = 'Error: ' + e;
@@ -2513,7 +2824,7 @@
             if(!siteSoftwareOverviewBody){
                 box.appendChild(softwareTarget);
             }
-            await renderSiteSoftwareOverview(id, softwareTarget);
+            await renderSiteSoftwareOverview(id, softwareTarget, { items: currentSiteSoftwareAssignments });
 
             const upgradeRows = await fetchJson(`/table/upgradeplan?limit=200`);
             const plans = Array.isArray(upgradeRows)

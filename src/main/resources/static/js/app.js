@@ -30,14 +30,6 @@ SCOPE_ALIAS_LOOKUP.set('all', 'all');
 
 let searchScopeKey = 'all';
 
-const SITE_SOFTWARE_STATUS_OPTIONS = [
-    { key: 'Offered', label: 'Offered' },
-    { key: 'Installed', label: 'Installed' },
-    { key: 'Rejected', label: 'Rejected' },
-];
-
-let currentSiteSoftwareStatus = 'Installed';
-
 const appIdUtils = (typeof window !== 'undefined' && window.appIdUtils) || {};
 
 function normalizeSiteIdValue(value) {
@@ -1173,13 +1165,6 @@ function tableQuickFilterQuery(typeToken, columnKey, rawValue) {
     return typeFilter ? `${typeFilter} AND ${prepared}` : prepared;
 }
 
-function getSiteSoftwareStatusOption(rawStatus) {
-    const normalized = (rawStatus ?? '').toString().trim().toLowerCase();
-    return SITE_SOFTWARE_STATUS_OPTIONS.find(opt => opt.key.toLowerCase() === normalized)
-        || SITE_SOFTWARE_STATUS_OPTIONS.find(opt => opt.key === 'Installed')
-        || SITE_SOFTWARE_STATUS_OPTIONS[0];
-}
-
 async function fetchSiteSoftwareSummary(statusKey) {
     const params = new URLSearchParams();
     if (statusKey) {
@@ -1213,94 +1198,69 @@ function toSiteSoftwareSummaryMap(entries) {
 async function renderSiteTableWithSummary(rows, baseColumns, tableTypeInfo, tableName) {
     const name = tableName || 'Site';
 
-    async function render(statusKey) {
-        const option = getSiteSoftwareStatusOption(statusKey);
-        currentSiteSoftwareStatus = option.key;
-        setBusy(resultArea, true);
+    setBusy(resultArea, true);
 
-        let summaryEntries = [];
-        let summaryError = null;
-        try {
-            summaryEntries = await fetchSiteSoftwareSummary(option.key);
-        } catch (err) {
-            summaryError = err;
-            console.error('Site software summary could not be loaded', err);
-        }
-        try {
-            const summaryMap = toSiteSoftwareSummaryMap(summaryEntries);
-            const columnLabel = `Software – ${option.label}`;
-            const allColumns = [...baseColumns, columnLabel];
-
-            const formattedRows = rows.map(row => {
-                const siteIdKey = getNormalizedSiteId(row);
-                const count = siteIdKey ? summaryMap.get(siteIdKey) : undefined;
-                let display;
-                if (summaryError) {
-                    display = 'Unavailable';
-                } else if (!Number.isFinite(count)) {
-                    display = '0 records';
-                } else if (count === 0) {
-                    display = '0 records';
-                } else if (count === 1) {
-                    display = '1 record';
-                } else {
-                    display = `${count} records`;
-                }
-                return {
-                    ...row,
-                    [columnLabel]: display,
-                };
-            });
-
-            const hdr = allColumns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
-            const body = formattedRows
-                .map(r => `<tr>${allColumns.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`)
-                .join('');
-
-            const toggleButtons = SITE_SOFTWARE_STATUS_OPTIONS.map(opt => {
-                const active = opt.key === option.key;
-                return `<button type="button" class="site-software-toggle__btn${active ? ' is-active' : ''}" data-status="${escapeHtml(opt.key)}">${escapeHtml(opt.label)}</button>`;
-            }).join('');
-
-            const toggleGroup = `
-                <div class="site-software-toggle" role="group" aria-label="Filter software by status">
-                    ${toggleButtons}
-                </div>`;
-
-            const statusMessage = summaryError
-                ? '<div class="site-software-toggle__status site-software-toggle__status--error" role="status">Software summary unavailable.</div>'
-                : '';
-
-            const safeName = escapeHtml(name);
-            const titleQuery = tableTypeInfo.typeToken ? escapeHtml(tableTypeInfo.typeToken) : null;
-            const titleControl = titleQuery
-                ? `<button type="button" class="table-quick-filter" data-query="${titleQuery}">${safeName}</button>`
-                : safeName;
-
-            resultArea.innerHTML = `
-                <h2>${titleControl}</h2>
-                ${toggleGroup}
-                ${statusMessage}
-                <div class="table-scroll">
-                    <table>
-                        <tr>${hdr}</tr>${body}
-                    </table>
-                </div>`;
-
-            const buttons = resultArea.querySelectorAll('.site-software-toggle__btn');
-            buttons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const next = btn.dataset.status;
-                    if (!next || next === currentSiteSoftwareStatus) return;
-                    render(next).catch(err => console.error('Unable to update software summary', err));
-                });
-            });
-        } finally {
-            setBusy(resultArea, false);
-        }
+    let summaryEntries = [];
+    let summaryError = null;
+    try {
+        summaryEntries = await fetchSiteSoftwareSummary('Installed');
+    } catch (err) {
+        summaryError = err;
+        console.error('Site software summary could not be loaded', err);
     }
 
-    await render(currentSiteSoftwareStatus);
+    try {
+        const summaryMap = toSiteSoftwareSummaryMap(summaryEntries);
+        const columnLabel = 'Software – Installed';
+        const allColumns = [...baseColumns, columnLabel];
+
+        const formattedRows = rows.map(row => {
+            const siteIdKey = getNormalizedSiteId(row);
+            const count = siteIdKey ? summaryMap.get(siteIdKey) : undefined;
+            let display;
+            if (summaryError) {
+                display = 'Unavailable';
+            } else if (!Number.isFinite(count)) {
+                display = '0 records';
+            } else if (count === 0) {
+                display = '0 records';
+            } else if (count === 1) {
+                display = '1 record';
+            } else {
+                display = `${count} records`;
+            }
+            return {
+                ...row,
+                [columnLabel]: display,
+            };
+        });
+
+        const hdr = allColumns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+        const body = formattedRows
+            .map(r => `<tr>${allColumns.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`)
+            .join('');
+
+        const safeName = escapeHtml(name);
+        const titleQuery = tableTypeInfo.typeToken ? escapeHtml(tableTypeInfo.typeToken) : null;
+        const titleControl = titleQuery
+            ? `<button type="button" class="table-quick-filter" data-query="${titleQuery}">${safeName}</button>`
+            : safeName;
+
+        const statusMessage = summaryError
+            ? '<div class="empty" role="status">Software summary unavailable.</div>'
+            : '';
+
+        resultArea.innerHTML = `
+            <h2>${titleControl}</h2>
+            ${statusMessage}
+            <div class="table-scroll">
+                <table>
+                    <tr>${hdr}</tr>${body}
+                </table>
+            </div>`;
+    } finally {
+        setBusy(resultArea, false);
+    }
 }
 
 function renderTableCell(tableName, columnName, value) {
