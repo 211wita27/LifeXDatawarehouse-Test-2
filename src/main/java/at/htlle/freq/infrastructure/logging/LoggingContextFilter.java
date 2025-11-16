@@ -1,5 +1,7 @@
 package at.htlle.freq.infrastructure.logging;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -30,9 +32,9 @@ public class LoggingContextFilter extends OncePerRequestFilter {
     static final String MDC_REQUEST_ID = "requestId";
     static final String MDC_USER = "user";
     private static final String HEADER_REQUEST_ID = "X-Request-Id";
-    private static final int MAX_REQUEST_ID_LENGTH = 100;
-    private static final Pattern UUID_PATTERN = Pattern.compile(
-            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
+    private static final int MAX_REQUEST_ID_LENGTH = 128;
+    private static final Pattern PRINTABLE_REQUEST_ID_PATTERN = Pattern.compile("^[\\p{Print}&&[^\\p{Cntrl}]]+$");
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggingContextFilter.class);
 
     /**
      * Adds logging metadata for the current request and delegates to the next element of the filter chain.
@@ -65,10 +67,19 @@ public class LoggingContextFilter extends OncePerRequestFilter {
     }
 
     private String resolveRequestId(HttpServletRequest request) {
-        return Optional.ofNullable(request.getHeader(HEADER_REQUEST_ID))
+        String headerValue = Optional.ofNullable(request.getHeader(HEADER_REQUEST_ID))
                 .map(String::trim)
-                .filter(this::isSafeRequestId)
-                .orElseGet(() -> UUID.randomUUID().toString());
+                .orElse(null);
+
+        if (headerValue != null && isSafeRequestId(headerValue)) {
+            return headerValue;
+        }
+
+        if (headerValue != null) {
+            LOGGER.warn("Received invalid X-Request-Id header '{}', generating new identifier", headerValue);
+        }
+
+        return UUID.randomUUID().toString();
     }
 
     private boolean isSafeRequestId(String candidate) {
@@ -78,7 +89,7 @@ public class LoggingContextFilter extends OncePerRequestFilter {
         if (candidate.chars().anyMatch(Character::isISOControl)) {
             return false;
         }
-        return UUID_PATTERN.matcher(candidate).matches();
+        return PRINTABLE_REQUEST_ID_PATTERN.matcher(candidate).matches();
     }
 
     private String resolveUser(HttpServletRequest request) {
