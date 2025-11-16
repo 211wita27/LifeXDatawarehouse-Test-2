@@ -1321,7 +1321,12 @@
         }
         try{
             const options = await loadSoftwareOptions();
-            list.innerHTML = options.map(opt => `<option value="${escapeHtml(opt.value)}">${escapeHtml(opt.label || opt.value)}</option>`).join('');
+            list.innerHTML = options.map(opt => {
+                const identifier = opt.value ?? '';
+                const displayLabel = opt.displayLabel || opt.label || identifier;
+                const secondary = identifier ? escapeHtml(identifier) : '';
+                return `<option data-id="${escapeHtml(identifier)}" value="${escapeHtml(displayLabel)}" label="${escapeHtml(displayLabel)}">${secondary}</option>`;
+            }).join('');
         }catch(err){
             console.error('Unable to load software options', err);
             list.innerHTML = '';
@@ -1340,14 +1345,52 @@
         softwareField.className = 'software-assignment__field';
         const softwareLabel = document.createElement('label');
         softwareLabel.textContent = 'Software';
+        const softwareHiddenInput = document.createElement('input');
+        softwareHiddenInput.type = 'hidden';
+        softwareHiddenInput.name = 'softwareId';
+        softwareHiddenInput.value = normalized.softwareId || '';
+
         const softwareInput = document.createElement('input');
         softwareInput.type = 'text';
-        softwareInput.name = 'softwareId';
+        softwareInput.name = 'softwareDisplay';
         softwareInput.required = true;
         softwareInput.setAttribute('list', 'software-options-list');
-        softwareInput.placeholder = 'Software UUID';
-        softwareInput.value = normalized.softwareId || '';
+        softwareInput.placeholder = 'Select software';
+        const displayParts = [normalized.softwareName, normalized.release, normalized.revision].filter(Boolean);
+        const initialDisplay = displayParts.join(' • ');
+        if(initialDisplay){
+            softwareInput.value = initialDisplay;
+        }else if(normalized.softwareId){
+            const cachedMatch = softwareOptionCache?.find(opt => opt.value === normalized.softwareId);
+            softwareInput.value = cachedMatch?.displayLabel || cachedMatch?.label || normalized.softwareId;
+        }
+
+        const syncSoftwareSelection = () => {
+            const display = softwareInput.value.trim();
+            let resolvedId = '';
+            const listEl = softwareInput.list;
+            if(listEl && display){
+                const opts = Array.from(listEl.options || []);
+                const match = opts.find(opt => opt.value === display);
+                if(match){
+                    resolvedId = match.dataset.id || match.getAttribute('data-id') || '';
+                }
+            }
+            if(!resolvedId && display){
+                resolvedId = display;
+            }
+            softwareHiddenInput.value = resolvedId;
+        };
+        softwareInput.addEventListener('change', syncSoftwareSelection);
+        softwareInput.addEventListener('blur', syncSoftwareSelection);
+        softwareInput.addEventListener('input', () => {
+            if(!softwareInput.value.trim()){
+                softwareHiddenInput.value = '';
+            }
+        });
+
         softwareField.appendChild(softwareLabel);
+        softwareField.appendChild(softwareHiddenInput);
         softwareField.appendChild(softwareInput);
         if(normalized.softwareName || normalized.release || normalized.revision){
             const meta = document.createElement('div');
@@ -1481,7 +1524,8 @@
         let hasError = false;
 
         rows.forEach(row => {
-            const softwareInput = row.querySelector('input[name="softwareId"]');
+            const softwareIdInput = row.querySelector('input[name="softwareId"]');
+            const softwareDisplayInput = row.querySelector('input[name="softwareDisplay"]');
             const statusSelect = row.querySelector('select[name="status"]');
             const offeredInput = row.querySelector('input[name="offeredDate"]');
             const installedInput = row.querySelector('input[name="installedDate"]');
@@ -1492,11 +1536,25 @@
             }
             row.classList.remove('is-error');
 
-            const softwareId = (softwareInput?.value ?? '').trim();
+            const softwareDisplay = (softwareDisplayInput?.value ?? '').trim();
+            let softwareId = (softwareIdInput?.value ?? '').trim();
             const status = (statusSelect?.value ?? '').trim();
             const offeredDate = (offeredInput?.value ?? '').trim();
             const installedDate = (installedInput?.value ?? '').trim();
             const rejectedDate = (rejectedInput?.value ?? '').trim();
+
+            if(!softwareId && softwareDisplay){
+                const listEl = softwareDisplayInput?.list;
+                if(listEl){
+                    const match = Array.from(listEl.options || []).find(opt => opt.value === softwareDisplay);
+                    if(match){
+                        softwareId = match.dataset.id || match.getAttribute('data-id') || '';
+                    }
+                }
+                if(!softwareId){
+                    softwareId = softwareDisplay;
+                }
+            }
 
             if(!softwareId){
                 if(errorEl) errorEl.textContent = 'Software is required.';
