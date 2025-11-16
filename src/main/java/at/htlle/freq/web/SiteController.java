@@ -6,6 +6,7 @@ import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
 import at.htlle.freq.domain.Site;
 import at.htlle.freq.web.dto.InstalledSoftwareStatusUpdateRequest;
+import at.htlle.freq.web.dto.SiteDetailResponse;
 import at.htlle.freq.web.dto.SiteSoftwareSummary;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
 import org.slf4j.Logger;
@@ -127,6 +128,32 @@ public class SiteController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Site not found");
         }
         return rows.get(0);
+    }
+
+    /**
+     * Returns a site with its linked software assignments.
+     *
+     * <p>Path: {@code GET /sites/{id}/detail}</p>
+     *
+     * @param id site identifier
+     * @return site data and assignments
+     */
+    @GetMapping("/{id}/detail")
+    public SiteDetailResponse findDetail(@PathVariable String id) {
+        UUID siteId = parseUuid(id, "SiteID");
+        Site site = siteService.getSiteById(siteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Site not found"));
+        List<SiteSoftwareOverviewEntry> assignments = installedSoftwareService.getSiteSoftwareOverview(siteId);
+
+        return new SiteDetailResponse(
+                site.getSiteID(),
+                site.getSiteName(),
+                site.getProjectID(),
+                site.getAddressID(),
+                site.getFireZone(),
+                site.getTenantCount(),
+                assignments
+        );
     }
 
     @GetMapping({"/{id}/software", "/{id}/software/overview"})

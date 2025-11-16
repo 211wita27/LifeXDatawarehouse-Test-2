@@ -4,6 +4,7 @@ import at.htlle.freq.application.InstalledSoftwareService;
 import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.Site;
+import at.htlle.freq.web.dto.SiteDetailResponse;
 import at.htlle.freq.web.dto.SiteSoftwareAssignmentDto;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -135,6 +136,47 @@ class SiteControllerTest {
 
         verify(installedSoftwareService).replaceAssignmentsForSite(eq(siteId),
                 argThat(list -> list.size() == 1 && software.equals(list.get(0).getSoftwareID())));
+    }
+
+    @Test
+    void detailEndpointReturnsSiteDataAndAssignments() {
+        UUID siteId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID addressId = UUID.randomUUID();
+        Site site = new Site();
+        site.setSiteID(siteId);
+        site.setSiteName("Detail Site");
+        site.setProjectID(projectId);
+        site.setAddressID(addressId);
+        site.setFireZone("Blue");
+        site.setTenantCount(3);
+
+        List<SiteSoftwareOverviewEntry> assignments = List.of(new SiteSoftwareOverviewEntry(
+                UUID.randomUUID(),
+                siteId,
+                "Site",
+                UUID.randomUUID(),
+                "Core",
+                "1",
+                "0",
+                "Installed",
+                "Installed",
+                "2024-01-01",
+                "2024-02-02",
+                null
+        ));
+
+        when(siteService.getSiteById(siteId)).thenReturn(Optional.of(site));
+        when(installedSoftwareService.getSiteSoftwareOverview(siteId)).thenReturn(assignments);
+
+        SiteDetailResponse response = controller.findDetail(siteId.toString());
+
+        assertEquals(siteId, response.siteId());
+        assertEquals("Detail Site", response.siteName());
+        assertEquals(projectId, response.projectId());
+        assertEquals(addressId, response.addressId());
+        assertEquals(1, response.softwareAssignments().size());
+        assertEquals(assignments, response.softwareAssignments());
     }
 
     @Test
