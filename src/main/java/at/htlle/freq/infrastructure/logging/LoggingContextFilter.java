@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 /**
  * Servlet filter that enriches the logging MDC context for every incoming HTTP request.
@@ -29,6 +30,9 @@ public class LoggingContextFilter extends OncePerRequestFilter {
     static final String MDC_REQUEST_ID = "requestId";
     static final String MDC_USER = "user";
     private static final String HEADER_REQUEST_ID = "X-Request-Id";
+    private static final int MAX_REQUEST_ID_LENGTH = 100;
+    private static final Pattern UUID_PATTERN = Pattern.compile(
+            "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$");
 
     /**
      * Adds logging metadata for the current request and delegates to the next element of the filter chain.
@@ -62,8 +66,19 @@ public class LoggingContextFilter extends OncePerRequestFilter {
 
     private String resolveRequestId(HttpServletRequest request) {
         return Optional.ofNullable(request.getHeader(HEADER_REQUEST_ID))
-                .filter(id -> !id.isBlank())
+                .map(String::trim)
+                .filter(this::isSafeRequestId)
                 .orElseGet(() -> UUID.randomUUID().toString());
+    }
+
+    private boolean isSafeRequestId(String candidate) {
+        if (candidate.isEmpty() || candidate.length() > MAX_REQUEST_ID_LENGTH) {
+            return false;
+        }
+        if (candidate.chars().anyMatch(Character::isISOControl)) {
+            return false;
+        }
+        return UUID_PATTERN.matcher(candidate).matches();
     }
 
     private String resolveUser(HttpServletRequest request) {
