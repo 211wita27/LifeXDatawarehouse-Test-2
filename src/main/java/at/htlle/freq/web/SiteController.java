@@ -5,6 +5,7 @@ import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
 import at.htlle.freq.domain.Site;
+import at.htlle.freq.web.dto.InstalledSoftwareStatusUpdateRequest;
 import at.htlle.freq.web.dto.SiteSoftwareSummary;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
 import org.slf4j.Logger;
@@ -132,6 +133,43 @@ public class SiteController {
     public List<SiteSoftwareOverviewEntry> softwareOverview(@PathVariable String id) {
         UUID siteId = parseUuid(id, "SiteID");
         return installedSoftwareService.getSiteSoftwareOverview(siteId);
+    }
+
+    /**
+     * Updates the install status for a site/software relationship.
+     *
+     * <p>Path: {@code PATCH /sites/{siteId}/software/{installationId}/status}</p>
+     *
+     * @param siteId          site identifier
+     * @param installationId  installed software identifier
+     * @param request         payload containing the new status
+     */
+    @PatchMapping("/{siteId}/software/{installationId}/status")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateSoftwareStatus(@PathVariable String siteId,
+                                     @PathVariable String installationId,
+                                     @RequestBody InstalledSoftwareStatusUpdateRequest request) {
+        if (request == null || request.normalizedStatus() == null || request.normalizedStatus().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "status is required");
+        }
+
+        UUID siteUuid = parseUuid(siteId, "SiteID");
+        UUID installationUuid = parseUuid(installationId, "InstalledSoftwareID");
+
+        var installation = installedSoftwareService.getInstalledSoftwareById(installationUuid)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Installed software not found"));
+
+        if (installation.getSiteID() != null && !installation.getSiteID().equals(siteUuid)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Installation does not belong to the requested site");
+        }
+
+        try {
+            installedSoftwareService.updateStatus(installationUuid, request.normalizedStatus());
+            log.info("[{}] status updated: installation={} site={} status={}", TABLE,
+                    installationUuid, siteUuid, request.normalizedStatus());
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+        }
     }
 
     // CREATE operations
