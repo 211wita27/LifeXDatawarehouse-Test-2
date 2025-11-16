@@ -6,6 +6,8 @@
 
     const DEFAULT_RANGE = 'next90';
 
+    const PRESETS = ['next30', 'next90', 'next180', 'custom'];
+
     const state = {
         range: DEFAULT_RANGE,
         startDate: '',
@@ -57,11 +59,18 @@
     }
 
     function applyStateToForm(){
-        elements.range.value = state.range;
+        const preset = normalizeRange(state.range);
+        state.range = preset;
+        elements.range.value = preset;
         elements.startDate.value = state.startDate;
         elements.endDate.value = state.endDate;
-        toggleCustomRange(state.range === 'custom');
+        toggleCustomRange(preset === 'custom');
         updateSelectionInfo();
+    }
+
+    function normalizeRange(range){
+        if (PRESETS.includes(range)) return range;
+        return DEFAULT_RANGE;
     }
 
     function toggleCustomRange(show){
@@ -74,7 +83,7 @@
     }
 
     function readFormState(){
-        state.range = elements.range.value || DEFAULT_RANGE;
+        state.range = normalizeRange(elements.range.value || DEFAULT_RANGE);
         if (state.range === 'custom') {
             state.startDate = elements.startDate.value;
             state.endDate = elements.endDate.value;
@@ -167,17 +176,19 @@
 
     function buildParams(){
         const params = new URLSearchParams();
-        if (state.range) params.set('range', state.range);
-        if (state.range === 'custom') {
-            if (state.startDate) params.set('startDate', state.startDate);
-            if (state.endDate) params.set('endDate', state.endDate);
+        const preset = normalizeRange(state.range);
+        params.set('preset', preset);
+        if (preset === 'custom') {
+            if (state.startDate) params.set('from', state.startDate);
+            if (state.endDate) params.set('to', state.endDate);
         }
         return params.toString();
     }
 
     function updateSelectionInfo(){
         if (!elements.selectionInfo) return;
-        if (state.range === 'custom' && state.startDate && state.endDate) {
+        const preset = normalizeRange(state.range);
+        if (preset === 'custom' && state.startDate && state.endDate) {
             elements.selectionInfo.textContent = `Custom range: ${state.startDate} – ${state.endDate}`;
         } else {
             const labels = {
@@ -186,7 +197,7 @@
                 next180: 'Next 180 days',
                 custom: 'Custom'
             };
-            elements.selectionInfo.textContent = labels[state.range] || '';
+            elements.selectionInfo.textContent = labels[preset] || '';
         }
     }
 
