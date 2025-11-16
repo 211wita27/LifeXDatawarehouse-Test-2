@@ -174,7 +174,9 @@ INSERT INTO Software (SoftwareID, Name, Release, Revision, SupportPhase, License
     ('ca80bbb5-c8f9-4c71-b571-060000000009', 'LifeX Core', '2026.3', '13', 'EoL', 'Subscription', FALSE, DATEADD('DAY', 607, CURRENT_DATE), DATEADD('DAY', -145, CURRENT_DATE), DATEADD('DAY', 220, CURRENT_DATE)),
     ('1a213527-9b68-4c7c-892a-060000000010', 'Command Center', '2026.1', '14', 'Production', 'Perpetual', FALSE, DATEADD('DAY', 577, CURRENT_DATE), DATEADD('DAY', -197, CURRENT_DATE), DATEADD('DAY', 168, CURRENT_DATE)),
     ('005485d3-eecc-4b21-ab38-060000000011', 'Edge Gateway', '2026.2', '15', 'Preview', 'Subscription', TRUE, DATEADD('DAY', 553, CURRENT_DATE), DATEADD('DAY', -160, CURRENT_DATE), DATEADD('DAY', 205, CURRENT_DATE)),
-    ('94c37f57-9782-4842-80d1-060000000012', 'Analytics Suite', '2026.3', '16', 'EoL', 'Perpetual', TRUE, DATEADD('DAY', 458, CURRENT_DATE), DATEADD('DAY', -164, CURRENT_DATE), DATEADD('DAY', 201, CURRENT_DATE))
+    ('94c37f57-9782-4842-80d1-060000000012', 'Analytics Suite', '2026.3', '16', 'EoL', 'Perpetual', TRUE, DATEADD('DAY', 458, CURRENT_DATE), DATEADD('DAY', -164, CURRENT_DATE), DATEADD('DAY', 201, CURRENT_DATE)),
+    ('ab4a5c54-2f44-4f3e-9297-060000000013', 'LifeX Core', '2026.4', '17', 'Production', 'Subscription', FALSE, DATEADD('DAY', 210, CURRENT_DATE), DATEADD('DAY', -120, CURRENT_DATE), DATEADD('DAY', 20, CURRENT_DATE)),
+    ('e9cbb1b9-0b4c-4f84-a23c-060000000014', 'Command Center', '2026.5', '18', 'Preview', 'Perpetual', FALSE, DATEADD('DAY', 330, CURRENT_DATE), DATEADD('DAY', -90, CURRENT_DATE), DATEADD('DAY', 85, CURRENT_DATE))
 ;
 
 -- Projects (SAP references, variants, and lifecycle states)
