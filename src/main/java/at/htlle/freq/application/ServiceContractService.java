@@ -166,8 +166,8 @@ public class ServiceContractService {
                     sc.getSiteID() != null ? sc.getSiteID().toString() : null,
                     sc.getContractNumber(),
                     sc.getStatus(),
-                    sc.getStartDate(),
-                    sc.getEndDate()
+                    sc.getStartDate() != null ? sc.getStartDate().toString() : null,
+                    sc.getEndDate() != null ? sc.getEndDate().toString() : null
             );
             log.debug("ServiceContract indexed in Lucene: id={}", sc.getContractID());
         } catch (Exception e) {
@@ -181,7 +181,7 @@ public class ServiceContractService {
         return s == null || s.trim().isEmpty();
     }
 
-    private static String nvl(String in, String fallback) {
+    private static <T> T nvl(T in, T fallback) {
         return in != null ? in : fallback;
     }
 }

@@ -3,6 +3,7 @@ package at.htlle.freq.application;
 import at.htlle.freq.domain.*;
 import at.htlle.freq.domain.ProjectLifecycleStatus;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 final class TestFixtures {
@@ -50,7 +51,12 @@ final class TestFixtures {
     }
 
     static UpgradePlan upgradePlan() {
-        return new UpgradePlan(UUID3, UUID4, UUID5, "2024-03-01", "2024-03-02", "Planned", "2024-01-01", "Alice");
+        return new UpgradePlan(UUID3, UUID4, UUID5,
+                LocalDate.parse("2024-03-01"),
+                LocalDate.parse("2024-03-02"),
+                "Planned",
+                LocalDate.parse("2024-01-01"),
+                "Alice");
     }
 
     static Server server() {
@@ -72,6 +78,7 @@ final class TestFixtures {
     }
 
     static ServiceContract serviceContract() {
-        return new ServiceContract(UUID3, UUID4, UUID3, UUID4, "C-1", "Active", "2024-01-01", "2024-12-31");
+        return new ServiceContract(UUID3, UUID4, UUID3, UUID4, "C-1", "Active",
+                LocalDate.parse("2024-01-01"), LocalDate.parse("2024-12-31"));
     }
 }

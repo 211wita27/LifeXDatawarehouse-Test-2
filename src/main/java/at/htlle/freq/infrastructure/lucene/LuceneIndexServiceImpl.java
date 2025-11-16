@@ -534,8 +534,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         toStringOrNull(contract.getSiteID()),
                         contract.getContractNumber(),
                         contract.getStatus(),
-                        contract.getStartDate(),
-                        contract.getEndDate()
+                        toStringOrNull(contract.getStartDate()),
+                        toStringOrNull(contract.getEndDate())
                 );
             }
             for (Site site : sites) {
@@ -567,10 +567,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         toStringOrNull(plan.getUpgradePlanID()),
                         toStringOrNull(plan.getSiteID()),
                         toStringOrNull(plan.getSoftwareID()),
-                        plan.getPlannedWindowStart(),
-                        plan.getPlannedWindowEnd(),
+                        toStringOrNull(plan.getPlannedWindowStart()),
+                        toStringOrNull(plan.getPlannedWindowEnd()),
                         plan.getStatus(),
-                        plan.getCreatedAt(),
+                        toStringOrNull(plan.getCreatedAt()),
                         plan.getCreatedBy()
                 );
             }
