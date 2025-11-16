@@ -1699,10 +1699,10 @@
         renderDetail();
     }
 
-    function exitEditMode(){
+    async function exitEditMode(){
         if(!currentRow) return;
         isEditing = false;
-        renderDetail();
+        await loadData({ preserveStatus: true });
     }
 
     async function saveForm(form, saveButton){
