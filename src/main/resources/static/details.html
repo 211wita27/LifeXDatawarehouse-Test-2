@@ -2482,39 +2482,6 @@
                 }
             }
             if (pills.length) sections.push({ title: 'Belongs to', pills });
-        } else if (type === 'Country') {
-            const codeRaw = val(row, 'CountryCode') ?? id;
-            const normalizedCode = codeRaw ? String(codeRaw).toUpperCase() : '';
-            if (normalizedCode) {
-                const cityRows = await fetchJson(`/table/city?limit=200`);
-                if (Array.isArray(cityRows) && cityRows.length) {
-                    const pills = [];
-                    cityRows
-                        .filter(city => {
-                            const cityCountry = val(city, 'CountryCode');
-                            if (!cityCountry) return false;
-                            return String(cityCountry).toUpperCase() === normalizedCode;
-                        })
-                        .sort((a, b) => {
-                            const aName = val(a, 'CityName') ?? '';
-                            const bName = val(b, 'CityName') ?? '';
-                            return aName.toString().localeCompare(bName.toString(), undefined, { sensitivity: 'base' });
-                        })
-                        .forEach(city => {
-                            const cityId = val(city, 'CityID');
-                            if (!cityId) return;
-                            pills.push(pillLink(
-                                `/details.html?type=city&id=${encodeURIComponent(cityId)}`,
-                                'City',
-                                cityId,
-                                labelFor('city', city)
-                            ));
-                        });
-                    if (pills.length) {
-                        sections.push({ title: 'Belongs to', pills });
-                    }
-                }
-            }
         } else if (type === 'City') {
             const countryCode = val(row, 'CountryCode');
             if (countryCode != null) {
@@ -2768,6 +2735,19 @@
                 const name = val(p,'ProjectName');
                 return pillLink(`/details.html?type=project&id=${encodeURIComponent(pid)}`, null, pid, name);
             }, { entity: 'Project', label: 'Project', params: { deploymentVariantId: id } });
+        }
+        else if(type==='Country'){
+            const codeRaw = val(row, 'CountryCode') ?? id;
+            const normalizedCode = codeRaw ? String(codeRaw).toUpperCase() : '';
+            const cities = normalizedCode ? await fetchJson(`/cities?countryCode=${encodeURIComponent(normalizedCode)}`) : [];
+            const cityList = Array.isArray(cities)
+                ? cities.filter(city => val(city, 'CityID') != null)
+                : [];
+            addSection(box, 'Cities', cityList, city => {
+                const cityId = val(city, 'CityID');
+                const label = labelFor('city', city);
+                return pillLink(`/details.html?type=city&id=${encodeURIComponent(cityId)}`, label, cityId, null);
+            }, { entity: 'City', label: 'City', params: { countryCode: normalizedCode } });
         }
         else if(type==='City'){
             const addressRows = await fetchJson(`/table/address?limit=200`);
