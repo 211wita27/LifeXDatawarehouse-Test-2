@@ -92,6 +92,8 @@ public class ReportController {
             case "last7" -> new DateRange(today.minusDays(6), today);
             case "last30" -> new DateRange(today.minusDays(29), today);
             case "next30" -> new DateRange(today, today.plusDays(29));
+            case "next90" -> new DateRange(today, today.plusDays(89));
+            case "next180" -> new DateRange(today, today.plusDays(179));
             case "quarter" -> {
                 int quarter = (today.getMonthValue() - 1) / 3;
                 int startMonth = quarter * 3 + 1;
