@@ -21,26 +21,26 @@ import static org.mockito.Mockito.when;
 class ReportControllerTest {
 
     @Test
-    void quarterPeriodExtendsToQuarterEnd() {
+    void quarterPresetExtendsToQuarterEnd() {
         ReportService reportService = mock(ReportService.class);
         AtomicReference<ReportFilter> captured = new AtomicReference<>();
         when(reportService.getReport(any())).thenAnswer(invocation -> {
             ReportFilter filter = invocation.getArgument(0);
             captured.set(filter);
             ReportTable table = new ReportTable(Collections.emptyList(), Collections.emptyList(), "", "");
-            return new ReportResponse(filter.type(), Collections.emptyList(), table, Collections.emptyList(), "", "");
+            return new ReportResponse(table, "");
         });
 
         ReportController controller = new ReportController(reportService);
         LocalDate fixedToday = LocalDate.of(2024, 8, 15);
         try (MockedStatic<LocalDate> mockedLocalDate = mockStatic(LocalDate.class, CALLS_REAL_METHODS)) {
             mockedLocalDate.when(LocalDate::now).thenReturn(fixedToday);
-            controller.getReportData("maintenance", null, null, null, null, null, null);
+            controller.getReportData(null, null, "quarter");
         }
 
         ReportFilter filter = captured.get();
         assertThat(filter).isNotNull();
-        assertThat(filter.period()).isEqualTo("quarter");
+        assertThat(filter.preset()).isEqualTo("quarter");
         assertThat(filter.from()).isEqualTo(LocalDate.of(2024, 7, 1));
         assertThat(filter.to()).isEqualTo(LocalDate.of(2024, 9, 30));
     }

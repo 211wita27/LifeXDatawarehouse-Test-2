@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -23,86 +23,19 @@ import static org.mockito.Mockito.when;
 class ReportServiceTest {
 
     @Test
-    void configurationReportAggregatesBrowserClientsSeparately() throws SQLException {
+    void supportReportMapsDateInformation() throws SQLException {
         NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
         ReportService service = new ReportService(jdbc);
 
-        ResultSet firstRow = mock(ResultSet.class);
-        when(firstRow.getString("SiteName")).thenReturn("Alpha");
-        when(firstRow.getString("ProjectName")).thenReturn("Project A");
-        when(firstRow.getString("ProjectSAPID")).thenReturn("SAP-A");
-        when(firstRow.getString("VariantCode")).thenReturn("V1");
-        when(firstRow.getInt("server_count")).thenReturn(2);
-        when(firstRow.getInt("ha_servers")).thenReturn(1);
-        when(firstRow.getInt("client_count")).thenReturn(10);
-        when(firstRow.getInt("local_clients")).thenReturn(4);
-        when(firstRow.getInt("browser_clients")).thenReturn(3);
-        when(firstRow.getInt("radio_count")).thenReturn(0);
-        when(firstRow.getInt("audio_count")).thenReturn(2);
-        when(firstRow.getInt("phone_count")).thenReturn(1);
-        when(firstRow.getString("server_os")).thenReturn("Linux");
-        when(firstRow.getString("client_os")).thenReturn("Windows");
-
-        ResultSet secondRow = mock(ResultSet.class);
-        when(secondRow.getString("SiteName")).thenReturn("Beta");
-        when(secondRow.getString("ProjectName")).thenReturn("Project B");
-        when(secondRow.getString("ProjectSAPID")).thenReturn("SAP-B");
-        when(secondRow.getString("VariantCode")).thenReturn("V2");
-        when(secondRow.getInt("server_count")).thenReturn(1);
-        when(secondRow.getInt("ha_servers")).thenReturn(0);
-        when(secondRow.getInt("client_count")).thenReturn(5);
-        when(secondRow.getInt("local_clients")).thenReturn(2);
-        when(secondRow.getInt("browser_clients")).thenReturn(1);
-        when(secondRow.getInt("radio_count")).thenReturn(0);
-        when(secondRow.getInt("audio_count")).thenReturn(0);
-        when(secondRow.getInt("phone_count")).thenReturn(0);
-        when(secondRow.getString("server_os")).thenReturn("Windows");
-        when(secondRow.getString("client_os")).thenReturn("macOS");
-
-        when(jdbc.query(anyString(), anyMap(), any(RowMapper.class))).thenAnswer(invocation -> {
-            @SuppressWarnings("unchecked")
-            RowMapper<Map<String, Object>> mapper = (RowMapper<Map<String, Object>>) invocation.getArgument(2);
-            List<Map<String, Object>> mappedRows = new ArrayList<>();
-            try {
-                mappedRows.add(mapper.mapRow(firstRow, 0));
-                mappedRows.add(mapper.mapRow(secondRow, 1));
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-            return mappedRows;
-        });
-
-        ReportFilter filter = new ReportFilter(ReportType.CONFIGURATION, null, null, null, null, null, null);
-        ReportResponse response = service.getReport(filter);
-
-        assertEquals("LOCAL 6 · BROWSER 4", response.kpis().get(2).hint());
-
-        ChartSlice browserSlice = response.chart().stream()
-                .filter(slice -> "BROWSER".equals(slice.label()))
-                .findFirst()
-                .orElse(null);
-        assertNotNull(browserSlice, "Browser slice missing");
-        assertEquals(4.0, browserSlice.value());
-    }
-
-    @Test
-    void differenceReportTreatsExpiredSupportAsCriticalEvenWhenUpToDate() throws SQLException {
-        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
-        ReportService service = new ReportService(jdbc);
+        LocalDate startDate = LocalDate.of(2023, 1, 10);
+        LocalDate endDate = LocalDate.now().plusDays(15);
 
         ResultSet row = mock(ResultSet.class);
-        when(row.getString("ProjectName")).thenReturn("Project X");
-        when(row.getString("ProjectSAPID")).thenReturn("SAP-X");
-        when(row.getString("SiteName")).thenReturn("Site Alpha");
-        when(row.getString("VariantCode")).thenReturn("VAR-1");
-        when(row.getString("software_name")).thenReturn("Core");
-        when(row.getString("current_release")).thenReturn("2024");
-        when(row.getString("current_revision")).thenReturn("1");
-        when(row.getString("target_release")).thenReturn("2024");
-        when(row.getString("target_revision")).thenReturn("1");
-        when(row.getString("install_status")).thenReturn("Installed");
-        LocalDate now = LocalDate.now();
-        when(row.getObject("support_end")).thenReturn(Date.valueOf(now.minusDays(1)));
+        when(row.getString("Name")).thenReturn("Core");
+        when(row.getString("Release")).thenReturn("2024");
+        when(row.getString("Revision")).thenReturn("2");
+        when(row.getDate("SupportStartDate")).thenReturn(Date.valueOf(startDate));
+        when(row.getDate("SupportEndDate")).thenReturn(Date.valueOf(endDate));
 
         when(jdbc.query(anyString(), anyMap(), any(RowMapper.class))).thenAnswer(invocation -> {
             @SuppressWarnings("unchecked")
@@ -116,54 +49,36 @@ class ReportServiceTest {
             return mappedRows;
         });
 
-        ReportFilter filter = new ReportFilter(ReportType.DIFFERENCE, null, null, null, null, null, null);
+        ReportFilter filter = new ReportFilter(LocalDate.now(), LocalDate.now().plusDays(30), "next30");
         ReportResponse response = service.getReport(filter);
 
         Map<String, Object> firstRow = response.table().rows().get(0);
-        assertEquals("Critical", firstRow.get("severity"));
-        assertEquals("Up to date", firstRow.get("compliance"));
+        assertEquals("Core", firstRow.get("name"));
+        assertEquals("2024", firstRow.get("release"));
+        assertEquals("2", firstRow.get("revision"));
+        assertEquals("10.01.2023", firstRow.get("supportStart"));
+        assertNotEquals("—", firstRow.get("daysRemaining"));
     }
 
     @Test
-    void differenceReportMarksExpiringSupportAsRiskInKpiHint() throws SQLException {
-        NamedParameterJdbcTemplate jdbc = mock(NamedParameterJdbcTemplate.class);
-        ReportService service = new ReportService(jdbc);
+    void csvRenderIncludesSupportHeadings() {
+        ReportService service = new ReportService(null);
+        List<ReportColumn> columns = List.of(
+                new ReportColumn("name", "Software", "left"),
+                new ReportColumn("supportEnd", "Support end", "left")
+        );
+        Map<String, Object> row = Map.of(
+                "name", "Core",
+                "supportEnd", "01.01.2025"
+        );
+        ReportTable table = new ReportTable(columns, List.of(row), "", "");
+        ReportResponse response = new ReportResponse(table, "2024-01-01 10:00");
 
-        ResultSet row = mock(ResultSet.class);
-        when(row.getString("ProjectName")).thenReturn("Project Y");
-        when(row.getString("ProjectSAPID")).thenReturn("SAP-Y");
-        when(row.getString("SiteName")).thenReturn("Site Beta");
-        when(row.getString("VariantCode")).thenReturn("VAR-2");
-        when(row.getString("software_name")).thenReturn("Core");
-        when(row.getString("current_release")).thenReturn("2024");
-        when(row.getString("current_revision")).thenReturn("1");
-        when(row.getString("target_release")).thenReturn("2024");
-        when(row.getString("target_revision")).thenReturn("1");
-        when(row.getString("install_status")).thenReturn("Installed");
-        LocalDate now = LocalDate.now();
-        when(row.getObject("support_end")).thenReturn(Date.valueOf(now.plusDays(30)));
+        String csv = service.renderCsv(response);
 
-        when(jdbc.query(anyString(), anyMap(), any(RowMapper.class))).thenAnswer(invocation -> {
-            @SuppressWarnings("unchecked")
-            RowMapper<Map<String, Object>> mapper = (RowMapper<Map<String, Object>>) invocation.getArgument(2);
-            List<Map<String, Object>> mappedRows = new ArrayList<>();
-            try {
-                mappedRows.add(mapper.mapRow(row, 0));
-            } catch (SQLException ex) {
-                throw new RuntimeException(ex);
-            }
-            return mappedRows;
-        });
-
-        ReportFilter filter = new ReportFilter(ReportType.DIFFERENCE, null, null, null, null, null, null);
-        ReportResponse response = service.getReport(filter);
-
-        Kpi criticalKpi = response.kpis().stream()
-                .filter(kpi -> "critical".equals(kpi.key()))
-                .findFirst()
-                .orElseThrow();
-
-        assertEquals("act immediately", criticalKpi.hint());
-        assertEquals("1", criticalKpi.value());
+        String[] lines = csv.split("\n");
+        assertEquals("Report;Support end dates", lines[0]);
+        assertEquals("Software;Support end", lines[3]);
+        assertEquals("Core;01.01.2025", lines[4]);
     }
 }
