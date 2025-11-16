@@ -294,6 +294,7 @@ table caption{text-align:left;font-weight:600;margin-bottom:.4rem}
     text-decoration:none;font-weight:bold;padding:.45rem .9rem;border-radius:6px}
 #back:hover{background:#0054a6}
 .card{background:#fff;padding:1.4rem;border-radius:8px;max-width:730px;margin:auto;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+#detail-layout:not(.detail-layout--with-software)>.card{max-width:1100px;width:100%}
 .card--wide{max-width:none;width:100%;margin:0}
 #kv{border-collapse:collapse;width:100%}
 #kv th, #kv td{border:1px solid #ddd;padding:.45rem}
