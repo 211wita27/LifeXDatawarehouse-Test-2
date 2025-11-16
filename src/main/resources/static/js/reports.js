@@ -100,14 +100,20 @@
         setStatus('Loading…');
         try {
             const res = await fetch(`${API.data}?${params}`);
-            if (!res.ok) throw new Error('HTTP ' + res.status);
+            if (!res.ok) {
+                if (res.status >= 400 && res.status < 500) {
+                    throw Object.assign(new Error('Client error'), { status: res.status });
+                }
+                throw new Error('HTTP ' + res.status);
+            }
             const payload = await res.json();
             renderTable(payload.table || payload);
             updateGeneratedAt(payload.generatedAt);
             updateExportLink(params);
         } catch (err) {
             console.error('Report fetch failed', err);
-            showError('Report could not be loaded.');
+            const message = err.status ? 'No software releases found for the selected range.' : 'Report could not be loaded.';
+            showError(message);
         } finally {
             setBusy(false);
         }
