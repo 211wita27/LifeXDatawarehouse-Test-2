@@ -44,8 +44,13 @@ public class SmartQueryBuilder {
     public static boolean looksLikeLucene(String q) {
         if (q == null) return false;
         String s = q.trim();
-        return s.contains(":") || s.contains("\"") || s.contains(" AND ")
-                || s.contains(" OR ") || s.endsWith("*");
+        if (s.isEmpty()) {
+            return false;
+        }
+
+        String normalized = s.toLowerCase();
+        return s.contains(":") || s.contains("\"") || normalized.contains(" and ")
+                || normalized.contains(" or ") || s.endsWith("*");
     }
 
     /**

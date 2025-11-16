@@ -14,6 +14,8 @@ class SmartQueryBuilderTest {
         assertTrue(SmartQueryBuilder.looksLikeLucene("type:server"));
         assertTrue(SmartQueryBuilder.looksLikeLucene("\"quoted phrase\""));
         assertTrue(SmartQueryBuilder.looksLikeLucene("foo AND bar"));
+        assertTrue(SmartQueryBuilder.looksLikeLucene("foo and bar"));
+        assertTrue(SmartQueryBuilder.looksLikeLucene("foo AnD bar"));
         assertTrue(SmartQueryBuilder.looksLikeLucene("name*"));
     }
 
