@@ -53,16 +53,6 @@
         .software-overview__meta a{color:#1d4ed8;text-decoration:none}
         .software-overview__meta a:hover,.software-overview__meta a:focus{text-decoration:underline}
         .software-overview__notes{margin:.75rem 0 0 0;color:#4b5563;font-size:.9rem;line-height:1.4}
-        .software-overview__status-editor{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-left:auto}
-        .software-overview__status-select{border:1px solid #cbd5e1;border-radius:6px;padding:.35rem .6rem;font-weight:600;color:#0f172a;background:#fff}
-        .software-overview__status-select:focus-visible{outline:2px solid #003a70;outline-offset:2px}
-        .software-overview__status-save{border:none;border-radius:6px;padding:.4rem .8rem;font-weight:700;background:#0067c2;color:#fff;cursor:pointer;transition:background .2s ease}
-        .software-overview__status-save:hover{background:#0054a6}
-        .software-overview__status-save:focus-visible{outline:2px solid #003a70;outline-offset:2px}
-        .software-overview__status-save:disabled{background:#9ca3af;cursor:not-allowed}
-        .software-overview__status-hint{font-size:.85rem;color:#4b5563}
-        .software-overview__status-hint--error{color:#b91c1c}
-        .software-overview__status-hint--success{color:#047857}
     </style>
 </head>
 <body>
@@ -970,39 +960,6 @@
         return [];
     }
 
-    async function updateSiteSoftwareStatus(siteId, installationId, status){
-        if(!siteId || !installationId){
-            throw new Error('Missing identifiers for status update');
-        }
-        const payload = { status };
-        const res = await fetch(`/sites/${encodeURIComponent(siteId)}/software/${encodeURIComponent(installationId)}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if(res.ok) return;
-
-        let message = `Unable to update status (HTTP ${res.status})`;
-        try{
-            const text = await res.text();
-            if(text){
-                try {
-                    const parsed = JSON.parse(text);
-                    if(parsed && parsed.message){
-                        message = parsed.message;
-                    } else {
-                        message = text;
-                    }
-                } catch {
-                    message = text;
-                }
-            }
-        } catch {
-            // ignore parse errors, keep default message
-        }
-        throw new Error(message);
-    }
-
     function normalizeSoftwareOverviewEntry(item){
         if(!item || typeof item !== 'object') return null;
 
@@ -1166,90 +1123,7 @@
         metaList.appendChild(li);
     }
 
-    function buildStatusSelect(currentValue){
-        const select = document.createElement('select');
-        select.className = 'software-overview__status-select';
-        select.setAttribute('aria-label', 'Update install status');
-
-        const placeholder = document.createElement('option');
-        placeholder.value = '';
-        placeholder.textContent = 'Select status…';
-        select.appendChild(placeholder);
-
-        Object.entries(INSTALL_STATUS_DISPLAY).forEach(([key, meta]) => {
-            const opt = document.createElement('option');
-            opt.value = meta.label;
-            opt.textContent = meta.label;
-            select.appendChild(opt);
-        });
-
-        const normalized = normalizeInstallStatus(currentValue);
-        const match = INSTALL_STATUS_DISPLAY[normalized];
-        if(match){
-            select.value = match.label;
-        }
-        return select;
-    }
-
-    function buildStatusEditor(entry, options = {}){
-        const installationId = entry.installedSoftwareId || entry.installationId || entry.id || entry.InstalledSoftwareID;
-        const siteId = options.siteId || entry.siteId;
-        if(!installationId || !siteId) return null;
-
-        const wrapper = document.createElement('div');
-        wrapper.className = 'software-overview__status-editor';
-
-        const select = buildStatusSelect(entry.status ?? entry.fallbackStatus);
-        const saveBtn = document.createElement('button');
-        saveBtn.type = 'button';
-        saveBtn.className = 'software-overview__status-save';
-        saveBtn.textContent = 'Save status';
-
-        const hint = document.createElement('span');
-        hint.className = 'software-overview__status-hint';
-
-        const setHint = (text, variant) => {
-            hint.textContent = text || '';
-            hint.className = 'software-overview__status-hint';
-            if(variant){
-                hint.classList.add(`software-overview__status-hint--${variant}`);
-            }
-        };
-
-        const setBusy = (busy) => {
-            select.disabled = !!busy;
-            saveBtn.disabled = !!busy;
-            saveBtn.textContent = busy ? 'Saving…' : 'Save status';
-        };
-
-        saveBtn.addEventListener('click', async () => {
-            const nextStatus = select.value;
-            if(!nextStatus){
-                setHint('Choose a status before saving.', 'error');
-                return;
-            }
-            setBusy(true);
-            setHint('Saving…');
-            try {
-                await updateSiteSoftwareStatus(siteId, installationId, nextStatus);
-                setHint('Status updated', 'success');
-                if(typeof options.onStatusUpdated === 'function'){
-                    options.onStatusUpdated(entry);
-                }
-            } catch(err){
-                setHint(err?.message || 'Unable to update status', 'error');
-            } finally {
-                setBusy(false);
-            }
-        });
-
-        wrapper.appendChild(select);
-        wrapper.appendChild(saveBtn);
-        wrapper.appendChild(hint);
-        return wrapper;
-    }
-
-    function buildSoftwareOverviewItem(entry, context, options = {}){
+    function buildSoftwareOverviewItem(entry, context){
         const item = document.createElement('div');
         item.className = 'software-overview__item';
 
@@ -1300,17 +1174,6 @@
         }
 
         appendStatusBadgeElement(header, entry);
-
-        const enableStatusEditing = !isSoftwareContext && options.enableStatusEditing;
-        if(enableStatusEditing){
-            const statusEditor = buildStatusEditor(entry, {
-                siteId: options.siteId || entry.siteId,
-                onStatusUpdated: options.onStatusUpdated
-            });
-            if(statusEditor){
-                header.appendChild(statusEditor);
-            }
-        }
 
         item.appendChild(header);
 
@@ -1402,7 +1265,7 @@
 
         const list = document.createElement('div');
         list.className = 'software-overview';
-        normalized.forEach(entry => list.appendChild(buildSoftwareOverviewItem(entry, context, config)));
+        normalized.forEach(entry => list.appendChild(buildSoftwareOverviewItem(entry, context)));
         section.appendChild(list);
         container.appendChild(section);
     }
@@ -1691,10 +1554,7 @@
             title: 'Software Overview',
             items: softwareOverview,
             context: 'site',
-            emptyMessage: 'No software assignments recorded yet.',
-            enableStatusEditing: true,
-            siteId,
-            onStatusUpdated: () => renderSiteSoftwareOverview(siteId, targetEl)
+            emptyMessage: 'No software assignments recorded yet.'
         });
 
         if(targetEl === siteSoftwareOverviewBody && siteSoftwareOverviewCard){
