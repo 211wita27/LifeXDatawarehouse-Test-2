@@ -103,12 +103,24 @@ public class GenericCrudController {
         DATE_COLUMNS = Collections.unmodifiableMap(d);
     }
 
+    private ResponseStatusException logAndThrow(HttpStatus status, String table, String action, String reason) {
+        return logAndThrow(status, table, action, reason, null);
+    }
+
+    private ResponseStatusException logAndThrow(HttpStatus status, String table, String action, String reason, String logReason) {
+        String actionLabel = action == null ? "(unknown action)" : action;
+        String tableLabel = table == null ? "(unknown table)" : table;
+        String message = logReason == null ? reason : logReason;
+        log.warn("Action {} on table {} failed: {}", actionLabel, tableLabel, message);
+        return new ResponseStatusException(status, reason);
+    }
+
     private String normalizeTable(String name) {
-        if (name == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "table missing");
+        if (name == null) throw logAndThrow(HttpStatus.BAD_REQUEST, null, "normalizeTable", "table missing");
         String key = name.trim().toLowerCase();
         String table = TABLES.get(key);
         if (table == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown table: " + name);
+            throw logAndThrow(HttpStatus.BAD_REQUEST, name, "normalizeTable", "unknown table: " + name, "unknown table");
         }
         return table;
     }
@@ -120,23 +132,23 @@ public class GenericCrudController {
     private Map<String, Object> sanitizeColumns(String table, Map<String, Object> body) {
         Set<String> allowed = COLUMNS.get(table);
         if (allowed == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no columns known for table " + table);
+            throw logAndThrow(HttpStatus.BAD_REQUEST, table, "sanitizeColumns", "no columns known for table " + table);
         }
 
         Map<String, Object> sanitized = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             String column = entry.getKey();
             if (!COLUMN_PATTERN.matcher(column).matches()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + column);
+                throw logAndThrow(HttpStatus.BAD_REQUEST, table, "sanitizeColumns", "invalid column: " + column);
             }
             if (!allowed.contains(column)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "column not allowed: " + column);
+                throw logAndThrow(HttpStatus.BAD_REQUEST, table, "sanitizeColumns", "column not allowed: " + column);
             }
             sanitized.put(column, entry.getValue());
         }
 
         if (sanitized.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+            throw logAndThrow(HttpStatus.BAD_REQUEST, table, "sanitizeColumns", "empty body");
         }
         return sanitized;
     }
@@ -175,12 +187,12 @@ public class GenericCrudController {
     public Map<String, Object> row(@PathVariable String name, @PathVariable String id) {
         String table = normalizeTable(name);
         String pk = PKS.get(table);
-        if (pk == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no PK known for table " + table);
+        if (pk == null) throw logAndThrow(HttpStatus.BAD_REQUEST, table, "row", "no PK known for table " + table);
 
         String sql = "SELECT * FROM " + table + " WHERE " + pk + " = :id";
         var params = new MapSqlParameterSource("id", id);
         List<Map<String, Object>> rows = jdbc.queryForList(sql, params);
-        if (rows.isEmpty()) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "not found");
+        if (rows.isEmpty()) throw logAndThrow(HttpStatus.NOT_FOUND, table, "row", "not found");
         return rows.get(0);
     }
 
@@ -199,7 +211,7 @@ public class GenericCrudController {
     @ResponseStatus(HttpStatus.CREATED)
     public void insert(@PathVariable String name, @RequestBody Map<String, Object> body) {
         String table = normalizeTable(name);
-        if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        if (body.isEmpty()) throw logAndThrow(HttpStatus.BAD_REQUEST, table, "insert", "empty body");
 
         Map<String, Object> sanitized = convertTemporalValues(table, sanitizeColumns(table, body));
 
@@ -237,22 +249,22 @@ public class GenericCrudController {
     public void update(@PathVariable String name, @PathVariable String id, @RequestBody Map<String, Object> body) {
         String table = normalizeTable(name);
         String pk = PKS.get(table);
-        if (pk == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no PK known for table " + table);
+        if (pk == null) throw logAndThrow(HttpStatus.BAD_REQUEST, table, "update", "no PK known for table " + table);
 
-        if (body.isEmpty()) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        if (body.isEmpty()) throw logAndThrow(HttpStatus.BAD_REQUEST, table, "update", "empty body");
 
         Map<String, Object> sanitized = new LinkedHashMap<>(convertTemporalValues(table, sanitizeColumns(table, body)));
 
         Object removedPkValue = sanitized.remove(pk);
         if (removedPkValue != null) {
             if (sanitized.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no updatable columns provided");
+                throw logAndThrow(HttpStatus.BAD_REQUEST, table, "update", "no updatable columns provided");
             }
             log.debug("Ignoring primary key column {} in update for table {}", pk, table);
         }
 
         if (sanitized.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no updatable columns provided");
+            throw logAndThrow(HttpStatus.BAD_REQUEST, table, "update", "no updatable columns provided");
         }
 
         var setClauses = new ArrayList<String>();
@@ -264,7 +276,7 @@ public class GenericCrudController {
 
         int count = jdbc.update(sql, params);
         if (count == 0)
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no record updated");
+            throw logAndThrow(HttpStatus.NOT_FOUND, table, "update", "no record updated");
 
         log.info("Updated {} {} with fields {}", table, id, sanitized.keySet());
     }
@@ -284,13 +296,13 @@ public class GenericCrudController {
     public void delete(@PathVariable String name, @PathVariable String id) {
         String table = normalizeTable(name);
         String pk = PKS.get(table);
-        if (pk == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "no PK known for table " + table);
+        if (pk == null) throw logAndThrow(HttpStatus.BAD_REQUEST, table, "delete", "no PK known for table " + table);
 
         String sql = "DELETE FROM " + table + " WHERE " + pk + " = :id";
         int count = jdbc.update(sql, new MapSqlParameterSource("id", id));
         if (count == 0) {
             log.warn("Attempted to delete {} {} but no record was found", table, id);
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no record deleted");
+            throw logAndThrow(HttpStatus.NOT_FOUND, table, "delete", "no record deleted");
         }
 
         log.info("Deleted {} {} with fields {}", table, id, Collections.singleton(pk));
@@ -315,10 +327,11 @@ public class GenericCrudController {
                 try {
                     converted.put(column, LocalDate.parse(s));
                 } catch (DateTimeParseException ex) {
-                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid date for " + column + ": " + s);
+                    throw logAndThrow(HttpStatus.BAD_REQUEST, table, "convertTemporalValues", "invalid date for " + column,
+                            "invalid date for " + column);
                 }
             } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid date type for " + column);
+                throw logAndThrow(HttpStatus.BAD_REQUEST, table, "convertTemporalValues", "invalid date type for " + column);
             }
         }
         return converted;
