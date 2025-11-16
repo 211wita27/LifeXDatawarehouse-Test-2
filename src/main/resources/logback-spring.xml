@@ -18,28 +18,27 @@
         </encoder>
     </appender>
 
-    <logger name="at.htlle.freq.application" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT"/>
+    <logger name="at.htlle.freq.application" level="WARN" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="at.htlle.freq.infrastructure" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT"/>
+    <logger name="at.htlle.freq.infrastructure" level="WARN" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="at.htlle.freq.web" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT"/>
+    <logger name="at.htlle.freq.web" level="WARN" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <logger name="at.htlle.freq.domain" level="INFO" additivity="false">
-        <appender-ref ref="AUDIT"/>
+    <logger name="at.htlle.freq.domain" level="WARN" additivity="false">
         <appender-ref ref="CONSOLE"/>
     </logger>
 
-    <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
+    <logger name="at.htlle.freq.audit" level="INFO" additivity="false">
         <appender-ref ref="AUDIT"/>
+    </logger>
+
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
     </root>
 </configuration>
