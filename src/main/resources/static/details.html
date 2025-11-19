@@ -1386,8 +1386,9 @@
             { prop: 'rejectedDate', wrapper: rejectedField, input: rejectedField?.querySelector('input[name="rejectedDate"]') }
         ];
 
-        const updateVisibility = (statusValue) => {
-            const allowed = new Set(getSoftwareStatusDateProps(statusValue));
+        const updateVisibility = (rawStatus) => {
+            const normalizedStatus = normalizeSoftwareStatus(rawStatus ?? statusSelect.value);
+            const allowed = new Set(getSoftwareStatusDateProps(normalizedStatus));
             fieldMap.forEach(({ prop, wrapper, input }) => {
                 if(!wrapper) return;
                 const shouldShow = allowed.has(prop);
@@ -1399,8 +1400,12 @@
             });
         };
 
-        statusSelect.addEventListener('change', (event) => {
+        const handleStatusChange = (event) => {
             updateVisibility(event?.target?.value);
+        };
+
+        ['change','input'].forEach(eventName => {
+            statusSelect.addEventListener(eventName, handleStatusChange);
         });
 
         updateVisibility(statusSelect.value);
