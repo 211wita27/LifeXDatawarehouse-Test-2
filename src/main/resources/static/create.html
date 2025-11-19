@@ -119,6 +119,66 @@
         {idSuffix:'rejected',label:'Rejected on',prop:'rejectedDate'}
     ];
 
+    const SOFTWARE_STATUS_DATE_VISIBILITY={
+        offered:['offeredDate'],
+        installed:['offeredDate','installedDate'],
+        rejected:['offeredDate','rejectedDate']
+    };
+
+    const normalizeSoftwareStatus=value=>(value??'').toString().trim().toLowerCase();
+
+    const getVisibleSoftwareDateProps=statusValue=>{
+        const normalized=normalizeSoftwareStatus(statusValue);
+        return SOFTWARE_STATUS_DATE_VISIBILITY[normalized]||[];
+    };
+
+    const queryEntryField=(entry,fieldId)=>{
+        if(!entry||!fieldId) return null;
+        if(entry.isConnected){
+            return document.getElementById(fieldId);
+        }
+        if(typeof CSS!=='undefined'&&typeof CSS.escape==='function'){
+            return entry.querySelector(`#${CSS.escape(fieldId)}`);
+        }
+        return entry.querySelector(`[id="${fieldId.replace(/"/g,'\\"')}"]`);
+    };
+
+    function updateSoftwareEntryDateVisibility(entry,statusValue){
+        if(!entry) return;
+        const allowedProps=new Set(getVisibleSoftwareDateProps(statusValue));
+        SOFTWARE_DATE_FIELDS.forEach(field=>{
+            const fieldId=entry.dataset?.[`${field.prop}Field`];
+            if(!fieldId) return;
+            const input=queryEntryField(entry,fieldId);
+            if(!input) return;
+            const wrapper=input.closest?.('.software-entry__field')||input.parentElement;
+            if(!wrapper) return;
+            const shouldShow=allowedProps.has(field.prop);
+            wrapper.hidden=!shouldShow;
+            wrapper.classList.toggle('hidden',!shouldShow);
+            if(!shouldShow){
+                input.value='';
+            }
+        });
+    }
+
+    function wireSoftwareEntryStatus(entry){
+        if(!entry||entry.dataset.statusVisibilityBound==='true') return;
+        const statusFieldId=entry.dataset?.statusField;
+        if(!statusFieldId) return;
+        const statusInput=queryEntryField(entry,statusFieldId);
+        if(!statusInput) return;
+        const handler=event=>{
+            const value=(event&&event.detail&&event.detail.value)!==undefined?event.detail.value:(event?.target?.value??statusInput.value);
+            updateSoftwareEntryDateVisibility(entry,value);
+        };
+        ['value-changed','change'].forEach(eventName=>{
+            statusInput.addEventListener(eventName,handler);
+        });
+        entry.dataset.statusVisibilityBound='true';
+        updateSoftwareEntryDateVisibility(entry,statusInput.value);
+    }
+
     function updateCreateHeading(entityKey){
         const heading=document.getElementById('createHeading');
         if(!heading) return;
@@ -690,6 +750,7 @@
                 <button type="button" class="software-entry__remove">Remove software</button>
             </div>
         `;
+        wireSoftwareEntryStatus(entry);
         return entry;
     }
 
@@ -712,6 +773,7 @@
                 });
                 addButton.dataset.bound='true';
             }
+            (items?.querySelectorAll('.software-entry')||[]).forEach(entry=>wireSoftwareEntryStatus(entry));
             container.addEventListener('click',event=>{
                 const removeBtn=event.target.closest('.software-entry__remove');
                 if(!removeBtn) return;

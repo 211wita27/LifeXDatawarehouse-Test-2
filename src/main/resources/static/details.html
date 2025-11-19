@@ -123,10 +123,25 @@
         REJECTED: { label: 'Rejected', tone: 'rejected' }
     };
 
+    const SOFTWARE_STATUS_DATE_VISIBILITY = {
+        OFFERED: ['offeredDate'],
+        INSTALLED: ['offeredDate', 'installedDate'],
+        REJECTED: ['offeredDate', 'rejectedDate']
+    };
+
     const ALLOWED_AUDIO_DEVICE_TYPES = new Set(['HEADSET','SPEAKER','MIC']);
 
     function normalizeLifecycleStatus(value){
         return (value ?? '').toString().trim().toUpperCase();
+    }
+
+    function normalizeSoftwareStatus(value){
+        return (value ?? '').toString().trim().toUpperCase();
+    }
+
+    function getSoftwareStatusDateProps(value){
+        const normalized = normalizeSoftwareStatus(value);
+        return SOFTWARE_STATUS_DATE_VISIBILITY[normalized] || [];
     }
 
     function renderLifecycleStatusBadge(value){
@@ -140,7 +155,7 @@
     }
 
     function normalizeInstallStatus(value){
-        return (value ?? '').toString().trim().toUpperCase();
+        return normalizeSoftwareStatus(value);
     }
 
     function renderInstallStatusBadge(value, displayLabel){
@@ -1333,6 +1348,34 @@
         }
     }
 
+    function applyAssignmentDateVisibility({row,statusSelect,offeredField,installedField,rejectedField} = {}){
+        if(!row || !statusSelect) return;
+        const fieldMap = [
+            { prop: 'offeredDate', wrapper: offeredField, input: offeredField?.querySelector('input[name="offeredDate"]') },
+            { prop: 'installedDate', wrapper: installedField, input: installedField?.querySelector('input[name="installedDate"]') },
+            { prop: 'rejectedDate', wrapper: rejectedField, input: rejectedField?.querySelector('input[name="rejectedDate"]') }
+        ];
+
+        const updateVisibility = (statusValue) => {
+            const allowed = new Set(getSoftwareStatusDateProps(statusValue));
+            fieldMap.forEach(({ prop, wrapper, input }) => {
+                if(!wrapper) return;
+                const shouldShow = allowed.has(prop);
+                wrapper.hidden = !shouldShow;
+                wrapper.classList.toggle('hidden', !shouldShow);
+                if(!shouldShow && input){
+                    input.value = '';
+                }
+            });
+        };
+
+        statusSelect.addEventListener('change', (event) => {
+            updateVisibility(event?.target?.value);
+        });
+
+        updateVisibility(statusSelect.value);
+    }
+
     function createSoftwareAssignmentRow(entry = {}){
         const normalized = normalizeAssignmentEntry(entry) || {};
         const row = document.createElement('div');
@@ -1476,6 +1519,14 @@
         row.appendChild(rejectedField);
         row.appendChild(actions);
         row.appendChild(error);
+
+        applyAssignmentDateVisibility({
+            row,
+            statusSelect,
+            offeredField,
+            installedField,
+            rejectedField
+        });
 
         return row;
     }
