@@ -47,6 +47,9 @@
         .software-overview__name:hover,.software-overview__name:focus{text-decoration:underline}
         .software-overview__version{color:#4b5563;font-size:.9rem}
         .software-overview__status-text{font-weight:600;color:#374151}
+        .software-overview__dates{display:flex;flex-wrap:wrap;gap:.75rem;margin:.2rem 0 0 0;color:#4b5563;font-size:.9rem;line-height:1.35}
+        .software-overview__dates-item{display:flex;align-items:center;gap:.3rem}
+        .software-overview__dates-label{font-weight:600;color:#1f2937}
         .software-overview__meta{margin:.75rem 0 0 0;padding:0;list-style:none;display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;font-size:.9rem;color:#4b5563}
         .software-overview__meta li{display:flex;align-items:center;gap:.35rem}
         .software-overview__meta-label{font-weight:600;color:#1f2937;position:relative}
@@ -1012,6 +1015,7 @@
             statusSince: val(item,'StatusSince','statusSince','StatusDate','statusDate','StatusChangedAt','statusChangedAt','StatusUpdatedAt','statusUpdatedAt'),
             installedAt: val(item,'InstalledAt','installedAt','InstalledOn','installedOn'),
             offeredAt: val(item,'OfferedAt','offeredAt','OfferedOn','offeredOn'),
+            rejectedDate: val(item,'RejectedDate','rejectedDate','RejectedAt','rejectedAt'),
             plannedStart: val(item,'PlannedWindowStart','plannedWindowStart','NextWindowStart','nextWindowStart','PlannedStart','plannedStart','WindowStart','windowStart'),
             plannedEnd: val(item,'PlannedWindowEnd','plannedWindowEnd','NextWindowEnd','nextWindowEnd','PlannedEnd','plannedEnd','WindowEnd','windowEnd'),
             createdAt: val(item,'CreatedAt','createdAt'),
@@ -1192,6 +1196,32 @@
         appendStatusBadgeElement(header, entry);
 
         item.appendChild(header);
+
+        const dateLine = document.createElement('div');
+        dateLine.className = 'software-overview__dates';
+
+        const addDateEntry = (label, value) => {
+            const formatted = formatDateLabel(value);
+            if(!formatted) return;
+            const span = document.createElement('span');
+            span.className = 'software-overview__dates-item';
+            const labelEl = document.createElement('span');
+            labelEl.className = 'software-overview__dates-label';
+            labelEl.textContent = label;
+            const valueEl = document.createElement('span');
+            valueEl.textContent = formatted;
+            span.append(labelEl, valueEl);
+            dateLine.appendChild(span);
+        };
+
+        addDateEntry('Offered', entry.offeredAt);
+        addDateEntry('Installed', entry.installedAt);
+        addDateEntry('Rejected', entry.rejectedDate);
+        addDateEntry('Status since', entry.statusSince);
+
+        if(dateLine.childNodes.length){
+            item.appendChild(dateLine);
+        }
 
         const meta = document.createElement('ul');
         meta.className = 'software-overview__meta';
