@@ -195,6 +195,7 @@ class SiteControllerTest {
                 "Installed",
                 "2024-01-01",
                 "2024-02-02",
+                null,
                 null
         ));
         when(installedSoftwareService.getSiteSoftwareOverview(siteId)).thenReturn(entries);
