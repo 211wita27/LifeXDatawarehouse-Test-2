@@ -8,7 +8,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.mockito.InOrder;
+import org.mockito.ArgumentCaptor;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -68,6 +70,22 @@ class ProjectServiceTest {
         Project saved = service.createOrUpdateProject(value);
         assertSame(value, saved);
         verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()));
+    }
+
+    @Test
+    void createProjectSetsCreationDateWhenMissing() {
+        Project value = project();
+        value.setCreateDateTime("   ");
+        when(repo.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        String today = LocalDate.now().toString();
+
+        Project saved = service.createOrUpdateProject(value);
+        assertEquals(today, saved.getCreateDateTime());
+
+        ArgumentCaptor<Project> captor = ArgumentCaptor.forClass(Project.class);
+        verify(repo).save(captor.capture());
+        assertEquals(today, captor.getValue().getCreateDateTime());
     }
 
     @Test

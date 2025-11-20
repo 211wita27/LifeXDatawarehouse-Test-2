@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.LocalDate;
 import java.util.*;
 
 /**
@@ -85,9 +86,8 @@ public class ProjectService {
             throw new IllegalArgumentException("ProjectName is required");
         if (isBlank(incoming.getProjectSAPID()))
             throw new IllegalArgumentException("ProjectSAPID is required");
-        if (incoming.getLifecycleStatus() == null) {
-            incoming.setLifecycleStatus(ProjectLifecycleStatus.ACTIVE);
-        }
+        if (incoming.getLifecycleStatus() == null) incoming.setLifecycleStatus(ProjectLifecycleStatus.ACTIVE);
+        if (isBlank(incoming.getCreateDateTime())) incoming.setCreateDateTime(LocalDate.now().toString());
 
         validateRequiredIdentifiers(incoming);
 
