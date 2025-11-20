@@ -19,7 +19,6 @@ import at.htlle.freq.domain.UpgradePlanRepository;
 import org.apache.camel.CamelContext;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.Route;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.seda.SedaEndpoint;
 import org.apache.camel.model.ProcessorDefinition;
@@ -85,12 +84,7 @@ class UnifiedIndexingRoutesTest extends CamelTestSupport {
     @BeforeEach
     void adviseTimerRoutes() throws Exception {
         for (String routeId : timerRouteIds) {
-            adviceWith(context, routeId, new AdviceWithRouteBuilder() {
-                @Override
-                public void configure() {
-                    replaceFromWith("direct:" + routeId + "-trigger");
-                }
-            });
+            adviceWith(context, routeId, advice -> advice.replaceFromWith("direct:" + routeId + "-trigger"));
         }
         context.start();
     }
