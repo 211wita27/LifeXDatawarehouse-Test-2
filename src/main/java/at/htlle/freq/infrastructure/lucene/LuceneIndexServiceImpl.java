@@ -476,7 +476,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         item.getStatus(),
                         item.getOfferedDate(),
                         item.getInstalledDate(),
-                        item.getRejectedDate()
+                        item.getRejectedDate(),
+                        item.getOutdatedDate()
                 );
             }
             for (PhoneIntegration integration : phoneIntegrations) {
