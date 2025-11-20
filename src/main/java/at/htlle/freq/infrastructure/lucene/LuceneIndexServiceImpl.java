@@ -844,7 +844,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     public void indexInstalledSoftware(String installedSoftwareId, String siteId, String softwareId, String status,
-                                       String offeredDate, String installedDate, String rejectedDate) {
+                                       String offeredDate, String installedDate, String rejectedDate, String outdatedDate) {
         InstalledSoftwareStatus resolved;
         try {
             resolved = InstalledSoftwareStatus.from(status);
@@ -858,13 +858,15 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         String offeredSafe = safe(offeredDate);
         String installedSafe = safe(installedDate);
         String rejectedSafe = safe(rejectedDate);
+        String outdatedSafe = safe(outdatedDate);
         String offeredToken = tokenWithPrefix("offered", offeredSafe);
         String installedToken = tokenWithPrefix("installed", installedSafe);
         String rejectedToken = tokenWithPrefix("rejected", rejectedSafe);
+        String outdatedToken = tokenWithPrefix("outdated", outdatedSafe);
         indexDocument(installedSoftwareId, TYPE_INSTALLED_SOFTWARE,
                 statusValue, statusLabel, statusToken,
-                offeredSafe, installedSafe, rejectedSafe,
-                offeredToken, installedToken, rejectedToken,
+                offeredSafe, installedSafe, rejectedSafe, outdatedSafe,
+                offeredToken, installedToken, rejectedToken, outdatedToken,
                 siteId, softwareId);
     }
 
