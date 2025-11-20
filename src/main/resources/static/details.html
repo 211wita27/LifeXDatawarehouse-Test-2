@@ -1226,9 +1226,8 @@
         const meta = document.createElement('ul');
         meta.className = 'software-overview__meta';
 
-        appendMeta(meta, 'Status since', formatDateLabel(entry.statusSince));
-        appendMeta(meta, 'Installed', formatDateLabel(entry.installedAt));
-        appendMeta(meta, 'Offered', formatDateLabel(entry.offeredAt));
+        // Dates are shown in the dedicated date line above; avoid duplicating them here
+        // and rely on the per-date rendering to only display existing values (including rejected).
         appendMeta(meta, 'Planned window', formatDateRange(entry.plannedStart, entry.plannedEnd));
         appendMeta(meta, 'Support window', formatDateRange(entry.supportStart, entry.supportEnd));
 
