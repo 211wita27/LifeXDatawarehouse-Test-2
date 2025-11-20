@@ -1400,8 +1400,8 @@
             });
         };
 
-        const handleStatusChange = (event) => {
-            updateVisibility(event?.target?.value);
+        const handleStatusChange = () => {
+            updateVisibility(statusSelect.value);
         };
 
         ['change','input'].forEach(eventName => {
@@ -1488,14 +1488,14 @@
         statusSelect.innerHTML = '<option value="">Select status…</option>';
         Object.entries(INSTALL_STATUS_DISPLAY).forEach(([key, meta]) => {
             const opt = document.createElement('option');
-            opt.value = meta.label;
+            opt.value = key;
             opt.textContent = meta.label;
             statusSelect.appendChild(opt);
         });
         const normalizedStatus = normalizeInstallStatus(normalized.status);
         const match = INSTALL_STATUS_DISPLAY[normalizedStatus];
         if(match){
-            statusSelect.value = match.label;
+            statusSelect.value = normalizedStatus;
         }
         statusField.appendChild(statusLabel);
         statusField.appendChild(statusSelect);
