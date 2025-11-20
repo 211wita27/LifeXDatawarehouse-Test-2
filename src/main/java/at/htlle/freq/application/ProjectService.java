@@ -82,6 +82,8 @@ public class ProjectService {
     public Project createOrUpdateProject(Project incoming) {
         Objects.requireNonNull(incoming, "project payload must not be null");
 
+        trimIdentifiers(incoming);
+
         if (isBlank(incoming.getProjectName()))
             throw new IllegalArgumentException("ProjectName is required");
         if (isBlank(incoming.getProjectSAPID()))
@@ -90,6 +92,7 @@ public class ProjectService {
         if (isBlank(incoming.getCreateDateTime())) incoming.setCreateDateTime(LocalDate.now().toString());
 
         validateRequiredIdentifiers(incoming);
+        ensureUniqueSapId(incoming);
 
         Project saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
@@ -122,7 +125,9 @@ public class ProjectService {
             existing.setAccountID(patch.getAccountID() != null ? patch.getAccountID() : existing.getAccountID());
             existing.setAddressID(patch.getAddressID() != null ? patch.getAddressID() : existing.getAddressID());
 
+            trimIdentifiers(existing);
             validateRequiredIdentifiers(existing);
+            ensureUniqueSapId(existing);
 
             Project saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
@@ -171,6 +176,29 @@ public class ProjectService {
         }
         if (project.getAddressID() == null) {
             throw new IllegalArgumentException("AddressID is required");
+        }
+    }
+
+    private void ensureUniqueSapId(Project project) {
+        repo.findBySapId(project.getProjectSAPID()).ifPresent(existing -> {
+            if (project.getProjectID() == null || !project.getProjectID().equals(existing.getProjectID())) {
+                throw new IllegalArgumentException("ProjectSAPID already exists: " + project.getProjectSAPID());
+            }
+        });
+    }
+
+    private void trimIdentifiers(Project project) {
+        if (project.getProjectSAPID() != null) {
+            project.setProjectSAPID(project.getProjectSAPID().trim());
+        }
+        if (project.getProjectName() != null) {
+            project.setProjectName(project.getProjectName().trim());
+        }
+        if (project.getBundleType() != null) {
+            project.setBundleType(project.getBundleType().trim());
+        }
+        if (project.getCreateDateTime() != null) {
+            project.setCreateDateTime(project.getCreateDateTime().trim());
         }
     }
 

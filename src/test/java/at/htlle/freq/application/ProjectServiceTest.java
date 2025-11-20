@@ -35,6 +35,7 @@ class ProjectServiceTest {
         repo = mock(ProjectRepository.class);
         lucene = mock(LuceneIndexService.class);
         service = new ProjectService(repo, lucene);
+        when(repo.findBySapId(anyString())).thenReturn(Optional.empty());
     }
 
     @Test
@@ -89,6 +90,17 @@ class ProjectServiceTest {
     }
 
     @Test
+    void createProjectRejectsDuplicateSapId() {
+        Project value = project();
+        value.setProjectID(null);
+        when(repo.findBySapId("SAP-1")).thenReturn(Optional.of(project()));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateProject(value));
+        assertTrue(ex.getMessage().contains("ProjectSAPID already exists"));
+        verify(repo, never()).save(any());
+    }
+
+    @Test
     void createProjectRegistersAfterCommit() {
         Project value = project();
         when(repo.save(value)).thenReturn(value);
@@ -137,6 +149,22 @@ class ProjectServiceTest {
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
         verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("RETIRED"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()));
+    }
+
+    @Test
+    void updateProjectRejectsDuplicateSapId() {
+        Project existing = project();
+        when(repo.findById(UUID3)).thenReturn(Optional.of(existing));
+
+        Project duplicate = project();
+        duplicate.setProjectID(UUID.randomUUID());
+        when(repo.findBySapId("SAP-NEW")).thenReturn(Optional.of(duplicate));
+
+        Project patch = new Project();
+        patch.setProjectSAPID("SAP-NEW");
+
+        assertThrows(IllegalArgumentException.class, () -> service.updateProject(UUID3, patch));
+        verify(repo, never()).save(any());
     }
 
     @Test
