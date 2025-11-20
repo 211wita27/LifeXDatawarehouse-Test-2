@@ -592,7 +592,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
      * Clears the entire Lucene index and commits the deletion immediately.
      * Called only from reindexAll() and mirrors the log entry "Lucene index cleared (ready for reindex)".
      */
-    private void clearIndex() throws IOException {
+    void clearIndex() throws IOException {
         withWriter(writer -> {
             writer.deleteAll();
             writer.commit();
