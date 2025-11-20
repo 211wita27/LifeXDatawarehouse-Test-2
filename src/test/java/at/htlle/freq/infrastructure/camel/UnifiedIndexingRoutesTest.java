@@ -114,7 +114,7 @@ class UnifiedIndexingRoutesTest extends CamelTestSupport {
     @Test
     void timerRoutesUseLuceneIndexQueueWithConfiguredOptions() {
         List<String> timerTargets = timerRouteIds.stream()
-                .map(id -> context.getRouteDefinition(id))
+                .map(this::getRouteDefinition)
                 .flatMap(this::collectToUris)
                 .collect(Collectors.toList());
 
@@ -134,7 +134,7 @@ class UnifiedIndexingRoutesTest extends CamelTestSupport {
         String payload = "body-from-direct";
 
         for (String routeId : directRouteIds) {
-            String directUri = camelContext.getRouteDefinition(routeId).getInput().getEndpointUri();
+            String directUri = getRouteDefinition(routeId).getInput().getEndpointUri();
             producerTemplate.sendBody(directUri, payload);
             Object received = consumer.receiveBody("seda:lucene-index", 1000);
             assertThat(received).as("Payload for route %s", routeId).isEqualTo(payload);
@@ -163,5 +163,12 @@ class UnifiedIndexingRoutesTest extends CamelTestSupport {
 
     private java.util.stream.Stream<String> collectToUris(RouteDefinition routeDefinition) {
         return collectUris(routeDefinition).stream();
+    }
+
+    private RouteDefinition getRouteDefinition(String routeId) {
+        return context.getRouteDefinitions().stream()
+                .filter(rd -> routeId.equals(rd.getId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Route definition not found for id: " + routeId));
     }
 }
