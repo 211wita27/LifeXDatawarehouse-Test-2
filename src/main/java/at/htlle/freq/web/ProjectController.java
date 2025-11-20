@@ -112,6 +112,9 @@ public class ProjectController {
             } catch (IllegalArgumentException ex) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
             }
+            if (status == null) {
+                status = ProjectLifecycleStatus.ACTIVE;
+            }
         }
 
         MapSqlParameterSource params = new MapSqlParameterSource();

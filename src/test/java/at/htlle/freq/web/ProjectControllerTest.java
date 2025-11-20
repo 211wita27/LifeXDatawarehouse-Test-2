@@ -64,6 +64,19 @@ class ProjectControllerTest {
     }
 
     @Test
+    void createTreatsBlankLifecycleStatusAsDefault() {
+        Map<String, Object> body = baseBody();
+        body.put("lifecycleStatus", "   ");
+
+        controller.create(body);
+
+        ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbc).update(anyString(), paramsCaptor.capture());
+
+        assertEquals("ACTIVE", paramsCaptor.getValue().getValue("lifecycleStatus"));
+    }
+
+    @Test
     void updateNormalizesLifecycleStatusKeys() {
         Map<String, Object> body = new HashMap<>();
         body.put("lifecycle_status", "maintenance");
