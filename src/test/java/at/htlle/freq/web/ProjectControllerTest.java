@@ -23,6 +23,7 @@ class ProjectControllerTest {
     void setUp() {
         jdbc = mock(NamedParameterJdbcTemplate.class);
         controller = new ProjectController(jdbc);
+        when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Integer.class))).thenReturn(0);
     }
 
     private Map<String, Object> baseBody() {
@@ -48,6 +49,26 @@ class ProjectControllerTest {
 
         assertTrue(sqlCaptor.getValue().contains(":lifecycleStatus"));
         assertEquals("ACTIVE", paramsCaptor.getValue().getValue("lifecycleStatus"));
+    }
+
+    @Test
+    void createRejectsDuplicateSapId() {
+        Map<String, Object> body = baseBody();
+        when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Integer.class))).thenReturn(1);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(body));
+        assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
+        verify(jdbc, never()).update(anyString(), any(MapSqlParameterSource.class));
+    }
+
+    @Test
+    void createRejectsMissingSapId() {
+        Map<String, Object> body = baseBody();
+        body.remove("projectSAPID");
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(body));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        verify(jdbc, never()).update(anyString(), any(MapSqlParameterSource.class));
     }
 
     @Test
