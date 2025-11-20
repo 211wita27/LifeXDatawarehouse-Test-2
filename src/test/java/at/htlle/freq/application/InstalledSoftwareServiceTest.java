@@ -127,12 +127,12 @@ class InstalledSoftwareServiceTest {
         InstalledSoftware value = installedSoftware();
         when(repo.save(value)).thenReturn(value);
         doThrow(new RuntimeException("Lucene error")).when(lucene)
-                .indexInstalledSoftware(any(), any(), any(), any(), any(), any(), any());
+                .indexInstalledSoftware(any(), any(), any(), any(), any(), any(), any(), any());
 
         InstalledSoftware saved = service.createOrUpdateInstalledSoftware(value);
         assertSame(value, saved);
         verify(lucene).indexInstalledSoftware(eq(UUID2.toString()), eq(UUID4.toString()), eq(UUID5.toString()),
-                eq(InstalledSoftwareStatus.OFFERED.dbValue()), eq("2024-01-10"), isNull(), isNull());
+                eq(InstalledSoftwareStatus.OFFERED.dbValue()), eq("2024-01-10"), isNull(), isNull(), isNull());
     }
 
     @Test

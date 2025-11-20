@@ -148,7 +148,7 @@ class LuceneIndexServiceImplTest {
     }
 
     @Test
-    void reindexAllPassesAllInstalledSoftwareDatesToIndexing() {
+    void reindexAllPassesAllInstalledSoftwareDatesToIndexing() throws Exception {
         InstalledSoftwareRepository repository = mock(InstalledSoftwareRepository.class);
         UUID installedId = UUID.randomUUID();
         UUID siteId = UUID.randomUUID();

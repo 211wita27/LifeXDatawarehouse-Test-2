@@ -474,11 +474,7 @@ public final class SeedDataGenerator {
                     generateId(EntityType.INSTALLED_SOFTWARE),
                     site.id(),
                     soft.id(),
-                    status.dbValue(),
-                    null,
-                    null,
-                    null,
-                    null
+                    status.dbValue()
             ));
         }
         return installs;
