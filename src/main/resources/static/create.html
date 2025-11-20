@@ -110,18 +110,21 @@
     const SOFTWARE_STATUS_OPTIONS=[
         {value:'Offered',label:'Offered'},
         {value:'Installed',label:'Installed'},
+        {value:'Outdated',label:'Outdated'},
         {value:'Rejected',label:'Rejected'}
     ];
 
     const SOFTWARE_DATE_FIELDS=[
         {idSuffix:'offered',label:'Offered on',prop:'offeredDate'},
         {idSuffix:'installed',label:'Installed on',prop:'installedDate'},
+        {idSuffix:'outdated',label:'Outdated on',prop:'outdatedDate'},
         {idSuffix:'rejected',label:'Rejected on',prop:'rejectedDate'}
     ];
 
     const SOFTWARE_STATUS_DATE_VISIBILITY={
         offered:['offeredDate'],
         installed:['offeredDate','installedDate'],
+        outdated:['offeredDate','installedDate','outdatedDate'],
         rejected:['offeredDate','rejectedDate']
     };
 
