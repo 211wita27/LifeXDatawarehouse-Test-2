@@ -25,58 +25,65 @@
         <section>
             <h2>Shortcuts</h2>
 
-            <!-- Shortcut preset 0: Accounts – complete inventory -->
-            <div class="shortcut" data-id="sc0" data-default="type:account">
-                <button class="head">
-                    <span class="rename">✏️</span>
-                    <span class="label">Accounts – Full list</span>
-                    <span class="chev">▶</span>
-                </button>
-                <div class="panel"><input></div>
+            <div id="shortcut-container">
+                <!-- Shortcut preset 0: Accounts – complete inventory -->
+                <div class="shortcut" data-id="sc0" data-default="type:account">
+                    <button class="head">
+                        <span class="rename">✏️</span>
+                        <span class="label">Accounts – Full list</span>
+                        <span class="chev">▶</span>
+                    </button>
+                    <div class="panel"><input></div>
+                </div>
+
+                <!-- Shortcut preset 1: Projects – active -->
+                <div class="shortcut" data-id="sc1"
+                     data-default='type:project AND statusactive'>
+                    <button class="head">
+                        <span class="rename">✏️</span>
+                        <span class="label">Projects – active</span>
+                        <span class="chev">▶</span>
+                    </button>
+                    <div class="panel"><input></div>
+                </div>
+
+                <!-- Shortcut preset 2: Service contracts – in progress -->
+                <div class="shortcut" data-id="sc2"
+                     data-default='type:servicecontract AND statusinprogress'>
+                    <button class="head">
+                        <span class="rename">✏️</span>
+                        <span class="label">Service contracts – in progress</span>
+                        <span class="chev">▶</span>
+                    </button>
+                    <div class="panel"><input placeholder="Lucene query (e.g. type:servicecontract AND statusinprogress)"></div>
+                </div>
+
+                <!-- Shortcut preset 3: Sites – FireZone Bravo -->
+                <div class="shortcut" data-id="sc3"
+                     data-default='type:site AND zonebravo'>
+                    <button class="head">
+                        <span class="rename">✏️</span>
+                        <span class="label">Sites – FireZone Bravo</span>
+                        <span class="chev">▶</span>
+                    </button>
+                    <div class="panel"><input></div>
+                </div>
+
+                <!-- Shortcut preset 4: Servers – Lenovo -->
+                <div class="shortcut" data-id="sc4"
+                     data-default='type:server AND Lenovo'>
+                    <button class="head">
+                        <span class="rename">✏️</span>
+                        <span class="label">Servers – Lenovo</span>
+                        <span class="chev">▶</span>
+                    </button>
+                    <div class="panel"><input placeholder="Lucene query (e.g. type:server AND Lenovo)"></div>
+                </div>
             </div>
 
-            <!-- Shortcut preset 1: Projects – active -->
-            <div class="shortcut" data-id="sc1"
-                 data-default='type:project AND statusactive'>
-                <button class="head">
-                    <span class="rename">✏️</span>
-                    <span class="label">Projects – active</span>
-                    <span class="chev">▶</span>
-                </button>
-                <div class="panel"><input></div>
-            </div>
-
-            <!-- Shortcut preset 2: Service contracts – in progress -->
-            <div class="shortcut" data-id="sc2"
-                 data-default='type:servicecontract AND statusinprogress'>
-                <button class="head">
-                    <span class="rename">✏️</span>
-                    <span class="label">Service contracts – in progress</span>
-                    <span class="chev">▶</span>
-                </button>
-                <div class="panel"><input placeholder="Lucene query (e.g. type:servicecontract AND statusinprogress)"></div>
-            </div>
-
-            <!-- Shortcut preset 3: Sites – FireZone Bravo -->
-            <div class="shortcut" data-id="sc3"
-                 data-default='type:site AND zonebravo'>
-                <button class="head">
-                    <span class="rename">✏️</span>
-                    <span class="label">Sites – FireZone Bravo</span>
-                    <span class="chev">▶</span>
-                </button>
-                <div class="panel"><input></div>
-            </div>
-
-            <!-- Shortcut preset 4: Servers – Lenovo -->
-            <div class="shortcut" data-id="sc4"
-                 data-default='type:server AND Lenovo'>
-                <button class="head">
-                    <span class="rename">✏️</span>
-                    <span class="label">Servers – Lenovo</span>
-                    <span class="chev">▶</span>
-                </button>
-                <div class="panel"><input placeholder="Lucene query (e.g. type:server AND Lenovo)"></div>
+            <div class="shortcut-actions" aria-label="Shortcut controls">
+                <button id="shortcut-remove" type="button" aria-label="Remove shortcut">−</button>
+                <button id="shortcut-add" type="button" aria-label="Add shortcut">+</button>
             </div>
         </section>
 
