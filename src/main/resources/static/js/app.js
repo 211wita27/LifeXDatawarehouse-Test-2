@@ -20,6 +20,9 @@ const idxText = document.getElementById('idx-text');
 const idxBtnSide = document.getElementById('idx-reindex-side');
 
 const sugList = document.getElementById('sug');
+const advancedHelpToggle = document.getElementById('advanced-help-toggle');
+const advancedHelpPanel = document.getElementById('advanced-help');
+const advancedHelpStatus = document.getElementById('advanced-help-status');
 
 const SEARCH_SCOPE_OPTIONS = {
     all: { key: 'all', label: 'All', type: null },
@@ -98,6 +101,23 @@ function highlightMatches(text, terms){
     return result;
 }
 function setBusy(el, busy){ if(!el) return; busy ? el.setAttribute('aria-busy','true') : el.removeAttribute('aria-busy'); }
+
+function setAdvancedHelpExpanded(expanded) {
+    if (!advancedHelpPanel || !advancedHelpToggle) return;
+    const isOpen = !!expanded;
+    advancedHelpPanel.hidden = !isOpen;
+    advancedHelpToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    if (advancedHelpStatus) {
+        advancedHelpStatus.textContent = isOpen
+            ? 'Advanced search tips expanded'
+            : 'Advanced search tips collapsed';
+    }
+}
+
+function toggleAdvancedHelp() {
+    if (!advancedHelpPanel || !advancedHelpToggle) return;
+    setAdvancedHelpExpanded(advancedHelpPanel.hidden);
+}
 
 const shortcutCache = new Map();
 
@@ -876,6 +896,20 @@ function wireEvents() {
 
     // Reindex (right button)
     if (idxBtnSide) idxBtnSide.onclick = () => startReindex(idxBtnSide);
+
+    if (advancedHelpToggle && advancedHelpPanel) {
+        setAdvancedHelpExpanded(false);
+        const handleToggle = () => toggleAdvancedHelp();
+        advancedHelpToggle.addEventListener('click', handleToggle);
+        advancedHelpPanel.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                setAdvancedHelpExpanded(false);
+                if (typeof advancedHelpToggle.focus === 'function') {
+                    advancedHelpToggle.focus();
+                }
+            }
+        });
+    }
 
     // Poll progress regularly
     setInterval(pollProgress, 50);

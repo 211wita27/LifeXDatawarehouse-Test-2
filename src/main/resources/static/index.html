@@ -137,6 +137,18 @@
         <p>Use a leading asterisk for “contains” matches, e.g., <code>*box</code> finds anything ending with “box.”</p>
         <p>After selecting a table, searches stay within that scope (blue banner). Click the banner to search everywhere again.</p>
 
+        <button id="advanced-help-toggle" class="info-badge" type="button" aria-expanded="false" aria-controls="advanced-help">ℹ️ Advanced search examples</button>
+        <div id="advanced-help-status" class="visually-hidden" aria-live="polite"></div>
+        <div id="advanced-help" class="advanced-help" hidden>
+            <h3>Advanced syntax</h3>
+            <ul>
+                <li><strong>Phrase query:</strong> <code>"incident report"</code> keeps words together.</li>
+                <li><strong>Field scope:</strong> <code>city:berlin AND type:site</code> limits matches to a field.</li>
+                <li><strong>Wildcard:</strong> <code>serv?r*</code> matches server, serverless, etc.</li>
+                <li><strong>Boolean mix:</strong> <code>(type:server OR type:site) AND status:active</code>.</li>
+            </ul>
+        </div>
+
         <hr>
         <h3>Index management</h3>
         <button id="idx-reindex-side" class="btn-primary">Reindex</button>
