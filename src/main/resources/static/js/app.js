@@ -435,6 +435,12 @@ function looksLikeLucene(q){
 function buildUserQuery(raw){
     const s = (raw || '').trim();
     if (!s) return s;
+    const isInfixMode = s.startsWith('*');
+    if (isInfixMode) {
+        const tokens = s.replace(/^\*+/, '').split(/\s+/).filter(Boolean);
+        if (!tokens.length) return s;
+        return tokens.map(tok => `*${tok.replace(/^[*]+|[*]+$/g, '')}*`).join(' ');
+    }
     if (looksLikeLucene(s)) return s;
     return s.split(/\s+/).map(tok => /[*?]$/.test(tok) ? tok : (tok + '*')).join(' ');
 }
