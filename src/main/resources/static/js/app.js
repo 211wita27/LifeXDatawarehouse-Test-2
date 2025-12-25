@@ -60,14 +60,28 @@ const debounce = (fn, ms=250) => { let t; return (...a)=>{clearTimeout(t); t=set
 const stGet = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch { return d; } };
 const stSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 function escapeHtml(s){ return (s??'').replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-function highlightMatches(text, term){
+function getHighlightTerms(raw){
+    if (raw === undefined || raw === null) return [];
+    const tokens = Array.isArray(raw)
+        ? raw
+        : String(raw).split(/\s+/);
+    return tokens
+        .map(tok => String(tok ?? '').trim())
+        .map(tok => tok.replace(/^[*]+|[*]+$/g, ''))
+        .filter(Boolean);
+}
+
+function highlightMatches(text, terms){
     const source = text ?? '';
-    const query = (term ?? '').trim();
-    if (!query){
+    const normalizedTerms = getHighlightTerms(terms);
+    if (!normalizedTerms.length){
         return escapeHtml(source);
     }
     const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const pattern = escapeRegExp(query);
+    const pattern = normalizedTerms
+        .map(tok => escapeRegExp(tok))
+        .filter(Boolean)
+        .join('|');
     if (!pattern){
         return escapeHtml(source);
     }
@@ -1027,7 +1041,7 @@ function setupShortcuts() {
 /* ===================== Search ===================== */
 function runSearch(raw, options = {}) {
     const text = (raw ?? '').toString();
-    const highlightTerm = text.trim();
+    const highlightTerms = getHighlightTerms(text);
     if (options.updateInput !== false && searchInput) {
         searchInput.value = text;
     }
@@ -1041,7 +1055,7 @@ function runSearch(raw, options = {}) {
     if (!options.skipUrlUpdate) {
         updateUrlState(text);
     }
-    runLucene(prepared, scopeOption, highlightTerm);
+    runLucene(prepared, scopeOption, highlightTerms);
 }
 
 function shortUuid(value) {
@@ -1095,7 +1109,7 @@ function filterHitsByScope(hits, scopeKey) {
     return hits.filter(hit => resolveScopeKey(hit?.type) === canonicalScope);
 }
 
-async function runLucene(q, scopeOption, highlightTerm) {
+async function runLucene(q, scopeOption, highlightTerms) {
     const query = (q ?? '').trim();
     if (!query) {
         resultArea.textContent = '(no matches)';
@@ -1124,14 +1138,14 @@ async function runLucene(q, scopeOption, highlightTerm) {
 
         const rows = filteredHits.map((h, i) => {
             const snippet = (h.snippet ?? '').trim();
-            const snippetHtml = snippet ? `<div class="hit-snippet"><small>${highlightMatches(snippet, highlightTerm)}</small></div>` : '';
+            const snippetHtml = snippet ? `<div class="hit-snippet"><small>${highlightMatches(snippet, highlightTerms)}</small></div>` : '';
             const typeArg = JSON.stringify(h.type ?? '');
             const idArg = JSON.stringify(h.id ?? '');
             const idDisplay = renderIdDisplay(h.id);
             return `
       <tr onclick='toDetails(${typeArg},${idArg})' style="cursor:pointer">
         <td>${renderTypeCell(h.type)}</td>
-        <td><div class="hit-text">${highlightMatches(h.text ?? '', highlightTerm)}</div></td>
+        <td><div class="hit-text">${highlightMatches(h.text ?? '', highlightTerms)}</div></td>
         <td>${snippetHtml}<div id="info-${i}" class="hit-info"></div></td>
         <td title="${escapeHtml(idDisplay.title)}">${idDisplay.inner}</td>
       </tr>`;
