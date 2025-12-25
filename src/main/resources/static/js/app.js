@@ -1035,15 +1035,46 @@ function renderIdChip(value, displayOverride) {
     return `<span class="id-chip">${escapeHtml(text)}</span>`;
 }
 
-function renderIdDisplay(value) {
+function renderIdDisplay(value, displayOverride) {
     const fallback = (value === null || value === undefined) ? '' : String(value);
-    const display = shortUuid(value);
+    const display = displayOverride ?? shortUuid(value);
     const chip = renderIdChip(value, display);
     if (chip) {
         return { inner: chip, title: fallback };
     }
     const safeText = escapeHtml(display || fallback);
     return { inner: safeText, title: fallback };
+}
+
+function resolveForeignKeyDisplay(row, columnKey) {
+    if (!row || typeof row !== 'object') return null;
+
+    const explicitMap = {
+        SiteID: 'SiteName',
+        SoftwareID: 'SoftwareName',
+        ClientID: 'ClientName',
+        AssignedClientID: 'AssignedClientName',
+        AccountID: 'AccountName',
+        ProjectID: 'ProjectName',
+        DeploymentVariantID: 'VariantName',
+    };
+
+    const directAlias = explicitMap[columnKey];
+    if (directAlias && row[directAlias]) return row[directAlias];
+
+    const baseMatch = (columnKey || '').match(/^(.*?)(?:Id|ID|Guid|GUID)$/);
+    const base = baseMatch ? baseMatch[1] : '';
+    const candidateKeys = [
+        `${base}Name`,
+        `${base}Label`,
+        `${base}DisplayName`,
+    ].filter(Boolean);
+
+    for (const key of candidateKeys) {
+        if (row[key]) return row[key];
+    }
+
+    return null;
 }
 
 function renderTypeCell(typeValue) {
@@ -1242,7 +1273,7 @@ async function renderSiteTableWithSummary(rows, baseColumns, tableTypeInfo, tabl
 
         const hdr = allColumns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
         const body = formattedRows
-            .map(r => `<tr>${allColumns.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`)
+            .map(r => `<tr>${allColumns.map(c => renderTableCell(name, c, r[c], r)).join('')}</tr>`)
             .join('');
 
         const safeName = escapeHtml(name);
@@ -1268,7 +1299,7 @@ async function renderSiteTableWithSummary(rows, baseColumns, tableTypeInfo, tabl
     }
 }
 
-function renderTableCell(tableName, columnName, value) {
+function renderTableCell(tableName, columnName, value, row) {
     const key = (columnName === undefined || columnName === null) ? '' : String(columnName);
     const raw = (value === undefined || value === null) ? '' : String(value);
     const isIdColumn = isIdColumnName(key);
@@ -1279,7 +1310,8 @@ function renderTableCell(tableName, columnName, value) {
         : getTypeTokenForDetailType(columnDetailType);
 
     if (isIdColumn && raw) {
-        const rendered = renderIdDisplay(value);
+        const displayLabel = resolveForeignKeyDisplay(row, key);
+        const rendered = renderIdDisplay(value, displayLabel);
         const titleAttr = escapeHtml(rendered.title);
         if (columnDetailType) {
             const href = `/details.html?type=${encodeURIComponent(columnDetailType)}&id=${encodeURIComponent(raw)}`;
@@ -1316,7 +1348,7 @@ async function showTable(name) {
             return;
         }
         const hdr  = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('');
-        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
+        const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c], r)).join('')}</tr>`).join('');
         const { typeToken } = tableTypeInfo;
         const safeName = escapeHtml(name);
         const titleQuery = typeToken ? escapeHtml(typeToken) : null;
