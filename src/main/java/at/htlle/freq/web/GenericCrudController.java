@@ -8,8 +8,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import at.htlle.freq.infrastructure.persistence.TableViewDao;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -26,11 +24,9 @@ public class GenericCrudController {
     private static final Logger log = LoggerFactory.getLogger(GenericCrudController.class);
 
     private final NamedParameterJdbcTemplate jdbc;
-    private final TableViewDao tableViewDao;
 
-    public GenericCrudController(NamedParameterJdbcTemplate jdbc, TableViewDao tableViewDao) {
+    public GenericCrudController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
-        this.tableViewDao = tableViewDao;
     }
 
     // -------- Whitelist of allowed tables and aliases --------
@@ -176,7 +172,7 @@ public class GenericCrudController {
                                           @RequestParam(name = "limit", defaultValue = "100") int limit) {
         String table = normalizeTable(name);
         limit = Math.max(1, Math.min(limit, 500));
-        return tableViewDao.fetchTable(table, limit);
+        return jdbc.queryForList("SELECT * FROM " + table + " LIMIT " + limit, new HashMap<>());
     }
 
     /**
