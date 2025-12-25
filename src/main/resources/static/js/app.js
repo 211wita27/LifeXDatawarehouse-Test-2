@@ -25,6 +25,9 @@ const sugList = document.getElementById('sug');
 const advancedHelpToggle = document.getElementById('advanced-help-toggle');
 const advancedHelpPanel = document.getElementById('advanced-help');
 const advancedHelpStatus = document.getElementById('advanced-help-status');
+const shortcutContainer = document.getElementById('shortcut-container');
+const shortcutAddBtn = document.getElementById('shortcut-add');
+const shortcutRemoveBtn = document.getElementById('shortcut-remove');
 
 const SEARCH_SCOPE_OPTIONS = {
     all: { key: 'all', label: 'All', type: null },
@@ -123,6 +126,7 @@ function toggleAdvancedHelp() {
 
 const shortcutCache = new Map();
 const HELP_COLLAPSE_KEY = 'ui:help-collapsed';
+const SHORTCUT_COUNT_KEY = 'sc:count';
 
 function resolveScopeKey(value) {
     const normalized = normalizeTypeKey(value);
@@ -1013,99 +1017,201 @@ async function startReindex(btn) {
 }
 
 /* ===================== Shortcuts ===================== */
-function setupShortcuts() {
-    document.querySelectorAll('.shortcut').forEach(sc => {
-        const id        = sc.dataset.id;
-        const headBtn   = sc.querySelector('.head');
-        const labelEl   = sc.querySelector('.label');
-        const renameBtn = sc.querySelector('.rename');
-        const chevBtn   = sc.querySelector('.chev');
-        const panel     = sc.querySelector('.panel');
-        const listEl    = panel ? panel.querySelector('[data-role="list"]') : null;
-        const hasList   = !!(sc.dataset.list && listEl);
-        const inputEl   = hasList ? null : (panel ? panel.querySelector('input') : null);
-        const defVal    = (sc.dataset.default || '').trim();
+function readStoredShortcutCount(defaultCount) {
+    const stored = Number.parseInt(stGet(SHORTCUT_COUNT_KEY, defaultCount), 10);
+    if (Number.isFinite(stored) && stored > 0) return stored;
+    return defaultCount;
+}
 
-        const readLabel = () => shortcutStorage.getLabel(id, labelEl.textContent);
-        const readQuery = () => shortcutStorage.getQuery(id, defVal);
-        const writeLabel = (value) => shortcutStorage.setLabel(id, value);
-        const writeQuery = (value) => shortcutStorage.setQuery(id, value);
+function persistShortcutCount(count) {
+    stSet(SHORTCUT_COUNT_KEY, String(count));
+}
 
-        labelEl.textContent = readLabel();
+function getShortcutCountFromDom() {
+    return shortcutContainer ? shortcutContainer.querySelectorAll('.shortcut').length : 0;
+}
 
-        if (hasList) {
-            if (listEl && !listEl.innerHTML.trim()) {
-                listEl.innerHTML = '<p class="sc-status empty">No data loaded yet.</p>';
-            }
-        } else if (inputEl) {
-            inputEl.value = readQuery();
-            inputEl.placeholder = 'Lucene query';
-            inputEl.setAttribute('aria-label','Lucene query');
+function buildShortcutElement(id, label, defaultQuery = '') {
+    const sc = document.createElement('div');
+    sc.className = 'shortcut';
+    sc.dataset.id = id;
+    sc.dataset.default = defaultQuery;
+    sc.innerHTML = `
+        <button class="head">
+            <span class="rename">✏️</span>
+            <span class="label">${escapeHtml(label)}</span>
+            <span class="chev">▶</span>
+        </button>
+        <div class="panel"><input placeholder="Lucene query"></div>
+    `;
+    return sc;
+}
+
+function appendShortcutElement(index) {
+    if (!shortcutContainer) return null;
+    const id = `sc${index}`;
+    const el = buildShortcutElement(id, `Shortcut ${index + 1}`);
+    shortcutContainer.appendChild(el);
+    return el;
+}
+
+function restoreShortcutList() {
+    if (!shortcutContainer) return;
+    const baseCount = getShortcutCountFromDom();
+    const storedCount = Math.max(1, readStoredShortcutCount(baseCount));
+    const currentCount = baseCount;
+    if (currentCount < storedCount) {
+        for (let i = currentCount; i < storedCount; i += 1) {
+            appendShortcutElement(i);
         }
-
-        if (panel) {
-            const hid = `sc-head-${id}`;
-            const pid = `sc-panel-${id}`;
-            headBtn.id = hid;
-            headBtn.setAttribute('aria-controls', pid);
-            headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
-            panel.id = pid;
-            panel.setAttribute('role','region');
-            panel.setAttribute('aria-labelledby', hid);
+    } else if (currentCount > storedCount) {
+        for (let i = currentCount; i > storedCount; i -= 1) {
+            const last = shortcutContainer.querySelector('.shortcut:last-of-type');
+            if (!last) break;
+            shortcutStorage.setLabel(last.dataset.id, null);
+            shortcutStorage.setQuery(last.dataset.id, null);
+            last.remove();
         }
+    }
+    persistShortcutCount(storedCount);
+}
 
-        headBtn.addEventListener('click', (ev) => {
-            if (ev.target === renameBtn || ev.target === chevBtn) return;
-            const q = hasList ? defVal : (((inputEl && inputEl.value) || '').trim() || defVal);
-            if (q) {
-                if (!hasList) writeQuery(q);
-                setSearchScope('all', { syncUrl: true });
-                runSearch(q);
+function updateShortcutControls() {
+    if (!shortcutRemoveBtn) return;
+    const count = getShortcutCountFromDom();
+    shortcutRemoveBtn.disabled = count <= 1;
+}
+
+function removeLastShortcut() {
+    if (!shortcutContainer) return;
+    const items = shortcutContainer.querySelectorAll('.shortcut');
+    if (!items.length || items.length <= 1) return;
+    const last = items[items.length - 1];
+    const id = last.dataset.id;
+    shortcutStorage.setLabel(id, null);
+    shortcutStorage.setQuery(id, null);
+    last.remove();
+    persistShortcutCount(items.length - 1);
+    updateShortcutControls();
+}
+
+function bindShortcutControls() {
+    if (shortcutAddBtn) {
+        shortcutAddBtn.addEventListener('click', () => {
+            const nextIndex = getShortcutCountFromDom();
+            const el = appendShortcutElement(nextIndex);
+            if (el) {
+                initShortcut(el);
+                persistShortcutCount(nextIndex + 1);
+                updateShortcutControls();
             }
         });
+    }
+    if (shortcutRemoveBtn) {
+        shortcutRemoveBtn.addEventListener('click', () => removeLastShortcut());
+    }
+}
 
-        chevBtn.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            sc.classList.toggle('open');
-            const open = sc.classList.contains('open');
-            headBtn.setAttribute('aria-expanded', open);
-            if (!open) return;
-            if (hasList && listEl) {
-                renderShortcutList(sc, listEl);
-            } else if (inputEl) {
-                inputEl.focus();
-                inputEl.select();
-            }
-        });
+function initShortcut(sc) {
+    if (!sc || sc.dataset.bound === 'true') return;
+    sc.dataset.bound = 'true';
+    const id        = sc.dataset.id;
+    const headBtn   = sc.querySelector('.head');
+    const labelEl   = sc.querySelector('.label');
+    const renameBtn = sc.querySelector('.rename');
+    const chevBtn   = sc.querySelector('.chev');
+    const panel     = sc.querySelector('.panel');
+    const listEl    = panel ? panel.querySelector('[data-role="list"]') : null;
+    const hasList   = !!(sc.dataset.list && listEl);
+    const inputEl   = hasList ? null : (panel ? panel.querySelector('input') : null);
+    const defVal    = (sc.dataset.default || '').trim();
 
-        renameBtn.addEventListener('click', (ev) => {
-            ev.stopPropagation();
-            const current = labelEl.textContent.trim();
-            const name = prompt('New name for the shortcut:', current);
-            if (name && name.trim()) {
-                labelEl.textContent = name.trim();
-                writeLabel(labelEl.textContent);
-            }
-        });
+    const readLabel = () => shortcutStorage.getLabel(id, labelEl.textContent);
+    const readQuery = () => shortcutStorage.getQuery(id, defVal);
+    const writeLabel = (value) => shortcutStorage.setLabel(id, value);
+    const writeQuery = (value) => shortcutStorage.setQuery(id, value);
 
-        if (inputEl) {
-            inputEl.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const q = inputEl.value.trim();
-                    if (q) {
-                        writeQuery(q);
-                        setSearchScope('all', { syncUrl: true });
-                        runSearch(q);
-                    }
-                } else if (e.key === 'Escape') {
-                    sc.classList.remove('open');
-                    headBtn.setAttribute('aria-expanded', false);
-                }
-            });
+    labelEl.textContent = readLabel();
 
-            inputEl.addEventListener('blur', () => writeQuery(inputEl.value.trim()));
+    if (hasList) {
+        if (listEl && !listEl.innerHTML.trim()) {
+            listEl.innerHTML = '<p class="sc-status empty">No data loaded yet.</p>';
+        }
+    } else if (inputEl) {
+        inputEl.value = readQuery();
+        inputEl.placeholder = 'Lucene query';
+        inputEl.setAttribute('aria-label','Lucene query');
+    }
+
+    if (panel) {
+        const hid = `sc-head-${id}`;
+        const pid = `sc-panel-${id}`;
+        headBtn.id = hid;
+        headBtn.setAttribute('aria-controls', pid);
+        headBtn.setAttribute('aria-expanded', sc.classList.contains('open'));
+        panel.id = pid;
+        panel.setAttribute('role','region');
+        panel.setAttribute('aria-labelledby', hid);
+    }
+
+    headBtn.addEventListener('click', (ev) => {
+        if (ev.target === renameBtn || ev.target === chevBtn) return;
+        const q = hasList ? defVal : (((inputEl && inputEl.value) || '').trim() || defVal);
+        if (q) {
+            if (!hasList) writeQuery(q);
+            setSearchScope('all', { syncUrl: true });
+            runSearch(q);
         }
     });
+
+    chevBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        sc.classList.toggle('open');
+        const open = sc.classList.contains('open');
+        headBtn.setAttribute('aria-expanded', open);
+        if (!open) return;
+        if (hasList && listEl) {
+            renderShortcutList(sc, listEl);
+        } else if (inputEl) {
+            inputEl.focus();
+            inputEl.select();
+        }
+    });
+
+    renameBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const current = labelEl.textContent.trim();
+        const name = prompt('New name for the shortcut:', current);
+        if (name && name.trim()) {
+            labelEl.textContent = name.trim();
+            writeLabel(labelEl.textContent);
+        }
+    });
+
+    if (inputEl) {
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const q = inputEl.value.trim();
+                if (q) {
+                    writeQuery(q);
+                    setSearchScope('all', { syncUrl: true });
+                    runSearch(q);
+                }
+            } else if (e.key === 'Escape') {
+                sc.classList.remove('open');
+                headBtn.setAttribute('aria-expanded', false);
+            }
+        });
+
+        inputEl.addEventListener('blur', () => writeQuery(inputEl.value.trim()));
+    }
+}
+
+function setupShortcuts() {
+    restoreShortcutList();
+    document.querySelectorAll('.shortcut').forEach(sc => initShortcut(sc));
+    bindShortcutControls();
+    updateShortcutControls();
 }
 
 /* ===================== Search ===================== */
