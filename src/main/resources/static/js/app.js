@@ -436,7 +436,10 @@ function buildUserQuery(raw){
     const s = (raw || '').trim();
     if (!s) return s;
     if (looksLikeLucene(s)) return s;
-    return s.split(/\s+/).map(tok => /[*?]$/.test(tok) ? tok : (tok + '*')).join(' ');
+    return s
+        .split(/\s+/)
+        .map(tok => /[*?]/.test(tok) ? tok : (`*${tok}*`))
+        .join(' ');
 }
 
 function buildScopedQuery(raw, scopeType) {
