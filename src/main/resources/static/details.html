@@ -786,6 +786,51 @@
         });
     }
 
+    const upgradePlanSiteCache = new Map();
+    const upgradePlanSoftwareCache = new Map();
+
+    async function cacheRow(map, key, loader){
+        if(!key) return null;
+        const existing = map.get(key);
+        if(existing instanceof Promise) return existing;
+        if(existing !== undefined) return existing;
+        const promise = (async()=>{
+            try{
+                const result = await loader(key);
+                map.set(key, result);
+                return result;
+            }catch(err){
+                map.set(key, null);
+                return null;
+            }
+        })();
+        map.set(key, promise);
+        return promise;
+    }
+
+    async function hydrateUpgradePlanContext(plans){
+        const list = Array.isArray(plans) ? plans : [];
+        const tasks = [];
+        for(const plan of list){
+            const siteId = val(plan,'SiteID');
+            const softwareId = val(plan,'SoftwareID');
+            if(siteId){
+                tasks.push(cacheRow(upgradePlanSiteCache, siteId, id => fetchJson(`/row/Site/${encodeURIComponent(id)}`)));
+            }
+            if(softwareId){
+                tasks.push(cacheRow(upgradePlanSoftwareCache, softwareId, id => fetchJson(`/row/Software/${encodeURIComponent(id)}`)));
+            }
+        }
+        if(tasks.length){
+            await Promise.all(tasks.map(task => task instanceof Promise ? task : Promise.resolve(task)));
+        }
+    }
+
+    function cachedRow(map, key){
+        const value = map.get(key);
+        return value instanceof Promise ? null : value;
+    }
+
     function labelFor(type, row){
         switch((type||'').toLowerCase()){
             case 'account': return `${val(row,'AccountName') ?? 'Account'}`;
@@ -802,7 +847,23 @@
             case 'address': return `${val(row,'Street') ?? 'Address'}`;
             case 'deploymentvariant': return `${val(row,'VariantName') ?? 'DeploymentVariant'}`;
             case 'software': return `${val(row,'Name') ?? 'Software'}`;
-            case 'upgradeplan': return `${val(row,'UpgradePlanID') ?? 'UpgradePlan'}`;
+            case 'upgradeplan': {
+                const planId = val(row,'UpgradePlanID');
+                const softwareId = val(row,'SoftwareID');
+                const siteId = val(row,'SiteID');
+                const status = val(row,'Status');
+                const softwareRow = cachedRow(upgradePlanSoftwareCache, softwareId);
+                const siteRow = cachedRow(upgradePlanSiteCache, siteId);
+                const softwareName = val(row,'SoftwareName') || val(softwareRow,'Name');
+                const siteName = val(row,'SiteName') || val(siteRow,'SiteName') || val(siteRow,'Name');
+                const parts = [];
+                if(softwareName) parts.push(softwareName);
+                if(siteName) parts.push(siteName);
+                if(!siteName && status) parts.push(status);
+                if(parts.length) return parts.join(' – ');
+                const fallbackId = shortId(planId).replace(/^##/, '#');
+                return fallbackId || `${planId ?? 'UpgradePlan'}`;
+            }
             case 'servicecontract': return `${val(row,'ContractNumber') ?? 'ServiceContract'}`;
             default:        return '';
         }
@@ -2400,6 +2461,9 @@
                 const row = await res.json();
                 currentRow = row;
             }
+            if(configKey === 'UpgradePlan'){
+                await hydrateUpgradePlanContext([currentRow]);
+            }
             if(!preserveStatus) clearStatus();
             renderDetail();
 
@@ -2894,6 +2958,11 @@
                 return matchesId || matchesName;
             });
             addSection(box, 'Upgrade Plans', plans, ({ plan, site, software }) => {
+            const plans = Array.isArray(upgradeRows)
+                ? upgradeRows.filter(plan => (val(plan,'SiteID') ?? '').toString() === (id ?? '').toString())
+                : [];
+            await hydrateUpgradePlanContext(plans);
+            addSection(box, 'Upgrade Plans', plans, plan => {
                 const planId = val(plan,'UpgradePlanID');
                 const label = labelFor('upgradeplan', plan);
                 const status = val(plan,'Status');
@@ -2966,6 +3035,11 @@
                 return matchesId || matchesName;
             });
             addSection(box, 'Upgrade Plans', plans, ({ plan, site, software }) => {
+            const plans = Array.isArray(planRows)
+                ? planRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
+                : [];
+            await hydrateUpgradePlanContext(plans);
+            addSection(box, 'Upgrade Plans', plans, plan => {
                 const planId = val(plan,'UpgradePlanID');
                 const label = labelFor('upgradeplan', plan);
                 const status = val(plan,'Status');
