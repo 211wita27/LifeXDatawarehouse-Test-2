@@ -133,7 +133,8 @@
     <aside class="help">
         <h2>Lucene syntax</h2>
         <ul>
-            <li><code>tech*</code> Wildcard</li>
+            <li><code>tech*</code> Prefix wildcard (default behavior)</li>
+            <li><code>*box</code> Leading wildcard for contains/substring search</li>
             <li><code>"green valley"</code> Phrase</li>
             <li><code>+foo -bar</code> Must / Must not</li>
             <li><code>date:[2025-01-01 TO 2025-12-31]</code></li>
