@@ -132,14 +132,9 @@
     <!-- Help sidebar -->
     <aside class="help">
         <h2>Lucene syntax</h2>
-        <ul>
-            <li><code>tech*</code> Prefix wildcard (default behavior)</li>
-            <li><code>*box</code> Leading wildcard for contains/substring search</li>
-            <li><code>"green valley"</code> Phrase</li>
-            <li><code>+foo -bar</code> Must / Must not</li>
-            <li><code>date:[2025-01-01 TO 2025-12-31]</code></li>
-            <li>Project search: <code>type:project AND statusactive</code></li>
-        </ul>
+        <p>Search text uses prefix matching by default, so <code>tech</code> behaves like <code>tech*</code>; add a leading asterisk (e.g. <code>*box</code>) for contains searches, and any Lucene operators or fielded queries you enter are passed through unchanged.</p>
+        <p>The backend supports leading wildcards, so substring searches will return results.</p>
+        <p>Table filters: clicking a table sets the filter shown on the blue badge; click the badge again to return to <strong>All</strong>.</p>
 
         <hr>
         <h3>Index management</h3>
