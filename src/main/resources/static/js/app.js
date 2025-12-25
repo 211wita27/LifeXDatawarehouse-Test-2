@@ -18,6 +18,8 @@ const idxBox  = document.getElementById('idx-box');
 const idxBar  = document.querySelector('#idx-bar > span');
 const idxText = document.getElementById('idx-text');
 const idxBtnSide = document.getElementById('idx-reindex-side');
+const helpPanel = document.getElementById('help-panel');
+const helpToggle = document.querySelector('.help-toggle');
 
 const sugList = document.getElementById('sug');
 const advancedHelpToggle = document.getElementById('advanced-help-toggle');
@@ -120,6 +122,7 @@ function toggleAdvancedHelp() {
 }
 
 const shortcutCache = new Map();
+const HELP_COLLAPSE_KEY = 'ui:help-collapsed';
 
 function resolveScopeKey(value) {
     const normalized = normalizeTypeKey(value);
@@ -850,10 +853,43 @@ async function enrichRows(hits){
     await Promise.allSettled(jobs);
 }
 
+/* ===================== Help panel ===================== */
+function syncHelpPanelState(collapsed){
+    if (!helpPanel || !helpToggle) return;
+    const isCollapsed = !!collapsed;
+    const icon = helpToggle.querySelector('.help-toggle__icon');
+    helpPanel.classList.toggle('is-collapsed', isCollapsed);
+    helpToggle.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    helpToggle.setAttribute('aria-label', isCollapsed ? 'Expand help panel' : 'Collapse help panel');
+    if (icon) {
+        icon.textContent = isCollapsed ? '❯' : '☰';
+    }
+}
+
+function toggleHelpPanel(forceState){
+    if (!helpPanel || !helpToggle) return;
+    const nextState = (forceState === undefined)
+        ? !helpPanel.classList.contains('is-collapsed')
+        : !!forceState;
+    syncHelpPanelState(nextState);
+    stSet(HELP_COLLAPSE_KEY, nextState ? 'true' : 'false');
+}
+
+function hydrateHelpPanelState(){
+    if (!helpPanel || !helpToggle) return;
+    const stored = stGet(HELP_COLLAPSE_KEY, 'false') === 'true';
+    syncHelpPanelState(stored);
+}
+
 /* ===================== Event wiring ===================== */
 function wireEvents() {
     // Primary search (button)
     searchBtn.onclick = () => runSearch(searchInput.value);
+
+    if (helpToggle && helpPanel) {
+        hydrateHelpPanelState();
+        helpToggle.addEventListener('click', () => toggleHelpPanel());
+    }
 
     if (searchScopeIndicator) {
         searchScopeIndicator.addEventListener('click', () => {
