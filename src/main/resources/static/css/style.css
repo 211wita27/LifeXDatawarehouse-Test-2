@@ -19,10 +19,9 @@ header nav a{color:#fff;text-decoration:none;font-weight:bold;font-size:1.05rem;
 header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 
 /* Main layout ----------------------------------------------------- */
-.layout{max-width:1600px;margin:2rem auto;display:flex;gap:1rem}
+.layout{max-width:1600px;margin:2rem auto;display:flex;gap:1rem;align-items:flex-start}
 .sidebar{flex:0 0 300px;display:flex;flex-direction:column;gap:1rem}
 .content{flex:1 1 auto;background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
-.help{flex:0 0 330px;background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
 .info-badge{
     display:inline-flex;
     align-items:center;
@@ -50,16 +49,17 @@ header nav a[aria-current="page"]{background:rgba(255,255,255,.2)}
 .advanced-help h3{margin-top:0;margin-bottom:.4rem;font-size:1rem}
 .advanced-help ul{margin:.35rem 0 0 0;padding-left:1.1rem;display:flex;flex-direction:column;gap:.45rem}
 .advanced-help[hidden]{display:none}
-.help{flex:0 0 330px;max-width:330px;background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:.75rem;transition:flex-basis .2s ease,max-width .2s ease,padding .2s ease,box-shadow .2s ease}
+.help{flex:0 0 330px;max-width:330px;background:#fff;padding:1.5rem;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1);display:flex;flex-direction:column;gap:.75rem;transition:flex-basis .25s ease,max-width .25s ease,padding .25s ease,box-shadow .25s ease,max-height .25s ease;max-height:1200px;overflow:hidden;align-self:flex-start}
 .help__header{display:flex;align-items:center;gap:.5rem}
 .help__header h2{margin:0;flex:1 1 auto}
 .help__body{display:flex;flex-direction:column;gap:.5rem}
 .help-toggle{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:2.3rem;height:2.3rem;border-radius:8px;border:1px solid #cfe0ff;background:#f5f8ff;color:#003a70;cursor:pointer;transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease}
 .help-toggle:hover{background:#e8f1ff}
 .help-toggle:focus-visible{outline:2px solid #003a70;outline-offset:2px}
-.help.is-collapsed{flex:0 0 64px;max-width:64px;padding:.75rem .65rem;box-shadow:0 0 0 1px #e5e7eb}
+.help.is-collapsed{flex:0 0 64px;max-width:64px;max-height:72px;padding:.65rem;box-shadow:0 0 0 1px #e5e7eb;align-self:flex-start}
 .help.is-collapsed .help__body,.help.is-collapsed h2{display:none}
-.help.is-collapsed .help-toggle{margin-left:auto}
+.help.is-collapsed .help__header{justify-content:flex-end}
+.help.is-collapsed .help-toggle{margin-left:auto;width:100%;height:100%}
 .help.is-collapsed .help-toggle .help-toggle__icon{transform:rotate(180deg)}
 
 /* =============== Filterable combo boxes  =============== */
