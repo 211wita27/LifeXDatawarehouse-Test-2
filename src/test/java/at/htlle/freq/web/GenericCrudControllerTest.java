@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import at.htlle.freq.infrastructure.persistence.TableViewDao;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,20 +24,24 @@ import static org.mockito.Mockito.*;
 class GenericCrudControllerTest {
 
     private NamedParameterJdbcTemplate jdbc;
+    private TableViewDao tableViewDao;
     private GenericCrudController controller;
 
     @BeforeEach
     void setUp() {
         jdbc = mock(NamedParameterJdbcTemplate.class);
-        controller = new GenericCrudController(jdbc);
+        tableViewDao = mock(TableViewDao.class);
+        controller = new GenericCrudController(jdbc, tableViewDao);
     }
 
     @Test
     void listNormalisesTableNamesAndLimitsRows() {
-        when(jdbc.queryForList(anyString(), anyMap())).thenReturn(List.of(Map.of("AccountID", "1")));
+        when(tableViewDao.fetchTable(anyString(), anyInt())).thenReturn(List.of(Map.of("AccountID", "1")));
+
         List<Map<String, Object>> rows = controller.list(" ACCOUNT ", 9999);
+
         assertEquals(1, rows.size());
-        verify(jdbc).queryForList(contains("FROM Account"), anyMap());
+        verify(tableViewDao).fetchTable(eq("Account"), eq(500));
     }
 
     @Test
