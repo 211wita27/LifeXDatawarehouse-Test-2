@@ -1101,16 +1101,16 @@ async function runLucene(q, scopeOption) {
             return `
       <tr onclick='toDetails(${typeArg},${idArg})' style="cursor:pointer">
         <td>${renderTypeCell(h.type)}</td>
+        <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div></td>
+        <td>${snippetHtml}<div id="info-${i}" class="hit-info"></div></td>
         <td title="${escapeHtml(idDisplay.title)}">${idDisplay.inner}</td>
-        <td><div class="hit-text">${escapeHtml(h.text ?? '')}</div>${snippetHtml}</td>
-        <td id="info-${i}"></td>
       </tr>`;
         }).join('');
 
         resultArea.innerHTML = `
       <div class="table-scroll">
         <table>
-          <tr><th>Type</th><th>ID</th><th>Text / Snippet</th><th>Info</th></tr>
+          <tr><th>Type</th><th>Name / Text</th><th>Snippet / Info</th><th>ID</th></tr>
           ${rows}
         </table>
       </div>`;
