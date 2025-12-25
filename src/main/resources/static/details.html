@@ -175,6 +175,16 @@
         return `<span class="status-badge status-badge--${entry.tone}">${escapeHtml(label)}</span>`;
     }
 
+    function normalizeComparableName(value){
+        return (value ?? '').toString().trim().toLowerCase();
+    }
+
+    function namesMatch(left, right){
+        const normalizedLeft = normalizeComparableName(left);
+        const normalizedRight = normalizeComparableName(right);
+        return Boolean(normalizedLeft && normalizedRight && normalizedLeft === normalizedRight);
+    }
+
 
 
     let currentRow = null;
@@ -1727,6 +1737,38 @@
         }
     }
 
+    async function enrichUpgradePlans(plans){
+        const list = Array.isArray(plans) ? plans : [];
+        if(!list.length) return [];
+
+        const siteIds = new Set();
+        const softwareIds = new Set();
+        list.forEach(plan => {
+            const siteId = val(plan, 'SiteID');
+            const softwareId = val(plan, 'SoftwareID');
+            if(siteId) siteIds.add(siteId);
+            if(softwareId) softwareIds.add(softwareId);
+        });
+
+        const [siteEntries, softwareEntries] = await Promise.all([
+            Promise.all(Array.from(siteIds).map(async id => [id, await fetchJson(`/row/Site/${encodeURIComponent(id)}`)])),
+            Promise.all(Array.from(softwareIds).map(async id => [id, await fetchJson(`/row/Software/${encodeURIComponent(id)}`)]))
+        ]);
+
+        const siteMap = new Map(siteEntries.filter(([, row]) => !!row));
+        const softwareMap = new Map(softwareEntries.filter(([, row]) => !!row));
+
+        return list.map(plan => {
+            const siteId = val(plan, 'SiteID');
+            const softwareId = val(plan, 'SoftwareID');
+            return {
+                plan,
+                site: siteId ? siteMap.get(siteId) ?? null : null,
+                software: softwareId ? softwareMap.get(softwareId) ?? null : null
+            };
+        });
+    }
+
     function resetDetailRefs(){
         detailTitleEl = null;
         detailTypeEl = null;
@@ -2842,25 +2884,43 @@
             await renderSiteSoftwareOverview(id, softwareTarget, { items: currentSiteSoftwareAssignments });
 
             const upgradeRows = await fetchJson(`/table/upgradeplan?limit=200`);
-            const plans = Array.isArray(upgradeRows)
-                ? upgradeRows.filter(plan => (val(plan,'SiteID') ?? '').toString() === (id ?? '').toString())
-                : [];
-            addSection(box, 'Upgrade Plans', plans, plan => {
+            const enrichedPlans = await enrichUpgradePlans(upgradeRows);
+            const currentSiteName = val(row, 'SiteName');
+            const plans = enrichedPlans.filter(({ plan, site }) => {
+                const planSiteId = val(plan, 'SiteID');
+                const planSiteName = val(site, 'SiteName') || val(plan, 'SiteName');
+                const matchesId = (planSiteId ?? '').toString() === (id ?? '').toString();
+                const matchesName = namesMatch(planSiteName, currentSiteName);
+                return matchesId || matchesName;
+            });
+            addSection(box, 'Upgrade Plans', plans, ({ plan, site, software }) => {
                 const planId = val(plan,'UpgradePlanID');
                 const label = labelFor('upgradeplan', plan);
                 const status = val(plan,'Status');
                 const softwareId = val(plan,'SoftwareID');
+                const softwareName = val(software, 'Name') || val(plan, 'SoftwareName') || val(plan, 'Name');
                 const window = formatDateRange(val(plan,'PlannedWindowStart'), val(plan,'PlannedWindowEnd'));
                 const descParts = [];
                 if(status) descParts.push(status);
-                if(softwareId) descParts.push(`Software ${shortId(softwareId).replace(/^##/, '#')}`);
+                if(softwareName || softwareId){
+                    const softwareLabel = softwareName || shortId(softwareId).replace(/^##/, '#');
+                    descParts.push(`Software ${softwareLabel}`);
+                }
                 if(window) descParts.push(window);
-                return pillLink(
+                const pill = pillLink(
                     `/details.html?type=upgradeplan&id=${encodeURIComponent(planId)}`,
                     label,
                     planId,
                     descParts.join(' · ')
                 );
+                if(planId) pill.dataset.upgradePlanId = planId;
+                if(softwareId) pill.dataset.softwareId = softwareId;
+                const planSiteId = val(plan, 'SiteID');
+                if(planSiteId) pill.dataset.siteId = planSiteId;
+                const resolvedSiteName = val(site, 'SiteName') || val(plan, 'SiteName');
+                if(resolvedSiteName) pill.dataset.siteName = resolvedSiteName;
+                if(softwareName) pill.dataset.softwareName = softwareName;
+                return pill;
             }, { entity: 'UpgradePlan', label: 'Upgrade Plan', params: { siteId: id } });
         }
         else if(type==='Client'){
@@ -2896,16 +2956,38 @@
             });
 
             const planRows = await fetchJson(`/table/upgradeplan?limit=200`);
-            const plans = Array.isArray(planRows)
-                ? planRows.filter(r => (val(r,'SoftwareID') ?? '').toString() === id.toString())
-                : [];
-            addSection(box, 'Upgrade Plans', plans, plan => {
+            const enrichedPlans = await enrichUpgradePlans(planRows);
+            const currentSoftwareName = val(row, 'Name');
+            const plans = enrichedPlans.filter(({ plan, software }) => {
+                const planSoftwareId = val(plan, 'SoftwareID');
+                const planSoftwareName = val(software, 'Name') || val(plan, 'Name');
+                const matchesId = (planSoftwareId ?? '').toString() === id.toString();
+                const matchesName = namesMatch(planSoftwareName, currentSoftwareName);
+                return matchesId || matchesName;
+            });
+            addSection(box, 'Upgrade Plans', plans, ({ plan, site, software }) => {
                 const planId = val(plan,'UpgradePlanID');
                 const label = labelFor('upgradeplan', plan);
                 const status = val(plan,'Status');
+                const siteId = val(plan, 'SiteID');
+                const siteName = val(site, 'SiteName') || val(plan, 'SiteName');
                 const window = formatDateRange(val(plan,'PlannedWindowStart'), val(plan,'PlannedWindowEnd'));
-                const descParts = [status, window].filter(Boolean);
-                return pillLink(`/details.html?type=upgradeplan&id=${encodeURIComponent(planId)}`, label, planId, descParts.join(' · '));
+                const descParts = [];
+                if(siteName || siteId){
+                    const siteLabel = siteName || shortId(siteId).replace(/^##/, '#');
+                    descParts.push(`Site ${siteLabel}`);
+                }
+                if(status) descParts.push(status);
+                if(window) descParts.push(window);
+                const pill = pillLink(`/details.html?type=upgradeplan&id=${encodeURIComponent(planId)}`, label, planId, descParts.join(' · '));
+                if(planId) pill.dataset.upgradePlanId = planId;
+                if(siteId) pill.dataset.siteId = siteId;
+                const resolvedSoftwareId = val(plan, 'SoftwareID');
+                if(resolvedSoftwareId) pill.dataset.softwareId = resolvedSoftwareId;
+                if(siteName) pill.dataset.siteName = siteName;
+                const softwareName = val(software, 'Name') || val(plan, 'Name');
+                if(softwareName) pill.dataset.softwareName = softwareName;
+                return pill;
             }, {
                 entity: 'UpgradePlan',
                 label: 'UpgradePlan',
