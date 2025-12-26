@@ -165,6 +165,8 @@ CREATE TABLE Clients (
                          ClientOS       VARCHAR(100),
                          PatchLevel     VARCHAR(50),
                          InstallType    VARCHAR(20) NOT NULL,
+                         WorkingPositionType   VARCHAR(100),
+                         OtherInstalledSoftware VARCHAR(500),
                          CONSTRAINT fk_clients_site FOREIGN KEY (SiteID)
                              REFERENCES Site(SiteID),
                          CONSTRAINT ck_clients_installtype

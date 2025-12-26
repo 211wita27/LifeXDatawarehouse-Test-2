@@ -107,7 +107,9 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 c.getClientName(),
                                 c.getClientBrand(),
                                 c.getClientOS(),
-                                c.getInstallType()
+                                c.getInstallType(),
+                                c.getWorkingPositionType(),
+                                c.getOtherInstalledSoftware()
                         );
                         return;
                     }

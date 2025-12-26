@@ -328,6 +328,8 @@
             { id: 'serial', label: 'Serial Number', component: 'input', name: 'ClientSerialNr', required: false },
             { id: 'os', label: 'OS', component: 'input', name: 'ClientOS', required: false },
             { id: 'patch', label: 'Patch Level', component: 'input', name: 'PatchLevel', required: false },
+            { id: 'workingPositionType', label: 'Type of Working Position', component: 'input', name: 'WorkingPositionType', required: false, hint: 'Dispatcher, Call-taking, Supervisor, etc.' },
+            { id: 'otherSoftware', label: 'Other SW installed at client', component: 'input', name: 'OtherInstalledSoftware', required: false, hint: 'e.g., Office suite, CAD, analytics tools' },
             { id: 'install', label: 'InstallType', component: 'select', options: ['LOCAL','BROWSER'], name: 'InstallType' }
         ]
     };
