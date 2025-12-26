@@ -424,6 +424,7 @@ public final class SeedDataGenerator {
         List<String> brands = List.of("Jabra", "Bose", "Poly", "Sennheiser", "Logitech");
         List<String> firmwares = List.of("1.0.5", "2.1.3", "3.0.1", "4.2.0");
         List<String> types = List.of("HEADSET", "SPEAKER", "MIC");
+        List<String> directions = List.of("Input", "Output", "Input + Output");
         List<AudioDevice> devices = new ArrayList<>();
         for (int i = 0; i < 36; i++) {
             Client client = clients.get(i % clients.size());
@@ -431,13 +432,15 @@ public final class SeedDataGenerator {
             String serial = "AD-" + String.format(Locale.ROOT, "%04d", 400 + i);
             String firmware = firmwares.get(i % firmwares.size());
             String type = types.get(i % types.size());
+            String direction = directions.get(i % directions.size());
             devices.add(new AudioDevice(
                     generateId(EntityType.AUDIO_DEVICE),
                     client.id(),
                     brand,
                     serial,
                     firmware,
-                    type
+                    type,
+                    direction
             ));
         }
         return devices;
@@ -662,14 +665,15 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "AudioDevice", List.of("AudioDeviceID", "ClientID", "AudioDeviceBrand", "DeviceSerialNr", "AudioDeviceFirmware", "DeviceType"), audioDevices.stream()
+        appendInsert(sb, "AudioDevice", List.of("AudioDeviceID", "ClientID", "AudioDeviceBrand", "DeviceSerialNr", "AudioDeviceFirmware", "DeviceType", "Direction"), audioDevices.stream()
                 .map(device -> row(
                         str(device.id()),
                         str(device.clientId()),
                         str(device.brand()),
                         str(device.serial()),
                         str(device.firmware()),
-                        str(device.type())
+                        str(device.type()),
+                        str(device.direction())
                 ))
                 .collect(Collectors.toList()));
 
@@ -820,7 +824,7 @@ public final class SeedDataGenerator {
     private record Radio(String id, String siteId, String assignedClientId, String brand, String serial, String mode, String standard) {
     }
 
-    private record AudioDevice(String id, String clientId, String brand, String serial, String firmware, String type) {
+    private record AudioDevice(String id, String clientId, String brand, String serial, String firmware, String type, String direction) {
     }
 
     private record PhoneIntegration(String id, String clientId, String type, String brand, String serial, String firmware) {

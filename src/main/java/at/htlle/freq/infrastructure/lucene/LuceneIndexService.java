@@ -73,7 +73,7 @@ public interface LuceneIndexService {
     /**
      * Indexes audio device metadata belonging to a client, updating searchable hardware information.
      */
-    void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType);
+    void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType, String direction);
 
     /**
      * Indexes deployment variant information including lifecycle flags for project planning.

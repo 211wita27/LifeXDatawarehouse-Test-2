@@ -90,7 +90,8 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 d.getAudioDeviceBrand(),
                                 d.getDeviceSerialNr(),
                                 d.getAudioDeviceFirmware(),
-                                d.getDeviceType()
+                                d.getDeviceType(),
+                                d.getDirection()
                         );
                         return;
                     }

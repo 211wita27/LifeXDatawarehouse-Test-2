@@ -84,7 +84,7 @@ public class GenericCrudController {
         c.put("Server", Set.of("ServerID", "SiteID", "ServerName", "ServerBrand", "ServerSerialNr", "ServerOS", "PatchLevel", "VirtualPlatform", "VirtualVersion", "HighAvailability"));
         c.put("Clients", Set.of("ClientID", "SiteID", "ClientName", "ClientBrand", "ClientSerialNr", "ClientOS", "PatchLevel", "InstallType"));
         c.put("Radio", Set.of("RadioID", "SiteID", "AssignedClientID", "RadioBrand", "RadioSerialNr", "Mode", "DigitalStandard"));
-        c.put("AudioDevice", Set.of("AudioDeviceID", "ClientID", "AudioDeviceBrand", "DeviceSerialNr", "AudioDeviceFirmware", "DeviceType"));
+        c.put("AudioDevice", Set.of("AudioDeviceID", "ClientID", "AudioDeviceBrand", "DeviceSerialNr", "AudioDeviceFirmware", "DeviceType", "Direction"));
         c.put("PhoneIntegration", Set.of("PhoneIntegrationID", "ClientID", "PhoneType", "PhoneBrand", "PhoneSerialNr", "PhoneFirmware"));
         c.put("Country", Set.of("CountryCode", "CountryName"));
         c.put("City", Set.of("CityID", "CityName", "CountryCode"));

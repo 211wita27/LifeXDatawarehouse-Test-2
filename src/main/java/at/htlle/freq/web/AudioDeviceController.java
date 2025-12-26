@@ -23,6 +23,12 @@ public class AudioDeviceController {
     private static final Logger log = LoggerFactory.getLogger(AudioDeviceController.class);
     private static final String TABLE = "AudioDevice";
     private static final Set<String> ALLOWED_DEVICE_TYPES = Set.of("HEADSET", "SPEAKER", "MIC");
+    private static final Map<String, String> ALLOWED_DIRECTIONS = Map.of(
+            "input", "Input",
+            "output", "Output",
+            "input + output", "Input + Output",
+            "input+output", "Input + Output"
+    );
 
     public AudioDeviceController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
@@ -43,15 +49,15 @@ public class AudioDeviceController {
         if (clientId != null) {
             return jdbc.queryForList("""
                 SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr,
-                       AudioDeviceFirmware, DeviceType
+                       AudioDeviceFirmware, DeviceType, Direction
                 FROM AudioDevice
                 WHERE ClientID = :cid
                 """, new MapSqlParameterSource("cid", clientId));
         }
 
         return jdbc.queryForList("""
-            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, 
-                   AudioDeviceFirmware, DeviceType
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr,
+                   AudioDeviceFirmware, DeviceType, Direction
             FROM AudioDevice
             """, new HashMap<>());
     }
@@ -67,8 +73,8 @@ public class AudioDeviceController {
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, 
-                   AudioDeviceFirmware, DeviceType
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr,
+                   AudioDeviceFirmware, DeviceType, Direction
             FROM AudioDevice
             WHERE AudioDeviceID = :id
             """, new MapSqlParameterSource("id", id));
@@ -97,11 +103,16 @@ public class AudioDeviceController {
         }
 
         normalizeDeviceType(body).ifPresent(value -> body.put("deviceType", value));
+        Optional<String> direction = normalizeDirection(body);
+        direction.ifPresent(value -> body.put("direction", value));
+        if (direction.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Direction is required");
+        }
 
         String sql = """
             INSERT INTO AudioDevice
-            (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType)
-            VALUES (:clientID, :audioDeviceBrand, :deviceSerialNr, :audioDeviceFirmware, :deviceType)
+            (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction)
+            VALUES (:clientID, :audioDeviceBrand, :deviceSerialNr, :audioDeviceFirmware, :deviceType, :direction)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(body));
@@ -126,6 +137,7 @@ public class AudioDeviceController {
         }
 
         normalizeDeviceType(body);
+        normalizeDirection(body);
 
         var setClauses = new ArrayList<String>();
         for (String key : body.keySet()) {
@@ -202,6 +214,44 @@ public class AudioDeviceController {
         if (!ALLOWED_DEVICE_TYPES.contains(normalized)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "DeviceType must be one of HEADSET, SPEAKER, MIC");
+        }
+
+        for (String key : keys) {
+            if (body.containsKey(key)) {
+                body.put(key, normalized);
+            }
+        }
+        return Optional.of(normalized);
+    }
+
+    private Optional<String> normalizeDirection(Map<String, Object> body) {
+        String[] keys = {"Direction", "direction"};
+        String detectedKey = null;
+        Object rawValue = null;
+
+        for (String key : keys) {
+            if (body.containsKey(key)) {
+                detectedKey = key;
+                rawValue = body.get(key);
+                break;
+            }
+        }
+
+        if (detectedKey == null) {
+            return Optional.empty();
+        }
+
+        if (rawValue == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Direction must be one of Input, Output, Input + Output");
+        }
+
+        String trimmed = rawValue.toString().trim();
+        String collapsed = trimmed.replaceAll("\\s*\\+\\s*", " + ").replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+        String normalized = ALLOWED_DIRECTIONS.get(collapsed);
+        if (normalized == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Direction must be one of Input, Output, Input + Output");
         }
 
         for (String key : keys) {
