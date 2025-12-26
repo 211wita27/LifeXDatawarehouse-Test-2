@@ -928,10 +928,13 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount) {
+    public void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone,
+                          Integer tenantCount, Integer redundantServers) {
         String tenants = tenantCount != null ? tenantCount.toString() : "";
+        String redundant = redundantServers != null ? redundantServers.toString() : "";
         String zoneToken = tokenWithPrefix("zone", fireZone);
-        indexDocument(siteId, TYPE_SITE, siteName, fireZone, zoneToken, tenants, projectId, addressId);
+        String redundantToken = tokenWithPrefix("redundancy", redundant);
+        indexDocument(siteId, TYPE_SITE, siteName, fireZone, zoneToken, tenants, redundant, redundantToken, projectId, addressId);
     }
 
     @Override

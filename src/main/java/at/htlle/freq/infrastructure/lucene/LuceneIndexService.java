@@ -117,7 +117,8 @@ public interface LuceneIndexService {
     /**
      * Indexes site information with address linkage and optional tenancy details.
      */
-    void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount);
+    void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone,
+                   Integer tenantCount, Integer redundantServers);
 
     /**
      * Indexes software catalogue entries, capturing release lifecycle and licensing attributes.

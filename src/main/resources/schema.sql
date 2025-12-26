@@ -109,6 +109,7 @@ CREATE TABLE Site (
                       AddressID    UUID NOT NULL,
                       FireZone     VARCHAR(50),
                       TenantCount  INT,
+                      RedundantServers INT NOT NULL,
                       CONSTRAINT fk_site_project FOREIGN KEY (ProjectID)
                           REFERENCES Project(ProjectID),
                       CONSTRAINT fk_site_address FOREIGN KEY (AddressID)

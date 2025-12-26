@@ -55,6 +55,7 @@ class SiteControllerIntegrationTest {
         payload.put("siteName", siteName);
         payload.put("fireZone", "Zulu");
         payload.put("tenantCount", 12);
+        payload.put("redundantServers", 3);
         payload.put("softwareAssignments", List.of(
                 Map.of(
                         "softwareId", softwareInstalled,
@@ -79,7 +80,8 @@ class SiteControllerIntegrationTest {
                        ProjectID AS project,
                        AddressID AS address,
                        FireZone  AS zone,
-                       TenantCount AS tenants
+                       TenantCount AS tenants,
+                       RedundantServers AS redundant
                 FROM Site
                 WHERE SiteName = :name
                 """, new MapSqlParameterSource("name", siteName));
@@ -90,6 +92,7 @@ class SiteControllerIntegrationTest {
         assertEquals(addressId, siteRow.get("address"));
         assertEquals("Zulu", siteRow.get("zone"));
         assertEquals(12, siteRow.get("tenants"));
+        assertEquals(3, siteRow.get("redundant"));
 
         List<Map<String, Object>> assignments = jdbc.queryForList("""
                 SELECT InstalledSoftwareID AS id,

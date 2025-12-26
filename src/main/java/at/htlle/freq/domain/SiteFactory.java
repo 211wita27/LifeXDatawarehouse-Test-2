@@ -14,9 +14,11 @@ public class SiteFactory {
      * @param addressID reference to the {@link Address}
      * @param fireZone fire zone classification
      * @param tenantCount number of tenants residing at the site
+     * @param redundantServers count of redundant servers installed on-site
      * @return transient site entity
      */
-    public Site create(String siteName, UUID projectID, UUID addressID, String fireZone, Integer tenantCount) {
-        return new Site(null, siteName, projectID, addressID, fireZone, tenantCount);
+    public Site create(String siteName, UUID projectID, UUID addressID, String fireZone, Integer tenantCount,
+                       Integer redundantServers) {
+        return new Site(null, siteName, projectID, addressID, fireZone, tenantCount, redundantServers);
     }
 }

@@ -96,14 +96,14 @@ public class SiteController {
     public List<Map<String, Object>> findByProject(@RequestParam(required = false) String projectId) {
         if (projectId != null) {
             return jdbc.queryForList("""
-                SELECT SiteID, SiteName, FireZone, TenantCount, AddressID, ProjectID
+                SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, AddressID, ProjectID
                 FROM Site
                 WHERE ProjectID = :pid
                 """, new MapSqlParameterSource("pid", projectId));
         }
 
         return jdbc.queryForList("""
-            SELECT SiteID, SiteName, FireZone, TenantCount, AddressID, ProjectID
+            SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, AddressID, ProjectID
             FROM Site
             """, new HashMap<>());
     }
@@ -119,7 +119,7 @@ public class SiteController {
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT SiteID, SiteName, FireZone, TenantCount, AddressID, ProjectID
+            SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, AddressID, ProjectID
             FROM Site
             WHERE SiteID = :id
             """, new MapSqlParameterSource("id", id));
@@ -152,6 +152,7 @@ public class SiteController {
                 site.getAddressID(),
                 site.getFireZone(),
                 site.getTenantCount(),
+                site.getRedundantServers(),
                 assignments
         );
     }
@@ -325,6 +326,7 @@ public class SiteController {
         if (patch.getAddressID() != null) fields.add("AddressID");
         if (patch.getFireZone() != null) fields.add("FireZone");
         if (patch.getTenantCount() != null) fields.add("TenantCount");
+        if (patch.getRedundantServers() != null) fields.add("RedundantServers");
         return fields;
     }
 }

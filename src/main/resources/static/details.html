@@ -2259,6 +2259,19 @@
                 }
                 payload.TenantCount = num;
             }
+            const redundantRaw = payload.RedundantServers ?? payload.redundantServers;
+            if(redundantRaw === undefined || redundantRaw === null || redundantRaw === ''){
+                if(fail('RedundantServers is required.')) return;
+            }else{
+                const redundantNum = Number(redundantRaw);
+                if(Number.isNaN(redundantNum)){
+                    if(fail('RedundantServers must be a number.')) return;
+                }
+                if(redundantNum < 0){
+                    if(fail('RedundantServers must not be negative.')) return;
+                }
+                payload.RedundantServers = redundantNum;
+            }
             const assignments = collectSoftwareAssignments(form);
             if(assignments === null){
                 setStatus('Please resolve the highlighted software entries.', 'error');
@@ -2271,6 +2284,7 @@
                 addressID: normalizeEmpty(payload.AddressID ?? payload.addressID),
                 fireZone: normalizeEmpty(payload.FireZone ?? payload.fireZone),
                 tenantCount: payload.TenantCount ?? payload.tenantCount ?? null,
+                redundantServers: payload.RedundantServers ?? payload.redundantServers,
                 softwareAssignments: assignments
             };
         }else if(entityKey === 'UpgradePlan'){

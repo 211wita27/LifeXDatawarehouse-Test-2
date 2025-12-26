@@ -321,6 +321,7 @@ public final class SeedDataGenerator {
                 String name = project.projectName().replace("Project", "")
                         .trim() + " Hub " + (i + 1);
                 int tenants = 6 + RANDOM.nextInt(20);
+                int redundant = Math.max(1, tenants / 10);
                 String fireZone = zoneCodes.get((siteCounter + i) % zoneCodes.size());
                 sites.add(new Site(
                         generateId(EntityType.SITE),
@@ -328,7 +329,8 @@ public final class SeedDataGenerator {
                         project.id(),
                         address.id(),
                         fireZone,
-                        tenants
+                        tenants,
+                        redundant
                 ));
             }
             siteCounter++;
@@ -611,14 +613,15 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "Site", List.of("SiteID", "SiteName", "ProjectID", "AddressID", "FireZone", "TenantCount"), sites.stream()
+        appendInsert(sb, "Site", List.of("SiteID", "SiteName", "ProjectID", "AddressID", "FireZone", "TenantCount", "RedundantServers"), sites.stream()
                 .map(site -> row(
                         str(site.id()),
                         str(site.name()),
                         str(site.projectId()),
                         str(site.addressId()),
                         str(site.fireZone()),
-                        number(site.tenantCount())
+                        number(site.tenantCount()),
+                        number(site.redundantServers())
                 ))
                 .collect(Collectors.toList()));
 
@@ -808,7 +811,8 @@ public final class SeedDataGenerator {
     private record Project(String id, String sapId, String projectName, String deploymentVariantId, String bundleType, int createOffset, ProjectLifecycleStatus status, String accountId, String addressId) {
     }
 
-    private record Site(String id, String name, String projectId, String addressId, String fireZone, int tenantCount) {
+    private record Site(String id, String name, String projectId, String addressId, String fireZone, int tenantCount,
+                        int redundantServers) {
     }
 
     private record Server(String id, String siteId, String name, String brand, String serial, String os, String patchLevel, String virtualPlatform, String virtualVersion, boolean highAvailability) {

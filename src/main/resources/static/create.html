@@ -1571,6 +1571,20 @@
                     fail('TenantCount must be a number.');
                     return;
                 }
+                const redundantRaw=v('redundant');
+                if(redundantRaw === ''){
+                    fail('RedundantServers is required.');
+                    return;
+                }
+                const redundantServers=Number(redundantRaw);
+                if(Number.isNaN(redundantServers)){
+                    fail('RedundantServers must be a number.');
+                    return;
+                }
+                if(redundantServers < 0){
+                    fail('RedundantServers must not be negative.');
+                    return;
+                }
                 const softwareCollection=collectSoftwareEntries(e.target);
                 if(softwareCollection.error){
                     fail(softwareCollection.error);
@@ -1583,6 +1597,7 @@
                     addressID: v('addrId'),
                     fireZone: toNull(v('zone')),
                     tenantCount,
+                    redundantServers,
                     softwareAssignments: siteSoftwareEntries
                 };
                 break;

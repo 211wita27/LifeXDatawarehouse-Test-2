@@ -15,15 +15,18 @@ public class Site {
     private UUID addressID;
     private String fireZone;
     private Integer tenantCount;
+    private Integer redundantServers;
 
     public Site() {}
-    public Site(UUID siteID, String siteName, UUID projectID, UUID addressID, String fireZone, Integer tenantCount) {
+    public Site(UUID siteID, String siteName, UUID projectID, UUID addressID, String fireZone,
+                Integer tenantCount, Integer redundantServers) {
         this.siteID = siteID;
         this.siteName = siteName;
         this.projectID = projectID;
         this.addressID = addressID;
         this.fireZone = fireZone;
         this.tenantCount = tenantCount;
+        this.redundantServers = redundantServers;
     }
 
     public UUID getSiteID() { return siteID; }
@@ -43,4 +46,7 @@ public class Site {
 
     public Integer getTenantCount() { return tenantCount; }
     public void setTenantCount(Integer tenantCount) { this.tenantCount = tenantCount; }
+
+    public Integer getRedundantServers() { return redundantServers; }
+    public void setRedundantServers(Integer redundantServers) { this.redundantServers = redundantServers; }
 }

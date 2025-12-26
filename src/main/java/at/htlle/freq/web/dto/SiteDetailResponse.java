@@ -16,5 +16,6 @@ public record SiteDetailResponse(
         @JsonProperty("AddressID") UUID addressId,
         @JsonProperty("FireZone") String fireZone,
         @JsonProperty("TenantCount") Integer tenantCount,
+        @JsonProperty("RedundantServers") Integer redundantServers,
         List<SiteSoftwareOverviewEntry> softwareAssignments
 ) { }

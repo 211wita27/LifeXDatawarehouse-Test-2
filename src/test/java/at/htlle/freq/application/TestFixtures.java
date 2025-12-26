@@ -42,7 +42,7 @@ final class TestFixtures {
     }
 
     static Site site() {
-        return new Site(UUID4, "Site", UUID3, UUID5, "Zone", 10);
+        return new Site(UUID4, "Site", UUID3, UUID5, "Zone", 10, 2);
     }
 
     static Software software() {

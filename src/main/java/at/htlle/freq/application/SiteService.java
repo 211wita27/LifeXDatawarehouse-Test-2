@@ -86,6 +86,12 @@ public class SiteService {
             throw new IllegalArgumentException("ProjectID is required");
         if (incoming.getAddressID() == null)
             throw new IllegalArgumentException("AddressID is required");
+        if (incoming.getRedundantServers() == null)
+            throw new IllegalArgumentException("RedundantServers is required");
+        if (incoming.getRedundantServers() < 0)
+            throw new IllegalArgumentException("RedundantServers must not be negative");
+        if (incoming.getTenantCount() != null && incoming.getTenantCount() < 0)
+            throw new IllegalArgumentException("TenantCount must not be negative");
 
         Site saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
@@ -113,6 +119,18 @@ public class SiteService {
             existing.setAddressID(patch.getAddressID() != null ? patch.getAddressID() : existing.getAddressID());
             existing.setFireZone(nvl(patch.getFireZone(), existing.getFireZone()));
             existing.setTenantCount(patch.getTenantCount() != null ? patch.getTenantCount() : existing.getTenantCount());
+            if (patch.getRedundantServers() != null && patch.getRedundantServers() < 0) {
+                throw new IllegalArgumentException("RedundantServers must not be negative");
+            }
+            existing.setRedundantServers(patch.getRedundantServers() != null
+                    ? patch.getRedundantServers()
+                    : existing.getRedundantServers());
+            if (existing.getRedundantServers() == null) {
+                throw new IllegalArgumentException("RedundantServers is required");
+            }
+            if (patch.getTenantCount() != null && patch.getTenantCount() < 0) {
+                throw new IllegalArgumentException("TenantCount must not be negative");
+            }
 
             Site saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
@@ -160,7 +178,8 @@ public class SiteService {
                     s.getAddressID() != null ? s.getAddressID().toString() : null,
                     s.getSiteName(),
                     s.getFireZone(),
-                    s.getTenantCount()
+                    s.getTenantCount(),
+                    s.getRedundantServers()
             );
             log.debug("Site indexed in Lucene: id={}", s.getSiteID());
         } catch (Exception e) {

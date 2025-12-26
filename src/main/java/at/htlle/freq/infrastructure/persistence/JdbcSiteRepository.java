@@ -27,13 +27,14 @@ public class JdbcSiteRepository implements SiteRepository {
             rs.getObject("ProjectID", UUID.class),
             rs.getObject("AddressID", UUID.class),
             rs.getString("FireZone"),
-            (Integer) rs.getObject("TenantCount") // nullable column
+            (Integer) rs.getObject("TenantCount"), // nullable column
+            rs.getInt("RedundantServers")
     );
 
     @Override
     public Optional<Site> findById(UUID id) {
         String sql = """
-            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount
+            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers
             FROM Site WHERE SiteID = :id
             """;
         try {
@@ -44,7 +45,7 @@ public class JdbcSiteRepository implements SiteRepository {
     @Override
     public List<Site> findByProject(UUID projectId) {
         String sql = """
-            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount
+            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers
             FROM Site WHERE ProjectID = :pid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("pid", projectId), mapper);
@@ -52,7 +53,7 @@ public class JdbcSiteRepository implements SiteRepository {
 
     @Override
     public List<Site> findAll() {
-        return jdbc.query("SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount FROM Site", mapper);
+        return jdbc.query("SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers FROM Site", mapper);
     }
 
     @Override
@@ -78,8 +79,8 @@ public class JdbcSiteRepository implements SiteRepository {
         boolean isNew = s.getSiteID() == null;
         if (isNew) {
             String sql = """
-                INSERT INTO Site (SiteName, ProjectID, AddressID, FireZone, TenantCount)
-                VALUES (:name, :project, :address, :fz, :tenants)
+                INSERT INTO Site (SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers)
+                VALUES (:name, :project, :address, :fz, :tenants, :redundant)
                 """;
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbc.update(sql, new MapSqlParameterSource()
@@ -87,7 +88,8 @@ public class JdbcSiteRepository implements SiteRepository {
                             .addValue("project", s.getProjectID())
                             .addValue("address", s.getAddressID())
                             .addValue("fz", s.getFireZone())
-                            .addValue("tenants", s.getTenantCount()),
+                            .addValue("tenants", s.getTenantCount())
+                            .addValue("redundant", s.getRedundantServers()),
                     keyHolder, new String[]{"SiteID"});
 
             UUID id = extractGeneratedSiteId(keyHolder);
@@ -98,7 +100,7 @@ public class JdbcSiteRepository implements SiteRepository {
         } else {
             String sql = """
                 UPDATE Site SET SiteName = :name, ProjectID = :project, AddressID = :address,
-                                FireZone = :fz, TenantCount = :tenants
+                                FireZone = :fz, TenantCount = :tenants, RedundantServers = :redundant
                 WHERE SiteID = :id
                 """;
             jdbc.update(sql, new MapSqlParameterSource()
@@ -107,7 +109,8 @@ public class JdbcSiteRepository implements SiteRepository {
                     .addValue("project", s.getProjectID())
                     .addValue("address", s.getAddressID())
                     .addValue("fz", s.getFireZone())
-                    .addValue("tenants", s.getTenantCount()));
+                    .addValue("tenants", s.getTenantCount())
+                    .addValue("redundant", s.getRedundantServers()));
         }
         return s;
     }

@@ -294,6 +294,7 @@
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID', hint: 'Choose the physical location for this site.' },
             { id: 'zone', label: 'FireZone', component: 'input', name: 'FireZone', required: false },
             { id: 'tenant', label: 'TenantCount', component: 'input', inputType: 'number', min: '0', step: '1', required: false, name: 'TenantCount' },
+            { id: 'redundant', label: 'RedundantServers', component: 'input', inputType: 'number', min: '0', step: '1', name: 'RedundantServers', hint: 'Minimum count of redundant servers deployed at the site.' },
             { id: 'softwareInstallations', label: 'Software installations', component: 'softwareList', required: false, hint: 'Add deployed software packages with their status and key dates.', addLabel: 'Add software entry', emptyLabel: 'No software entries added yet.' }
         ],
         Software: [
