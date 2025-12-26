@@ -418,7 +418,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             for (Integer value : totals.values()) {
                 totalRecords += (value == null ? 0 : value);
             }
-            log.info("Starting full Lucene reindex with {} records.", totalRecords);
+            log.debug("Starting full Lucene reindex with {} records.", totalRecords);
 
             for (Account account : accounts) {
                 indexAccount(
@@ -578,7 +578,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                 );
             }
 
-            log.info("Lucene reindex finished. {} documents processed.", progress.totalDone());
+            log.debug("Lucene reindex finished. {} documents processed.", progress.totalDone());
         } catch (Exception e) {
             log.error("Reindexing failed", e);
         } finally {
@@ -599,7 +599,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             writer.deleteAll();
             writer.commit();
         });
-        log.info("Lucene index cleared (ready for reindex) at {}", indexDir.toAbsolutePath());
+        log.debug("Lucene index cleared (ready for reindex) at {}", indexDir.toAbsolutePath());
     }
 
     private String progressKey(String type) {
@@ -705,7 +705,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         }
         if (processed % PROGRESS_LOG_INTERVAL == 0 || processed == total) {
             int percent = total == 0 ? 100 : Math.min(100, (processed * 100) / total);
-            log.info("Lucene reindex progress: {}/{} documents ({}%)", processed, total, percent);
+            log.debug("Lucene reindex progress: {}/{} documents ({}%)", processed, total, percent);
         }
     }
 
