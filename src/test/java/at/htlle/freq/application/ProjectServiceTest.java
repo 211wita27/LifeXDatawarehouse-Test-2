@@ -135,7 +135,7 @@ class ProjectServiceTest {
         patch.setDeploymentVariantID(UUID.randomUUID());
         patch.setBundleType("New Bundle");
         patch.setCreateDateTime("2024-02-01");
-        patch.setLifecycleStatus(ProjectLifecycleStatus.RETIRED);
+        patch.setLifecycleStatus(ProjectLifecycleStatus.EOL);
         patch.setAccountID(UUID.randomUUID());
         patch.setAddressID(UUID.randomUUID());
 
@@ -144,11 +144,11 @@ class ProjectServiceTest {
             assertTrue(updated.isPresent());
             assertEquals("SAP-NEW", existing.getProjectSAPID());
             assertEquals("New Project", existing.getProjectName());
-            assertEquals(ProjectLifecycleStatus.RETIRED, existing.getLifecycleStatus());
+            assertEquals(ProjectLifecycleStatus.EOL, existing.getLifecycleStatus());
         });
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("RETIRED"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()));
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("EOL"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()));
     }
 
     @Test

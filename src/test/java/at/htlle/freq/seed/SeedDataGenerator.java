@@ -280,10 +280,10 @@ public final class SeedDataGenerator {
         List<String> bundleTypes = List.of("Premium", "Standard", "Hybrid", "Edge");
         List<Project> projects = new ArrayList<>();
         List<ProjectLifecycleStatus> lifecycleStatuses = List.of(
+                ProjectLifecycleStatus.OFFERED,
                 ProjectLifecycleStatus.ACTIVE,
                 ProjectLifecycleStatus.MAINTENANCE,
-                ProjectLifecycleStatus.PLANNED,
-                ProjectLifecycleStatus.RETIRED
+                ProjectLifecycleStatus.EOL
         );
         for (int i = 0; i < 38; i++) {
             String sapId = "PX-" + (2101 + i);

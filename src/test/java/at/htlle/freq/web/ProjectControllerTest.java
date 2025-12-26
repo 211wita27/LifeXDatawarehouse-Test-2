@@ -74,14 +74,14 @@ class ProjectControllerTest {
     @Test
     void createUsesProvidedLifecycleStatus() {
         Map<String, Object> body = baseBody();
-        body.put("LifecycleStatus", "retired");
+        body.put("LifecycleStatus", "eol");
 
         controller.create(body);
 
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
         verify(jdbc).update(anyString(), paramsCaptor.capture());
 
-        assertEquals("RETIRED", paramsCaptor.getValue().getValue("lifecycleStatus"));
+        assertEquals("EOL", paramsCaptor.getValue().getValue("lifecycleStatus"));
     }
 
     @Test
