@@ -18,6 +18,7 @@ public record SiteUpsertRequest(
         UUID addressID,
         String fireZone,
         Integer tenantCount,
+        Integer redundantServers,
         List<SiteSoftwareAssignmentDto> softwareAssignments
 ) {
     public void validateForCreate() {
@@ -30,12 +31,27 @@ public record SiteUpsertRequest(
         if (addressID == null) {
             throw new IllegalArgumentException("AddressID is required");
         }
+        if (redundantServers == null) {
+            throw new IllegalArgumentException("RedundantServers is required");
+        }
+        if (redundantServers < 0) {
+            throw new IllegalArgumentException("RedundantServers must not be negative");
+        }
+        if (tenantCount != null && tenantCount < 0) {
+            throw new IllegalArgumentException("TenantCount must not be negative");
+        }
         validateAssignments();
     }
 
     public void validateForUpdate() {
         if (siteName != null && siteName.trim().isEmpty()) {
             throw new IllegalArgumentException("SiteName must not be blank");
+        }
+        if (redundantServers != null && redundantServers < 0) {
+            throw new IllegalArgumentException("RedundantServers must not be negative");
+        }
+        if (tenantCount != null && tenantCount < 0) {
+            throw new IllegalArgumentException("TenantCount must not be negative");
         }
         validateAssignments();
     }
@@ -58,6 +74,7 @@ public record SiteUpsertRequest(
         site.setAddressID(addressID);
         site.setFireZone(fireZone);
         site.setTenantCount(tenantCount);
+        site.setRedundantServers(redundantServers);
         return site;
     }
 

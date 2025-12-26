@@ -223,7 +223,8 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 s.getAddressID() != null ? s.getAddressID().toString() : null,
                                 s.getSiteName(),
                                 s.getFireZone(),
-                                s.getTenantCount()
+                                s.getTenantCount(),
+                                s.getRedundantServers()
                         );
                         return;
                     }

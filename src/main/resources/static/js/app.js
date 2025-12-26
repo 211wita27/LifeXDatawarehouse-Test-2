@@ -390,11 +390,13 @@ async function loadShortcutItems(kind){
                     const id        = val(row,'SiteID');
                     const name      = val(row,'SiteName');
                     const tenants   = val(row,'TenantCount');
+                    const redundant = val(row,'RedundantServers');
                     const projectId = val(row,'ProjectID');
                     const zone      = val(row,'FireZone');
                     const meta = [];
                     if (zone) meta.push(`Zone ${zone}`);
                     if (tenants !== undefined && tenants !== null && tenants !== '') meta.push(`${tenants} units`);
+                    if (redundant !== undefined && redundant !== null && redundant !== '') meta.push(`${redundant} redundant srv`);
                     if (projectId) meta.push(`Project ${shortUuid(projectId)}`);
                     const primary = (name && name.trim()) || (id ? `Site ${shortUuid(id)}` : 'Site');
                     return {
