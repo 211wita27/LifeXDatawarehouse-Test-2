@@ -61,8 +61,8 @@ class DomainFactoryTest {
         assertNull(installedSoftware.getOutdatedDate());
 
         PhoneIntegrationFactory phoneIntegrationFactory = new PhoneIntegrationFactory();
-        PhoneIntegration phoneIntegration = phoneIntegrationFactory.create(UUID1, "TYPE", "Brand", "SN", "FW");
-        assertEquals(UUID1, phoneIntegration.getClientID());
+        PhoneIntegration phoneIntegration = phoneIntegrationFactory.create(UUID1, "TYPE", "Brand", "Interface", 2, "FW");
+        assertEquals(UUID1, phoneIntegration.getSiteID());
         assertEquals("TYPE", phoneIntegration.getPhoneType());
 
         ProjectFactory projectFactory = new ProjectFactory();

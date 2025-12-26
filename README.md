@@ -202,7 +202,7 @@ erDiagram
     Site    ||--o{ Server            : contains
     Site    ||--o{ WorkingPosition   : "WP"
     WorkingPosition ||--|{ AudioDevice      : has
-    WorkingPosition ||--|{ PhoneIntegration : phones
+    Site    ||--|{ PhoneIntegration  : phones
 ```
 
 *(You can find the full SQL definition in `schema.sql`.)*

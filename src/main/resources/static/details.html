@@ -2479,27 +2479,20 @@
             }
         } else if (type === 'PhoneIntegration') {
             const pills = [];
-            const clientId = val(row,'ClientID');
-            if (clientId != null) {
-                const client = await rowClient(clientId);
-                if (client) {
-                    pills.push(pillLink(`/details.html?type=client&id=${clientId}`, 'Client', clientId, labelFor('client', client)));
-                    const siteId = val(client,'SiteID');
-                    if (siteId != null) {
-                        const site = await rowSite(siteId);
-                        if (site) {
-                            pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
-                            const projId = val(site,'ProjectID');
-                            if (projId != null) {
-                                const proj = await rowProject(projId);
-                                if (proj) {
-                                    pills.push(pillLink(`/details.html?type=project&id=${projId}`, 'Project', projId, labelFor('project', proj)));
-                                    const accId = val(proj,'AccountID');
-                                    if (accId != null) {
-                                        const acc = await rowAccount(accId);
-                                        if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
-                                    }
-                                }
+            const siteId = val(row,'SiteID');
+            if (siteId != null) {
+                const site = await rowSite(siteId);
+                if (site) {
+                    pills.push(pillLink(`/details.html?type=site&id=${siteId}`, 'Site', siteId, labelFor('site', site)));
+                    const projId = val(site,'ProjectID');
+                    if (projId != null) {
+                        const proj = await rowProject(projId);
+                        if (proj) {
+                            pills.push(pillLink(`/details.html?type=project&id=${projId}`, 'Project', projId, labelFor('project', proj)));
+                            const accId = val(proj,'AccountID');
+                            if (accId != null) {
+                                const acc = await rowAccount(accId);
+                                if (acc) pills.push(pillLink(`/details.html?type=account&id=${accId}`, 'Account', accId, labelFor('account', acc)));
                             }
                         }
                     }
@@ -2871,12 +2864,15 @@
                 return pillLink(`/details.html?type=audio&id=${encodeURIComponent(aid)}`, null, aid, brand);
             }, { entity: 'AudioDevice', label: 'AudioDevice', params: { clientId: id, siteId: val(row,'SiteID') } });
 
-            const ph = await fetchJson(`/phones?clientId=${id}`);
-            addSection(box, 'Phone Integrations', ph, p => {
-                const pid = val(p,'PhoneIntegrationID');
-                const brand = val(p,'PhoneBrand');
-                return pillLink(`/details.html?type=phone&id=${encodeURIComponent(pid)}`, null, pid, brand);
-            }, { entity: 'PhoneIntegration', label: 'PhoneIntegration', params: { clientId: id, siteId: val(row,'SiteID') } });
+            const siteId = val(row,'SiteID');
+            if (siteId != null) {
+                const ph = await fetchJson(`/phones?siteId=${siteId}`);
+                addSection(box, 'Phone Integrations', ph, p => {
+                    const pid = val(p,'PhoneIntegrationID');
+                    const brand = val(p,'PhoneBrand');
+                    return pillLink(`/details.html?type=phone&id=${encodeURIComponent(pid)}`, null, pid, brand);
+                }, { entity: 'PhoneIntegration', label: 'PhoneIntegration', params: { siteId } });
+            }
         }
         else if(type==='Software'){
             const softwareContextLabel = (() => {
