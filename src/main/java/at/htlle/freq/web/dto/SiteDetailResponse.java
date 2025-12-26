@@ -17,5 +17,6 @@ public record SiteDetailResponse(
         @JsonProperty("FireZone") String fireZone,
         @JsonProperty("TenantCount") Integer tenantCount,
         @JsonProperty("RedundantServers") Integer redundantServers,
+        @JsonProperty("HighAvailability") Boolean highAvailability,
         List<SiteSoftwareOverviewEntry> softwareAssignments
 ) { }

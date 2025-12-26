@@ -10,8 +10,8 @@ import java.util.*;
 
 /**
  * JDBC repository for {@link Server} that maintains the {@code Server} table and maps server
- * hardware—including virtualization and high-availability features—into domain objects.
- */
+ * hardware—including virtualization settings—into domain objects.
+*/
 @Repository
 public class JdbcServerRepository implements ServerRepository {
 
@@ -28,15 +28,14 @@ public class JdbcServerRepository implements ServerRepository {
             rs.getString("ServerOS"),
             rs.getString("PatchLevel"),
             rs.getString("VirtualPlatform"),
-            rs.getString("VirtualVersion"),
-            rs.getObject("HighAvailability", Boolean.class)
+            rs.getString("VirtualVersion")
     );
 
     @Override
     public Optional<Server> findById(UUID id) {
         String sql = """
             SELECT ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr, ServerOS,
-                   PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability
+                   PatchLevel, VirtualPlatform, VirtualVersion
             FROM Server WHERE ServerID = :id
             """;
         try { return Optional.ofNullable(jdbc.queryForObject(sql, new MapSqlParameterSource("id", id), mapper)); }
@@ -47,7 +46,7 @@ public class JdbcServerRepository implements ServerRepository {
     public List<Server> findBySite(UUID siteId) {
         String sql = """
             SELECT ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr, ServerOS,
-                   PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability
+                   PatchLevel, VirtualPlatform, VirtualVersion
             FROM Server WHERE SiteID = :sid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("sid", siteId), mapper);
@@ -57,7 +56,7 @@ public class JdbcServerRepository implements ServerRepository {
     public List<Server> findAll() {
         String sql = """
             SELECT ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr, ServerOS,
-                   PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability
+                   PatchLevel, VirtualPlatform, VirtualVersion
             FROM Server
             """;
         return jdbc.query(sql, mapper);
@@ -87,8 +86,8 @@ public class JdbcServerRepository implements ServerRepository {
         if (isNew) {
             String sql = """
                 INSERT INTO Server (SiteID, ServerName, ServerBrand, ServerSerialNr, ServerOS,
-                                    PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability)
-                VALUES (:site, :name, :brand, :sn, :os, :pl, :vp, :vv, :ha)
+                                    PatchLevel, VirtualPlatform, VirtualVersion)
+                VALUES (:site, :name, :brand, :sn, :os, :pl, :vp, :vv)
                 RETURNING ServerID
                 """;
             UUID id = jdbc.queryForObject(sql, new MapSqlParameterSource()
@@ -99,15 +98,14 @@ public class JdbcServerRepository implements ServerRepository {
                             .addValue("os", s.getServerOS())
                             .addValue("pl", s.getPatchLevel())
                             .addValue("vp", s.getVirtualPlatform())
-                            .addValue("vv", s.getVirtualVersion())
-                            .addValue("ha", Boolean.TRUE.equals(s.getHighAvailability())),
+                            .addValue("vv", s.getVirtualVersion()),
                     UUID.class);
             s.setServerID(id);
         } else {
             String sql = """
                 UPDATE Server SET
                     SiteID = :site, ServerName = :name, ServerBrand = :brand, ServerSerialNr = :sn,
-                    ServerOS = :os, PatchLevel = :pl, VirtualPlatform = :vp, VirtualVersion = :vv, HighAvailability = :ha
+                    ServerOS = :os, PatchLevel = :pl, VirtualPlatform = :vp, VirtualVersion = :vv
                 WHERE ServerID = :id
                 """;
             jdbc.update(sql, new MapSqlParameterSource()
@@ -119,8 +117,7 @@ public class JdbcServerRepository implements ServerRepository {
                     .addValue("os", s.getServerOS())
                     .addValue("pl", s.getPatchLevel())
                     .addValue("vp", s.getVirtualPlatform())
-                    .addValue("vv", s.getVirtualVersion())
-                    .addValue("ha", Boolean.TRUE.equals(s.getHighAvailability())));
+                    .addValue("vv", s.getVirtualVersion()));
         }
         return s;
     }

@@ -96,14 +96,14 @@ public class SiteController {
     public List<Map<String, Object>> findByProject(@RequestParam(required = false) String projectId) {
         if (projectId != null) {
             return jdbc.queryForList("""
-                SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, AddressID, ProjectID
+                SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, HighAvailability, AddressID, ProjectID
                 FROM Site
                 WHERE ProjectID = :pid
                 """, new MapSqlParameterSource("pid", projectId));
         }
 
         return jdbc.queryForList("""
-            SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, AddressID, ProjectID
+            SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, HighAvailability, AddressID, ProjectID
             FROM Site
             """, new HashMap<>());
     }
@@ -119,7 +119,7 @@ public class SiteController {
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, AddressID, ProjectID
+            SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, HighAvailability, AddressID, ProjectID
             FROM Site
             WHERE SiteID = :id
             """, new MapSqlParameterSource("id", id));
@@ -153,6 +153,7 @@ public class SiteController {
                 site.getFireZone(),
                 site.getTenantCount(),
                 site.getRedundantServers(),
+                site.getHighAvailability(),
                 assignments
         );
     }

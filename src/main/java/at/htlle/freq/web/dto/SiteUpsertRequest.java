@@ -19,6 +19,7 @@ public record SiteUpsertRequest(
         String fireZone,
         Integer tenantCount,
         Integer redundantServers,
+        Boolean highAvailability,
         List<SiteSoftwareAssignmentDto> softwareAssignments
 ) {
     public void validateForCreate() {
@@ -39,6 +40,9 @@ public record SiteUpsertRequest(
         }
         if (tenantCount != null && tenantCount < 0) {
             throw new IllegalArgumentException("TenantCount must not be negative");
+        }
+        if (highAvailability == null) {
+            throw new IllegalArgumentException("HighAvailability is required");
         }
         validateAssignments();
     }
@@ -75,6 +79,7 @@ public record SiteUpsertRequest(
         site.setFireZone(fireZone);
         site.setTenantCount(tenantCount);
         site.setRedundantServers(redundantServers);
+        site.setHighAvailability(highAvailability);
         return site;
     }
 

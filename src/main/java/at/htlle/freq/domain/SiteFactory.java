@@ -15,10 +15,11 @@ public class SiteFactory {
      * @param fireZone fire zone classification
      * @param tenantCount number of tenants residing at the site
      * @param redundantServers count of redundant servers installed on-site
+     * @param highAvailability whether the site operates in an HA configuration
      * @return transient site entity
      */
     public Site create(String siteName, UUID projectID, UUID addressID, String fireZone, Integer tenantCount,
-                       Integer redundantServers) {
-        return new Site(null, siteName, projectID, addressID, fireZone, tenantCount, redundantServers);
+                       Integer redundantServers, boolean highAvailability) {
+        return new Site(null, siteName, projectID, addressID, fireZone, tenantCount, redundantServers, highAvailability);
     }
 }

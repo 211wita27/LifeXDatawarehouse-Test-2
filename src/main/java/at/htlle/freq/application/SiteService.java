@@ -92,6 +92,8 @@ public class SiteService {
             throw new IllegalArgumentException("RedundantServers must not be negative");
         if (incoming.getTenantCount() != null && incoming.getTenantCount() < 0)
             throw new IllegalArgumentException("TenantCount must not be negative");
+        if (incoming.getHighAvailability() == null)
+            throw new IllegalArgumentException("HighAvailability is required");
 
         Site saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
@@ -130,6 +132,12 @@ public class SiteService {
             }
             if (patch.getTenantCount() != null && patch.getTenantCount() < 0) {
                 throw new IllegalArgumentException("TenantCount must not be negative");
+            }
+            existing.setHighAvailability(patch.getHighAvailability() != null
+                    ? patch.getHighAvailability()
+                    : existing.getHighAvailability());
+            if (existing.getHighAvailability() == null) {
+                throw new IllegalArgumentException("HighAvailability is required");
             }
 
             Site saved = repo.save(existing);
@@ -179,7 +187,8 @@ public class SiteService {
                     s.getSiteName(),
                     s.getFireZone(),
                     s.getTenantCount(),
-                    s.getRedundantServers()
+                    s.getRedundantServers(),
+                    s.isHighAvailability()
             );
             log.debug("Site indexed in Lucene: id={}", s.getSiteID());
         } catch (Exception e) {

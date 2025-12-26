@@ -196,8 +196,7 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 s.getServerOS(),
                                 s.getPatchLevel(),
                                 s.getVirtualPlatform(),
-                                s.getVirtualVersion(),
-                                s.isHighAvailability()
+                                s.getVirtualVersion()
                         );
                         return;
                     }
@@ -224,7 +223,8 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 s.getSiteName(),
                                 s.getFireZone(),
                                 s.getTenantCount(),
-                                s.getRedundantServers()
+                                s.getRedundantServers(),
+                                s.isHighAvailability()
                         );
                         return;
                     }
