@@ -48,6 +48,7 @@ class SiteControllerTest {
                 "Zone",
                 5,
                 1,
+                true,
                 List.of(new SiteSoftwareAssignmentDto(null, software, "Offered", "2024-01-01", null, null, null))
         );
 
@@ -75,6 +76,7 @@ class SiteControllerTest {
                 null,
                 null,
                 1,
+                true,
                 List.of()
         );
         when(siteService.createOrUpdateSite(any(Site.class)))
@@ -89,6 +91,7 @@ class SiteControllerTest {
     void updateReturnsNotFoundWhenSiteMissing() {
         UUID siteId = UUID.randomUUID();
         SiteUpsertRequest request = new SiteUpsertRequest(
+                null,
                 null,
                 null,
                 null,
@@ -113,6 +116,7 @@ class SiteControllerTest {
                 null,
                 null,
                 null,
+                null,
                 List.of()
         );
 
@@ -132,6 +136,7 @@ class SiteControllerTest {
                 "Zone",
                 20,
                 2,
+                true,
                 List.of(new SiteSoftwareAssignmentDto(UUID.randomUUID(), software, "Installed", null, "2024-02-02", null, null))
         );
         when(siteService.updateSite(eq(siteId), any(Site.class))).thenReturn(Optional.of(new Site()));
@@ -155,6 +160,7 @@ class SiteControllerTest {
         site.setFireZone("Blue");
         site.setTenantCount(3);
         site.setRedundantServers(2);
+        site.setHighAvailability(true);
 
         List<SiteSoftwareOverviewEntry> assignments = List.of(new SiteSoftwareOverviewEntry(
                 UUID.randomUUID(),

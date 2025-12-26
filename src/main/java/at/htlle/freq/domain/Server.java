@@ -4,8 +4,7 @@ import java.util.UUID;
 
 /**
  * Describes an infrastructure server that supports a {@link Site}. Server
- * instances capture hardware, operating system and virtualization properties
- * and indicate whether the node participates in a high-availability setup.
+ * instances capture hardware, operating system and virtualization properties.
  */
 public class Server {
     private UUID serverID;
@@ -17,12 +16,10 @@ public class Server {
     private String patchLevel;
     private String virtualPlatform; // BareMetal / HyperV / vSphere
     private String virtualVersion;  // nullable
-    private Boolean highAvailability;
 
     public Server() {}
     public Server(UUID serverID, UUID siteID, String serverName, String serverBrand, String serverSerialNr,
-                  String serverOS, String patchLevel, String virtualPlatform, String virtualVersion,
-                  Boolean highAvailability) {
+                  String serverOS, String patchLevel, String virtualPlatform, String virtualVersion) {
         this.serverID = serverID;
         this.siteID = siteID;
         this.serverName = serverName;
@@ -32,7 +29,6 @@ public class Server {
         this.patchLevel = patchLevel;
         this.virtualPlatform = virtualPlatform;
         this.virtualVersion = virtualVersion;
-        this.highAvailability = highAvailability;
     }
 
     public UUID getServerID() { return serverID; }
@@ -61,9 +57,4 @@ public class Server {
 
     public String getVirtualVersion() { return virtualVersion; }
     public void setVirtualVersion(String virtualVersion) { this.virtualVersion = virtualVersion; }
-
-    public Boolean getHighAvailability() { return highAvailability; }
-    public boolean isHighAvailability() { return Boolean.TRUE.equals(highAvailability); }
-    public void setHighAvailability(Boolean highAvailability) { this.highAvailability = highAvailability; }
-    public void setHighAvailability(boolean highAvailability) { this.highAvailability = highAvailability; }
 }

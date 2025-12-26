@@ -16,10 +16,11 @@ public class Site {
     private String fireZone;
     private Integer tenantCount;
     private Integer redundantServers;
+    private Boolean highAvailability;
 
     public Site() {}
     public Site(UUID siteID, String siteName, UUID projectID, UUID addressID, String fireZone,
-                Integer tenantCount, Integer redundantServers) {
+                Integer tenantCount, Integer redundantServers, Boolean highAvailability) {
         this.siteID = siteID;
         this.siteName = siteName;
         this.projectID = projectID;
@@ -27,6 +28,7 @@ public class Site {
         this.fireZone = fireZone;
         this.tenantCount = tenantCount;
         this.redundantServers = redundantServers;
+        this.highAvailability = highAvailability;
     }
 
     public UUID getSiteID() { return siteID; }
@@ -49,4 +51,9 @@ public class Site {
 
     public Integer getRedundantServers() { return redundantServers; }
     public void setRedundantServers(Integer redundantServers) { this.redundantServers = redundantServers; }
+
+    public Boolean getHighAvailability() { return highAvailability; }
+    public boolean isHighAvailability() { return Boolean.TRUE.equals(highAvailability); }
+    public void setHighAvailability(Boolean highAvailability) { this.highAvailability = highAvailability; }
+    public void setHighAvailability(boolean highAvailability) { this.highAvailability = highAvailability; }
 }

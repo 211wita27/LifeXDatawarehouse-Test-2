@@ -28,13 +28,14 @@ public class JdbcSiteRepository implements SiteRepository {
             rs.getObject("AddressID", UUID.class),
             rs.getString("FireZone"),
             (Integer) rs.getObject("TenantCount"), // nullable column
-            rs.getInt("RedundantServers")
+            rs.getInt("RedundantServers"),
+            rs.getObject("HighAvailability", Boolean.class)
     );
 
     @Override
     public Optional<Site> findById(UUID id) {
         String sql = """
-            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers
+            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers, HighAvailability
             FROM Site WHERE SiteID = :id
             """;
         try {
@@ -45,7 +46,7 @@ public class JdbcSiteRepository implements SiteRepository {
     @Override
     public List<Site> findByProject(UUID projectId) {
         String sql = """
-            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers
+            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers, HighAvailability
             FROM Site WHERE ProjectID = :pid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("pid", projectId), mapper);
@@ -53,7 +54,7 @@ public class JdbcSiteRepository implements SiteRepository {
 
     @Override
     public List<Site> findAll() {
-        return jdbc.query("SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers FROM Site", mapper);
+        return jdbc.query("SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers, HighAvailability FROM Site", mapper);
     }
 
     @Override
@@ -79,8 +80,8 @@ public class JdbcSiteRepository implements SiteRepository {
         boolean isNew = s.getSiteID() == null;
         if (isNew) {
             String sql = """
-                INSERT INTO Site (SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers)
-                VALUES (:name, :project, :address, :fz, :tenants, :redundant)
+                INSERT INTO Site (SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers, HighAvailability)
+                VALUES (:name, :project, :address, :fz, :tenants, :redundant, :ha)
                 """;
             KeyHolder keyHolder = new GeneratedKeyHolder();
             jdbc.update(sql, new MapSqlParameterSource()
@@ -89,7 +90,8 @@ public class JdbcSiteRepository implements SiteRepository {
                             .addValue("address", s.getAddressID())
                             .addValue("fz", s.getFireZone())
                             .addValue("tenants", s.getTenantCount())
-                            .addValue("redundant", s.getRedundantServers()),
+                            .addValue("redundant", s.getRedundantServers())
+                            .addValue("ha", Boolean.TRUE.equals(s.getHighAvailability())),
                     keyHolder, new String[]{"SiteID"});
 
             UUID id = extractGeneratedSiteId(keyHolder);
@@ -100,7 +102,7 @@ public class JdbcSiteRepository implements SiteRepository {
         } else {
             String sql = """
                 UPDATE Site SET SiteName = :name, ProjectID = :project, AddressID = :address,
-                                FireZone = :fz, TenantCount = :tenants, RedundantServers = :redundant
+                                FireZone = :fz, TenantCount = :tenants, RedundantServers = :redundant, HighAvailability = :ha
                 WHERE SiteID = :id
                 """;
             jdbc.update(sql, new MapSqlParameterSource()
@@ -110,7 +112,8 @@ public class JdbcSiteRepository implements SiteRepository {
                     .addValue("address", s.getAddressID())
                     .addValue("fz", s.getFireZone())
                     .addValue("tenants", s.getTenantCount())
-                    .addValue("redundant", s.getRedundantServers()));
+                    .addValue("redundant", s.getRedundantServers())
+                    .addValue("ha", Boolean.TRUE.equals(s.getHighAvailability())));
         }
         return s;
     }
