@@ -63,7 +63,8 @@ public interface LuceneIndexService {
     /**
      * Indexes client metadata together with deployment context details, enabling entity-level lookup.
      */
-    void indexClient(String clientId, String siteId, String clientName, String clientBrand, String clientOS, String installType);
+    void indexClient(String clientId, String siteId, String clientName, String clientBrand, String clientOS,
+                     String installType, String workingPositionType, String otherInstalledSoftware);
 
     /**
      * Indexes country records for quick lookup via ISO code or display name.

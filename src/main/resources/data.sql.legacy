@@ -55,11 +55,11 @@ INSERT INTO Server (ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr, S
     ('00000000-0000-0000-0000-000000000604', '00000000-0000-0000-0000-000000000504', 'SRV-BAY-01', 'Dell', 'SRV-BAY-01', 'Red Hat Enterprise 9', '2025.05', 'vSphere', '8.0', TRUE);
 
 -- Client workstations (operator endpoints)
-INSERT INTO Clients (ClientID, SiteID, ClientName, ClientBrand, ClientSerialNr, ClientOS, PatchLevel, InstallType) VALUES
-    ('00000000-0000-0000-0000-000000000701', '00000000-0000-0000-0000-000000000501', 'Operator Desk 1', 'Dell', 'CL-VIE-01', 'Windows 11', '2025.06', 'LOCAL'),
-    ('00000000-0000-0000-0000-000000000702', '00000000-0000-0000-0000-000000000501', 'Operator Desk 2', 'Dell', 'CL-VIE-02', 'Windows 11', '2025.05', 'BROWSER'),
-    ('00000000-0000-0000-0000-000000000703', '00000000-0000-0000-0000-000000000503', 'Responder Tablet', 'Panasonic', 'CL-MUC-01', 'Windows 10', '2024.12', 'BROWSER'),
-    ('00000000-0000-0000-0000-000000000704', '00000000-0000-0000-0000-000000000504', 'Dispatch Console', 'Lenovo', 'CL-BAY-01', 'Windows 11', '2025.04', 'LOCAL');
+INSERT INTO Clients (ClientID, SiteID, ClientName, ClientBrand, ClientSerialNr, ClientOS, PatchLevel, InstallType, WorkingPositionType, OtherInstalledSoftware) VALUES
+    ('00000000-0000-0000-0000-000000000701', '00000000-0000-0000-0000-000000000501', 'Operator Desk 1', 'Dell', 'CL-VIE-01', 'Windows 11', '2025.06', 'LOCAL', 'Dispatcher', 'Office suite'),
+    ('00000000-0000-0000-0000-000000000702', '00000000-0000-0000-0000-000000000501', 'Operator Desk 2', 'Dell', 'CL-VIE-02', 'Windows 11', '2025.05', 'BROWSER', 'Dispatcher', 'Office suite'),
+    ('00000000-0000-0000-0000-000000000703', '00000000-0000-0000-0000-000000000503', 'Responder Tablet', 'Panasonic', 'CL-MUC-01', 'Windows 10', '2024.12', 'BROWSER', 'Dispatcher', 'Office suite'),
+    ('00000000-0000-0000-0000-000000000704', '00000000-0000-0000-0000-000000000504', 'Dispatch Console', 'Lenovo', 'CL-BAY-01', 'Windows 11', '2025.04', 'LOCAL', 'Dispatcher', 'Office suite');
 
 -- Radios (site radios and modes)
 INSERT INTO Radio (RadioID, SiteID, AssignedClientID, RadioBrand, RadioSerialNr, Mode, DigitalStandard) VALUES
