@@ -442,7 +442,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         audioDevice.getAudioDeviceBrand(),
                         audioDevice.getDeviceSerialNr(),
                         audioDevice.getAudioDeviceFirmware(),
-                        audioDevice.getDeviceType()
+                        audioDevice.getDeviceType(),
+                        audioDevice.getDirection()
                 );
             }
             for (City city : cities) {
@@ -857,8 +858,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType) {
-        indexDocument(audioDeviceId, TYPE_AUDIO_DEVICE, brand, serialNr, firmware, deviceType, clientId);
+    public void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType, String direction) {
+        indexDocument(audioDeviceId, TYPE_AUDIO_DEVICE, brand, serialNr, firmware, deviceType, direction, clientId);
     }
 
     @Override
