@@ -526,8 +526,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         server.getServerOS(),
                         server.getPatchLevel(),
                         server.getVirtualPlatform(),
-                        server.getVirtualVersion(),
-                        server.isHighAvailability()
+                        server.getVirtualVersion()
                 );
             }
             for (ServiceContract contract : serviceContracts) {
@@ -549,7 +548,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         toStringOrNull(site.getAddressID()),
                         site.getSiteName(),
                         site.getFireZone(),
-                        site.getTenantCount()
+                        site.getTenantCount(),
+                        site.isHighAvailability()
                 );
             }
             for (Software software : softwareList) {
@@ -916,8 +916,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     public void indexServer(String serverId, String siteId, String serverName, String serverBrand, String serverSerialNr, String serverOS,
-                            String patchLevel, String virtualPlatform, String virtualVersion, boolean highAvailability) {
-        indexDocument(serverId, TYPE_SERVER, serverName, serverBrand, serverSerialNr, serverOS, patchLevel, virtualPlatform, virtualVersion, String.valueOf(highAvailability), siteId);
+                            String patchLevel, String virtualPlatform, String virtualVersion) {
+        indexDocument(serverId, TYPE_SERVER, serverName, serverBrand, serverSerialNr, serverOS, patchLevel, virtualPlatform, virtualVersion, siteId);
     }
 
     @Override
@@ -928,10 +928,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount) {
+    public void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount,
+                         boolean highAvailability) {
         String tenants = tenantCount != null ? tenantCount.toString() : "";
         String zoneToken = tokenWithPrefix("zone", fireZone);
-        indexDocument(siteId, TYPE_SITE, siteName, fireZone, zoneToken, tenants, projectId, addressId);
+        indexDocument(siteId, TYPE_SITE, siteName, fireZone, zoneToken, tenants, String.valueOf(highAvailability), projectId, addressId);
     }
 
     @Override

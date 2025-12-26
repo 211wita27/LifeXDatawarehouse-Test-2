@@ -47,6 +47,7 @@ class SiteControllerTest {
                 address,
                 "Zone",
                 5,
+                true,
                 List.of(new SiteSoftwareAssignmentDto(null, software, "Offered", "2024-01-01", null, null, null))
         );
 
@@ -73,6 +74,7 @@ class SiteControllerTest {
                 UUID.randomUUID(),
                 null,
                 null,
+                true,
                 List.of()
         );
         when(siteService.createOrUpdateSite(any(Site.class)))
@@ -87,6 +89,7 @@ class SiteControllerTest {
     void updateReturnsNotFoundWhenSiteMissing() {
         UUID siteId = UUID.randomUUID();
         SiteUpsertRequest request = new SiteUpsertRequest(
+                null,
                 null,
                 null,
                 null,
@@ -110,6 +113,7 @@ class SiteControllerTest {
                 null,
                 null,
                 null,
+                null,
                 List.of()
         );
 
@@ -128,6 +132,7 @@ class SiteControllerTest {
                 UUID.randomUUID(),
                 "Zone",
                 20,
+                true,
                 List.of(new SiteSoftwareAssignmentDto(UUID.randomUUID(), software, "Installed", null, "2024-02-02", null, null))
         );
         when(siteService.updateSite(eq(siteId), any(Site.class))).thenReturn(Optional.of(new Site()));
@@ -150,6 +155,7 @@ class SiteControllerTest {
         site.setAddressID(addressId);
         site.setFireZone("Blue");
         site.setTenantCount(3);
+        site.setHighAvailability(true);
 
         List<SiteSoftwareOverviewEntry> assignments = List.of(new SiteSoftwareOverviewEntry(
                 UUID.randomUUID(),
@@ -176,6 +182,7 @@ class SiteControllerTest {
         assertEquals("Detail Site", response.siteName());
         assertEquals(projectId, response.projectId());
         assertEquals(addressId, response.addressId());
+        assertTrue(response.highAvailability());
         assertEquals(1, response.softwareAssignments().size());
         assertEquals(assignments, response.softwareAssignments());
     }

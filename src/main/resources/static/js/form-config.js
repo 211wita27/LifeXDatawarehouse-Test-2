@@ -276,8 +276,7 @@
             { id: 'os', label: 'Operating System', component: 'input', name: 'ServerOS', required: false },
             { id: 'patch', label: 'Patch Level', component: 'input', name: 'PatchLevel', required: false },
             { id: 'vplat', label: 'Virtual Platform', component: 'select', options: ['BareMetal','HyperV','vSphere'], name: 'VirtualPlatform' },
-            { id: 'vver', label: 'Virtual Version', component: 'input', name: 'VirtualVersion', required: false },
-            { id: 'ha', label: 'HighAvailability', component: 'select', options: ['true','false'], name: 'HighAvailability', valueType: 'boolean' }
+            { id: 'vver', label: 'Virtual Version', component: 'input', name: 'VirtualVersion', required: false }
         ],
         ServiceContract: [
             { id: 'accountID', label: 'Select account', component: 'asyncSelect', source: 'accounts', placeholder: 'Select account', allowManual: false, name: 'AccountID', hint: 'Contracts start at the account level.' },
@@ -294,6 +293,7 @@
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID', hint: 'Choose the physical location for this site.' },
             { id: 'zone', label: 'FireZone', component: 'input', name: 'FireZone', required: false },
             { id: 'tenant', label: 'TenantCount', component: 'input', inputType: 'number', min: '0', step: '1', required: false, name: 'TenantCount' },
+            { id: 'ha', label: 'HighAvailability', component: 'select', options: ['true','false'], name: 'HighAvailability', valueType: 'boolean' },
             { id: 'softwareInstallations', label: 'Software installations', component: 'softwareList', required: false, hint: 'Add deployed software packages with their status and key dates.', addLabel: 'Add software entry', emptyLabel: 'No software entries added yet.' }
         ],
         Software: [

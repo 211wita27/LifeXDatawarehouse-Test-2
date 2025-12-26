@@ -103,10 +103,10 @@ public interface LuceneIndexService {
     void indexRadio(String radioId, String siteId, String assignedClientId, String radioBrand, String radioSerialNr, String mode, String digitalStandard);
 
     /**
-     * Indexes server hardware records, including virtualisation details and availability flags.
+     * Indexes server hardware records, including virtualisation details.
      */
     void indexServer(String serverId, String siteId, String serverName, String serverBrand, String serverSerialNr, String serverOS,
-                     String patchLevel, String virtualPlatform, String virtualVersion, boolean highAvailability);
+                     String patchLevel, String virtualPlatform, String virtualVersion);
 
     /**
      * Indexes service contracts to make lifecycle status, durations, and related entities searchable.
@@ -115,9 +115,10 @@ public interface LuceneIndexService {
                               String startDate, String endDate);
 
     /**
-     * Indexes site information with address linkage and optional tenancy details.
+     * Indexes site information with address linkage, optional tenancy details, and availability flags.
      */
-    void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount);
+    void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone, Integer tenantCount,
+                  boolean highAvailability);
 
     /**
      * Indexes software catalogue entries, capturing release lifecycle and licensing attributes.

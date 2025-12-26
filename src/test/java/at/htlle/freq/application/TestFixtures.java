@@ -42,7 +42,7 @@ final class TestFixtures {
     }
 
     static Site site() {
-        return new Site(UUID4, "Site", UUID3, UUID5, "Zone", 10);
+        return new Site(UUID4, "Site", UUID3, UUID5, "Zone", 10, true);
     }
 
     static Software software() {
@@ -61,7 +61,7 @@ final class TestFixtures {
 
     static Server server() {
         return new Server(UUID2, UUID4, "Server", "Brand", "SERIAL", "Linux", "Patch",
-                "Platform", "1.0", true);
+                "Platform", "1.0");
     }
 
     static Radio radio() {

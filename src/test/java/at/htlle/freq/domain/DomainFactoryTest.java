@@ -76,9 +76,8 @@ class DomainFactoryTest {
         assertEquals("MODE", radio.getMode());
 
         ServerFactory serverFactory = new ServerFactory();
-        Server server = serverFactory.create(UUID1, "Server", "Brand", "SN", "OS", "Patch", "Platform", "Version", true);
+        Server server = serverFactory.create(UUID1, "Server", "Brand", "SN", "OS", "Patch", "Platform", "Version");
         assertEquals("Server", server.getServerName());
-        assertTrue(server.isHighAvailability());
 
         ServiceContractFactory serviceContractFactory = new ServiceContractFactory();
         ServiceContract serviceContract = serviceContractFactory.create(UUID1, UUID2, UUID1, "C-1", "Active",
@@ -87,9 +86,10 @@ class DomainFactoryTest {
         assertEquals("Active", serviceContract.getStatus());
 
         SiteFactory siteFactory = new SiteFactory();
-        Site site = siteFactory.create("Site", UUID1, UUID2, "Zone", 10);
+        Site site = siteFactory.create("Site", UUID1, UUID2, "Zone", 10, true);
         assertEquals("Site", site.getSiteName());
         assertEquals(10, site.getTenantCount());
+        assertTrue(site.isHighAvailability());
 
         SoftwareFactory softwareFactory = new SoftwareFactory();
         Software software = softwareFactory.create("Name", "1.0", "1", "Phase", "License", true, "2024-01-01", "2024-01-02", "2024-12-31");

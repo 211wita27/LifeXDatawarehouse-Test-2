@@ -43,7 +43,7 @@ public class ServerController {
         if (siteId != null) {
             return jdbc.queryForList("""
                 SELECT ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr,
-                       ServerOS, PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability
+                       ServerOS, PatchLevel, VirtualPlatform, VirtualVersion
                 FROM Server
                 WHERE SiteID = :sid
                 """, new MapSqlParameterSource("sid", siteId));
@@ -51,7 +51,7 @@ public class ServerController {
 
         return jdbc.queryForList("""
             SELECT ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr,
-                   ServerOS, PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability
+                   ServerOS, PatchLevel, VirtualPlatform, VirtualVersion
             FROM Server
             """, new HashMap<>());
     }
@@ -68,7 +68,7 @@ public class ServerController {
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
             SELECT ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr,
-                   ServerOS, PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability
+                   ServerOS, PatchLevel, VirtualPlatform, VirtualVersion
             FROM Server
             WHERE ServerID = :id
             """, new MapSqlParameterSource("id", id));
@@ -99,9 +99,9 @@ public class ServerController {
 
         String sql = """
             INSERT INTO Server (SiteID, ServerName, ServerBrand, ServerSerialNr,
-                                ServerOS, PatchLevel, VirtualPlatform, VirtualVersion, HighAvailability)
+                                ServerOS, PatchLevel, VirtualPlatform, VirtualVersion)
             VALUES (:siteID, :serverName, :serverBrand, :serverSerialNr,
-                    :serverOS, :patchLevel, :virtualPlatform, :virtualVersion, :highAvailability)
+                    :serverOS, :patchLevel, :virtualPlatform, :virtualVersion)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(body));

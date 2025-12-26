@@ -322,13 +322,15 @@ public final class SeedDataGenerator {
                         .trim() + " Hub " + (i + 1);
                 int tenants = 6 + RANDOM.nextInt(20);
                 String fireZone = zoneCodes.get((siteCounter + i) % zoneCodes.size());
+                boolean highAvailability = siteCounter % 2 == 0;
                 sites.add(new Site(
                         generateId(EntityType.SITE),
                         name.trim(),
                         project.id(),
                         address.id(),
                         fireZone,
-                        tenants
+                        tenants,
+                        highAvailability
                 ));
             }
             siteCounter++;
@@ -351,7 +353,6 @@ public final class SeedDataGenerator {
             String patchLevel = "2025." + String.format(Locale.ROOT, "%02d", (i % 12) + 1);
             String platform = virtualPlatforms.get(i % virtualPlatforms.size());
             String platformVersion = platform.equals("BareMetal") ? null : (platform.equals("vSphere") ? "8.0" : "2022");
-            boolean highAvailability = i % 2 == 0;
             servers.add(new Server(
                     generateId(EntityType.SERVER),
                     site.id(),
@@ -361,8 +362,7 @@ public final class SeedDataGenerator {
                     os,
                     patchLevel,
                     platform,
-                    platformVersion,
-                    highAvailability
+                    platformVersion
             ));
         }
         return servers;
@@ -611,18 +611,19 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "Site", List.of("SiteID", "SiteName", "ProjectID", "AddressID", "FireZone", "TenantCount"), sites.stream()
+        appendInsert(sb, "Site", List.of("SiteID", "SiteName", "ProjectID", "AddressID", "FireZone", "TenantCount", "HighAvailability"), sites.stream()
                 .map(site -> row(
                         str(site.id()),
                         str(site.name()),
                         str(site.projectId()),
                         str(site.addressId()),
                         str(site.fireZone()),
-                        number(site.tenantCount())
+                        number(site.tenantCount()),
+                        bool(site.highAvailability())
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "Server", List.of("ServerID", "SiteID", "ServerName", "ServerBrand", "ServerSerialNr", "ServerOS", "PatchLevel", "VirtualPlatform", "VirtualVersion", "HighAvailability"), servers.stream()
+        appendInsert(sb, "Server", List.of("ServerID", "SiteID", "ServerName", "ServerBrand", "ServerSerialNr", "ServerOS", "PatchLevel", "VirtualPlatform", "VirtualVersion"), servers.stream()
                 .map(server -> row(
                         str(server.id()),
                         str(server.siteId()),
@@ -632,8 +633,7 @@ public final class SeedDataGenerator {
                         str(server.os()),
                         str(server.patchLevel()),
                         str(server.virtualPlatform()),
-                        nullable(server.virtualVersion()),
-                        bool(server.highAvailability())
+                        nullable(server.virtualVersion())
                 ))
                 .collect(Collectors.toList()));
 
@@ -808,10 +808,11 @@ public final class SeedDataGenerator {
     private record Project(String id, String sapId, String projectName, String deploymentVariantId, String bundleType, int createOffset, ProjectLifecycleStatus status, String accountId, String addressId) {
     }
 
-    private record Site(String id, String name, String projectId, String addressId, String fireZone, int tenantCount) {
+    private record Site(String id, String name, String projectId, String addressId, String fireZone, int tenantCount,
+                        boolean highAvailability) {
     }
 
-    private record Server(String id, String siteId, String name, String brand, String serial, String os, String patchLevel, String virtualPlatform, String virtualVersion, boolean highAvailability) {
+    private record Server(String id, String siteId, String name, String brand, String serial, String os, String patchLevel, String virtualPlatform, String virtualVersion) {
     }
 
     private record Client(String id, String siteId, String name, String brand, String serial, String os, String patchLevel, String installType) {

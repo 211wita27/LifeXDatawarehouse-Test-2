@@ -47,6 +47,8 @@ class SiteServiceTest {
     void createSiteRequiresName() {
         Site value = new Site();
         value.setProjectID(UUID.randomUUID());
+        value.setAddressID(UUID.randomUUID());
+        value.setHighAvailability(true);
         assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateSite(value));
     }
 
@@ -54,6 +56,8 @@ class SiteServiceTest {
     void createSiteRequiresProjectId() {
         Site value = new Site();
         value.setSiteName("Site");
+        value.setAddressID(UUID.randomUUID());
+        value.setHighAvailability(true);
         assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateSite(value));
     }
 
@@ -62,6 +66,7 @@ class SiteServiceTest {
         Site value = new Site();
         value.setSiteName("Site");
         value.setProjectID(UUID.randomUUID());
+        value.setHighAvailability(true);
 
         assertThrows(IllegalArgumentException.class, () -> service.createOrUpdateSite(value));
     }
@@ -73,7 +78,7 @@ class SiteServiceTest {
 
         Site saved = service.createOrUpdateSite(value);
         assertSame(value, saved);
-        verify(lucene).indexSite(eq(UUID4.toString()), eq(UUID3.toString()), eq(UUID5.toString()), eq("Site"), eq("Zone"), eq(10));
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(UUID3.toString()), eq(UUID5.toString()), eq("Site"), eq("Zone"), eq(10), eq(true));
     }
 
     @Test
@@ -85,18 +90,18 @@ class SiteServiceTest {
         assertEquals(1, synchronizations.size());
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexSite(eq(UUID4.toString()), eq(UUID3.toString()), eq(UUID5.toString()), eq("Site"), eq("Zone"), eq(10));
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(UUID3.toString()), eq(UUID5.toString()), eq("Site"), eq("Zone"), eq(10), eq(true));
     }
 
     @Test
     void createSiteContinuesWhenLuceneFails() {
         Site value = site();
         when(repo.save(value)).thenReturn(value);
-        doThrow(new RuntimeException("Lucene error")).when(lucene).indexSite(any(), any(), any(), any(), any(), any());
+        doThrow(new RuntimeException("Lucene error")).when(lucene).indexSite(any(), any(), any(), any(), any(), any(), anyBoolean());
 
         Site saved = service.createOrUpdateSite(value);
         assertSame(value, saved);
-        verify(lucene).indexSite(eq(UUID4.toString()), eq(UUID3.toString()), eq(UUID5.toString()), eq("Site"), eq("Zone"), eq(10));
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(UUID3.toString()), eq(UUID5.toString()), eq("Site"), eq("Zone"), eq(10), eq(true));
     }
 
     @Test
@@ -111,6 +116,7 @@ class SiteServiceTest {
         patch.setAddressID(UUID.randomUUID());
         patch.setFireZone("NewZone");
         patch.setTenantCount(42);
+        patch.setHighAvailability(false);
 
         List<TransactionSynchronization> synchronizations = TransactionTestUtils.executeWithinTransaction(() -> {
             Optional<Site> updated = service.updateSite(UUID4, patch);
@@ -118,10 +124,11 @@ class SiteServiceTest {
             assertEquals("NewSite", existing.getSiteName());
             assertEquals("NewZone", existing.getFireZone());
             assertEquals(42, existing.getTenantCount());
+            assertFalse(existing.isHighAvailability());
         });
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexSite(eq(UUID4.toString()), eq(existing.getProjectID().toString()), eq(existing.getAddressID().toString()), eq("NewSite"), eq("NewZone"), eq(42));
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(existing.getProjectID().toString()), eq(existing.getAddressID().toString()), eq("NewSite"), eq("NewZone"), eq(42), eq(false));
     }
 
     @Test
@@ -137,7 +144,7 @@ class SiteServiceTest {
         assertTrue(updated.isPresent());
         assertEquals(UUID5, existing.getAddressID());
 
-        verify(lucene).indexSite(eq(UUID4.toString()), eq(existing.getProjectID().toString()), eq(UUID5.toString()), eq("NewName"), any(), any());
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(existing.getProjectID().toString()), eq(UUID5.toString()), eq("NewName"), any(), any(), eq(true));
     }
 
     @Test

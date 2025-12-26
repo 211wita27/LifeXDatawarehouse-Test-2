@@ -86,6 +86,8 @@ public class SiteService {
             throw new IllegalArgumentException("ProjectID is required");
         if (incoming.getAddressID() == null)
             throw new IllegalArgumentException("AddressID is required");
+        if (incoming.getHighAvailability() == null)
+            incoming.setHighAvailability(false);
 
         Site saved = repo.save(incoming);
         registerAfterCommitIndexing(saved);
@@ -113,6 +115,9 @@ public class SiteService {
             existing.setAddressID(patch.getAddressID() != null ? patch.getAddressID() : existing.getAddressID());
             existing.setFireZone(nvl(patch.getFireZone(), existing.getFireZone()));
             existing.setTenantCount(patch.getTenantCount() != null ? patch.getTenantCount() : existing.getTenantCount());
+            if (patch.getHighAvailability() != null) {
+                existing.setHighAvailability(patch.getHighAvailability());
+            }
 
             Site saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
@@ -160,7 +165,8 @@ public class SiteService {
                     s.getAddressID() != null ? s.getAddressID().toString() : null,
                     s.getSiteName(),
                     s.getFireZone(),
-                    s.getTenantCount()
+                    s.getTenantCount(),
+                    s.isHighAvailability()
             );
             log.debug("Site indexed in Lucene: id={}", s.getSiteID());
         } catch (Exception e) {

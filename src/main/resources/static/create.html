@@ -1571,6 +1571,11 @@
                     fail('TenantCount must be a number.');
                     return;
                 }
+                const haValue=v('ha');
+                if(!haValue){
+                    fail('HighAvailability is required.');
+                    return;
+                }
                 const softwareCollection=collectSoftwareEntries(e.target);
                 if(softwareCollection.error){
                     fail(softwareCollection.error);
@@ -1583,6 +1588,7 @@
                     addressID: v('addrId'),
                     fireZone: toNull(v('zone')),
                     tenantCount,
+                    highAvailability: haValue === 'true',
                     softwareAssignments: siteSoftwareEntries
                 };
                 break;
@@ -1597,8 +1603,7 @@
                     serverOS: toNull(v('os')),
                     patchLevel: toNull(v('patch')),
                     virtualPlatform: v('vplat'),
-                    virtualVersion: toNull(v('vver')),
-                    highAvailability: v('ha') === 'true'
+                    virtualVersion: toNull(v('vver'))
                 };
                 break;
 

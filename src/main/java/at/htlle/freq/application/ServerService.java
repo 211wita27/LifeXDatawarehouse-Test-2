@@ -119,9 +119,6 @@ public class ServerService {
             existing.setPatchLevel(nvl(patch.getPatchLevel(), existing.getPatchLevel()));
             existing.setVirtualPlatform(nvl(patch.getVirtualPlatform(), existing.getVirtualPlatform()));
             existing.setVirtualVersion(nvl(patch.getVirtualVersion(), existing.getVirtualVersion()));
-            if (patch.getHighAvailability() != null) {
-                existing.setHighAvailability(patch.getHighAvailability());
-            }
 
             Server saved = repo.save(existing);
             registerAfterCommitIndexing(saved);
@@ -172,8 +169,7 @@ public class ServerService {
                     s.getServerOS(),
                     s.getPatchLevel(),
                     s.getVirtualPlatform(),
-                    s.getVirtualVersion(),
-                    s.isHighAvailability()
+                    s.getVirtualVersion()
             );
             log.debug("Server indexed in Lucene: id={}", s.getServerID());
         } catch (Exception e) {

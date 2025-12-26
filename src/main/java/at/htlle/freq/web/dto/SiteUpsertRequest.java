@@ -18,6 +18,7 @@ public record SiteUpsertRequest(
         UUID addressID,
         String fireZone,
         Integer tenantCount,
+        Boolean highAvailability,
         List<SiteSoftwareAssignmentDto> softwareAssignments
 ) {
     public void validateForCreate() {
@@ -30,12 +31,18 @@ public record SiteUpsertRequest(
         if (addressID == null) {
             throw new IllegalArgumentException("AddressID is required");
         }
+        if (highAvailability == null) {
+            throw new IllegalArgumentException("HighAvailability is required");
+        }
         validateAssignments();
     }
 
     public void validateForUpdate() {
         if (siteName != null && siteName.trim().isEmpty()) {
             throw new IllegalArgumentException("SiteName must not be blank");
+        }
+        if (highAvailability != null && !(highAvailability instanceof Boolean)) {
+            throw new IllegalArgumentException("HighAvailability must be boolean");
         }
         validateAssignments();
     }
@@ -58,6 +65,7 @@ public record SiteUpsertRequest(
         site.setAddressID(addressID);
         site.setFireZone(fireZone);
         site.setTenantCount(tenantCount);
+        site.setHighAvailability(highAvailability);
         return site;
     }
 

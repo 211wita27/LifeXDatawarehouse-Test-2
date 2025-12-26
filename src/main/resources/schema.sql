@@ -109,6 +109,7 @@ CREATE TABLE Site (
                       AddressID    UUID NOT NULL,
                       FireZone     VARCHAR(50),
                       TenantCount  INT,
+                      HighAvailability BOOLEAN NOT NULL DEFAULT FALSE,
                       CONSTRAINT fk_site_project FOREIGN KEY (ProjectID)
                           REFERENCES Project(ProjectID),
                       CONSTRAINT fk_site_address FOREIGN KEY (AddressID)
@@ -146,7 +147,6 @@ CREATE TABLE Server (
                         PatchLevel       VARCHAR(50),
                         VirtualPlatform  VARCHAR(20),
                         VirtualVersion   VARCHAR(50),
-                        HighAvailability BOOLEAN NOT NULL,
                         CONSTRAINT fk_server_site FOREIGN KEY (SiteID)
                             REFERENCES Site(SiteID),
                         CONSTRAINT ck_server_virtualplatform
