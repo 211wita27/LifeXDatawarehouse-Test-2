@@ -11,7 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 
 /**
- * Fully featured CRUD controller for client phone integrations.
+ * Fully featured CRUD controller for site phone integrations.
  *
  * <p>All access goes through {@link NamedParameterJdbcTemplate}.</p>
  */
@@ -23,10 +23,11 @@ public class PhoneController {
     private static final Logger log = LoggerFactory.getLogger(PhoneController.class);
     private static final String TABLE = "PhoneIntegration";
     private static final Set<String> UPDATE_WHITELIST = Set.of(
-            "ClientID",
+            "SiteID",
             "PhoneType",
             "PhoneBrand",
-            "PhoneSerialNr",
+            "InterfaceName",
+            "Capacity",
             "PhoneFirmware"
     );
 
@@ -34,30 +35,30 @@ public class PhoneController {
         this.jdbc = jdbc;
     }
 
-    // READ operations: list all integrations or filter by client
+    // READ operations: list all integrations or filter by site
     /**
-     * Lists phone integrations and optionally filters by client.
+     * Lists phone integrations and optionally filters by site.
      *
      * <p>Path: {@code GET /phones}</p>
-     * <p>Optional {@code clientId} query parameter narrows the result to a client.</p>
+     * <p>Optional {@code siteId} query parameter narrows the result to a site.</p>
      *
-     * @param clientId optional client ID.
+     * @param siteId optional site ID.
      * @return 200 OK with a JSON list of phone integrations.
      */
     @GetMapping
-    public List<Map<String, Object>> findByClient(@RequestParam(required = false) String clientId) {
-        if (clientId != null) {
+    public List<Map<String, Object>> findBySite(@RequestParam(required = false) String siteId) {
+        if (siteId != null) {
             return jdbc.queryForList("""
-                SELECT PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, 
-                       PhoneSerialNr, PhoneFirmware
+                SELECT PhoneIntegrationID, SiteID, PhoneType, PhoneBrand,
+                       InterfaceName, Capacity, PhoneFirmware
                 FROM PhoneIntegration
-                WHERE ClientID = :cid
-                """, new MapSqlParameterSource("cid", clientId));
+                WHERE SiteID = :sid
+                """, new MapSqlParameterSource("sid", siteId));
         }
 
         return jdbc.queryForList("""
-            SELECT PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, 
-                   PhoneSerialNr, PhoneFirmware
+            SELECT PhoneIntegrationID, SiteID, PhoneType, PhoneBrand,
+                   InterfaceName, Capacity, PhoneFirmware
             FROM PhoneIntegration
             """, new HashMap<>());
     }
@@ -73,8 +74,8 @@ public class PhoneController {
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT PhoneIntegrationID, ClientID, PhoneType, PhoneBrand, 
-                   PhoneSerialNr, PhoneFirmware
+            SELECT PhoneIntegrationID, SiteID, PhoneType, PhoneBrand,
+                   InterfaceName, Capacity, PhoneFirmware
             FROM PhoneIntegration
             WHERE PhoneIntegrationID = :id
             """, new MapSqlParameterSource("id", id));
@@ -104,8 +105,8 @@ public class PhoneController {
 
         String sql = """
             INSERT INTO PhoneIntegration
-            (ClientID, PhoneType, PhoneBrand, PhoneSerialNr, PhoneFirmware)
-            VALUES (:clientID, :phoneType, :phoneBrand, :phoneSerialNr, :phoneFirmware)
+            (SiteID, PhoneType, PhoneBrand, InterfaceName, Capacity, PhoneFirmware)
+            VALUES (:siteID, :phoneType, :phoneBrand, :interfaceName, :capacity, :phoneFirmware)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(body));

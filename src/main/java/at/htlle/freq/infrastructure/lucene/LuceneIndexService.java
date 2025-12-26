@@ -87,9 +87,9 @@ public interface LuceneIndexService {
                                 String offeredDate, String installedDate, String rejectedDate, String outdatedDate);
 
     /**
-     * Indexes phone integration hardware assigned to clients for operational tracking.
+     * Indexes phone integration hardware assigned to sites for operational tracking.
      */
-    void indexPhoneIntegration(String phoneIntegrationId, String clientId, String phoneType, String phoneBrand, String phoneSerialNr, String phoneFirmware);
+    void indexPhoneIntegration(String phoneIntegrationId, String siteId, String phoneType, String phoneBrand, String interfaceName, Integer capacity, String phoneFirmware);
 
     /**
      * Indexes project metadata and its relations to deployment variants, accounts, and addresses.

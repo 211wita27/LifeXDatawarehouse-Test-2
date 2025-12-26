@@ -449,14 +449,16 @@ public final class SeedDataGenerator {
         List<PhoneIntegration> phones = new ArrayList<>();
         for (int i = 0; i < 32; i++) {
             Client client = clients.get(i % clients.size());
-            String serial = "PH-" + String.format(Locale.ROOT, "%04d", 500 + i);
             String firmware = "v" + (1 + i % 4) + "." + (i % 10);
+            String interfaceName = "IF-" + String.format(Locale.ROOT, "%04d", 501 + i);
+            int capacity = 2 + (i % 4) * 2;
             phones.add(new PhoneIntegration(
                     generateId(EntityType.PHONE_INTEGRATION),
-                    client.id(),
+                    client.siteId(),
                     types.get(i % types.size()),
                     brands.get(i % brands.size()),
-                    serial,
+                    interfaceName,
+                    capacity,
                     firmware
             ));
         }
@@ -673,13 +675,14 @@ public final class SeedDataGenerator {
                 ))
                 .collect(Collectors.toList()));
 
-        appendInsert(sb, "PhoneIntegration", List.of("PhoneIntegrationID", "ClientID", "PhoneType", "PhoneBrand", "PhoneSerialNr", "PhoneFirmware"), phones.stream()
+        appendInsert(sb, "PhoneIntegration", List.of("PhoneIntegrationID", "SiteID", "PhoneType", "PhoneBrand", "InterfaceName", "Capacity", "PhoneFirmware"), phones.stream()
                 .map(phone -> row(
                         str(phone.id()),
-                        str(phone.clientId()),
+                        str(phone.siteId()),
                         str(phone.type()),
                         str(phone.brand()),
-                        str(phone.serial()),
+                        str(phone.interfaceName()),
+                        str(phone.capacity()),
                         str(phone.firmware())
                 ))
                 .collect(Collectors.toList()));
@@ -823,7 +826,7 @@ public final class SeedDataGenerator {
     private record AudioDevice(String id, String clientId, String brand, String serial, String firmware, String type) {
     }
 
-    private record PhoneIntegration(String id, String clientId, String type, String brand, String serial, String firmware) {
+    private record PhoneIntegration(String id, String siteId, String type, String brand, String interfaceName, int capacity, String firmware) {
     }
 
     private record InstalledSoftware(String id, String siteId, String softwareId, String status) {

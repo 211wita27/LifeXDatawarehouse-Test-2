@@ -213,13 +213,14 @@ CREATE TABLE AudioDevice (
 -- =========================================================
 CREATE TABLE PhoneIntegration (
                                   PhoneIntegrationID  UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
-                                  ClientID            UUID NOT NULL,
+                                  SiteID              UUID NOT NULL,
                                   PhoneType           VARCHAR(20) NOT NULL,
                                   PhoneBrand          VARCHAR(50),
-                                  PhoneSerialNr       VARCHAR(100),
+                                  InterfaceName       VARCHAR(50),
+                                  Capacity            INT,
                                   PhoneFirmware       VARCHAR(50),
-                                  CONSTRAINT fk_phone_client FOREIGN KEY (ClientID)
-                                      REFERENCES Clients(ClientID),
+                                  CONSTRAINT fk_phone_site FOREIGN KEY (SiteID)
+                                      REFERENCES Site(SiteID),
                                   CONSTRAINT ck_phone_type
                                       CHECK (PhoneType IN ('Emergency','NonEmergency','Both'))
 );
@@ -294,7 +295,7 @@ CREATE INDEX ix_clients_site         ON Clients(SiteID);
 CREATE INDEX ix_server_site          ON Server(SiteID);
 CREATE INDEX ix_radio_site           ON Radio(SiteID);
 CREATE INDEX ix_audiodevice_client   ON AudioDevice(ClientID);
-CREATE INDEX ix_phone_client         ON PhoneIntegration(ClientID);
+CREATE INDEX ix_phone_site           ON PhoneIntegration(SiteID);
 CREATE INDEX ix_installed_site       ON InstalledSoftware(SiteID);
 CREATE INDEX ix_installed_software   ON InstalledSoftware(SoftwareID);
 CREATE INDEX ix_upgrade_site         ON UpgradePlan(SiteID);

@@ -145,10 +145,11 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                     if (body instanceof PhoneIntegration p) {
                         lucene.indexPhoneIntegration(
                                 p.getPhoneIntegrationID() != null ? p.getPhoneIntegrationID().toString() : null,
-                                p.getClientID() != null ? p.getClientID().toString() : null,
+                                p.getSiteID() != null ? p.getSiteID().toString() : null,
                                 p.getPhoneType(),
                                 p.getPhoneBrand(),
-                                p.getPhoneSerialNr(),
+                                p.getInterfaceName(),
+                                p.getCapacity(),
                                 p.getPhoneFirmware()
                         );
                         return;

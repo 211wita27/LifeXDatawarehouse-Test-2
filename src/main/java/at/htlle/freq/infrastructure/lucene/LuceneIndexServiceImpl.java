@@ -485,10 +485,11 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             for (PhoneIntegration integration : phoneIntegrations) {
                 indexPhoneIntegration(
                         toStringOrNull(integration.getPhoneIntegrationID()),
-                        toStringOrNull(integration.getClientID()),
+                        toStringOrNull(integration.getSiteID()),
                         integration.getPhoneType(),
                         integration.getPhoneBrand(),
-                        integration.getPhoneSerialNr(),
+                        integration.getInterfaceName(),
+                        integration.getCapacity(),
                         integration.getPhoneFirmware()
                 );
             }
@@ -892,8 +893,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexPhoneIntegration(String phoneIntegrationId, String clientId, String phoneType, String phoneBrand, String phoneSerialNr, String phoneFirmware) {
-        indexDocument(phoneIntegrationId, TYPE_PHONE_INTEGRATION, phoneType, phoneBrand, phoneSerialNr, phoneFirmware, clientId);
+    public void indexPhoneIntegration(String phoneIntegrationId, String siteId, String phoneType, String phoneBrand, String interfaceName, Integer capacity, String phoneFirmware) {
+        String capacityValue = capacity != null ? capacity.toString() : null;
+        indexDocument(phoneIntegrationId, TYPE_PHONE_INTEGRATION, phoneType, phoneBrand, interfaceName, capacityValue, phoneFirmware, siteId);
     }
 
     @Override

@@ -69,7 +69,7 @@ final class TestFixtures {
     }
 
     static PhoneIntegration phoneIntegration() {
-        return new PhoneIntegration(UUID2, UUID1, "TYPE", "Brand", "SERIAL", "FW");
+        return new PhoneIntegration(UUID2, UUID1, "TYPE", "Brand", "Interface", 4, "FW");
     }
 
     static InstalledSoftware installedSoftware() {

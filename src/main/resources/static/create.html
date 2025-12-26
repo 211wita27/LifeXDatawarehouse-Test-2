@@ -1482,10 +1482,9 @@
             case 'PhoneIntegration':
                 if(accountId) context.accountId=accountId;
                 if(projectId) context.projectId=projectId;
-                if(siteId) context.siteId=siteId;
-                if(clientId){
-                    await ensureAsyncValue('client', clientId, {lock:true});
-                    context.clientId=clientId;
+                if(siteId){
+                    await ensureAsyncValue('site', siteId, {lock:true});
+                    context.siteId=siteId;
                 }
                 break;
             case 'ServiceContract':
@@ -1638,16 +1637,17 @@
                 };
                 break;
 
-            case 'PhoneIntegration':
-                url='/phones';
-                p={
-                    clientID: v('client'),
-                    phoneType: v('type'),
-                    phoneBrand: toNull(v('brand')),
-                    phoneSerialNr: toNull(v('serial')),
-                    phoneFirmware: toNull(v('fw'))
-                };
-                break;
+        case 'PhoneIntegration':
+            url='/phones';
+            p={
+                siteID: v('site'),
+                phoneType: v('type'),
+                phoneBrand: toNull(v('brand')),
+                interfaceName: toNull(v('interfaceName')),
+                capacity: toIntOrNull(v('capacity')),
+                phoneFirmware: toNull(v('fw'))
+            };
+            break;
 
             case 'DeploymentVariant':
                 url='/deployment-variants';

@@ -149,8 +149,8 @@
             notes: ['Inactive variants should only be used for historical records.']
         },
         PhoneIntegration: {
-            summary: 'Document the phone integration that connects a client to telephony services.',
-            notes: ['Capture firmware and serial numbers when needed for troubleshooting.']
+            summary: 'Document the phone integration that connects a site to telephony services.',
+            notes: ['Track the interface name and line capacity to align with local infrastructure.']
         },
         Project: {
             summary: 'Create a project that ties an account to a deployment variant and address.',
@@ -239,10 +239,11 @@
             { id: 'active', label: 'IsActive', component: 'select', options: ['true','false'], name: 'IsActive', valueType: 'boolean' }
         ],
         PhoneIntegration: [
-            { id: 'client', label: 'Select client', component: 'asyncSelect', source: 'clients', placeholder: 'Select client', allowManual: false, name: 'ClientID', hint: 'Integrations attach to the working position using the phone.' },
+            { id: 'site', label: 'Select site', component: 'asyncSelect', source: 'sites', placeholder: 'Select site', allowManual: false, name: 'SiteID', hint: 'Integrations now attach directly to the site.' },
             { id: 'type', label: 'PhoneType', component: 'select', options: ['Emergency','NonEmergency','Both'], name: 'PhoneType' },
             { id: 'brand', label: 'Brand', component: 'input', name: 'PhoneBrand', required: false },
-            { id: 'serial', label: 'Serial Number', component: 'input', name: 'PhoneSerialNr', required: false },
+            { id: 'interfaceName', label: 'Interface Name', component: 'input', name: 'InterfaceName', required: false },
+            { id: 'capacity', label: 'Capacity', component: 'input', name: 'Capacity', required: false, inputmode: 'numeric', pattern: '[0-9]*' },
             { id: 'fw', label: 'Firmware', component: 'input', name: 'PhoneFirmware', required: false }
         ],
         Project: [
