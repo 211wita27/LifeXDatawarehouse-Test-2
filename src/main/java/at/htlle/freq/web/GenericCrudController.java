@@ -79,7 +79,7 @@ public class GenericCrudController {
 
         Map<String, Set<String>> c = new HashMap<>();
         c.put("Account", Set.of("AccountID", "AccountName", "ContactName", "ContactEmail", "ContactPhone", "VATNumber", "Country"));
-        c.put("Project", Set.of("ProjectID", "ProjectSAPID", "ProjectName", "DeploymentVariantID", "BundleType", "CreateDateTime", "LifecycleStatus", "AccountID", "AddressID"));
+        c.put("Project", Set.of("ProjectID", "ProjectSAPID", "ProjectName", "DeploymentVariantID", "BundleType", "CreateDateTime", "LifecycleStatus", "AccountID", "AddressID", "SpecialNotes"));
         c.put("Site", Set.of("SiteID", "SiteName", "ProjectID", "AddressID", "FireZone", "TenantCount"));
         c.put("Server", Set.of("ServerID", "SiteID", "ServerName", "ServerBrand", "ServerSerialNr", "ServerOS", "PatchLevel", "VirtualPlatform", "VirtualVersion", "HighAvailability"));
         c.put("Clients", Set.of("ClientID", "SiteID", "ClientName", "ClientBrand", "ClientSerialNr", "ClientOS", "PatchLevel", "InstallType"));

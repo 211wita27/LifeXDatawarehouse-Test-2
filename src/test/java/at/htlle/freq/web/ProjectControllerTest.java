@@ -72,6 +72,19 @@ class ProjectControllerTest {
     }
 
     @Test
+    void createPassesThroughSpecialNotes() {
+        Map<String, Object> body = baseBody();
+        body.put("specialNotes", "  On-site radio cabling  ");
+
+        controller.create(body);
+
+        ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbc).update(anyString(), paramsCaptor.capture());
+
+        assertEquals("On-site radio cabling", paramsCaptor.getValue().getValue("specialNotes"));
+    }
+
+    @Test
     void createUsesProvidedLifecycleStatus() {
         Map<String, Object> body = baseBody();
         body.put("LifecycleStatus", "eol");

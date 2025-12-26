@@ -250,6 +250,7 @@
             { id: 'pname', label: 'Project Name', component: 'input', name: 'ProjectName' },
             { id: 'variantId', label: 'Select deployment variant', component: 'asyncSelect', source: 'deploymentVariants', placeholder: 'Select deployment variant', allowManual: false, name: 'DeploymentVariantID', hint: 'Determines the LifeX deployment flavor.' },
             { id: 'bundle', label: 'Bundle Type', component: 'input', name: 'BundleType', required: false },
+            { id: 'specialNotes', label: 'Special Notes', component: 'input', name: 'SpecialNotes', required: false, hint: 'Document special installations or other noteworthy project details.' },
             { id: 'lifecycle', label: 'Lifecycle Status', component: 'select', name: 'LifecycleStatus', options: [
                 { value: 'OFFERED', label: 'Offered' },
                 { value: 'ACTIVE', label: 'Active' },

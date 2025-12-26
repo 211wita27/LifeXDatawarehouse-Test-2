@@ -95,7 +95,7 @@ public interface LuceneIndexService {
      * Indexes project metadata and its relations to deployment variants, accounts, and addresses.
      */
     void indexProject(String projectId, String projectSAPId, String projectName, String deploymentVariantId, String bundleType, String lifecycleStatus,
-                      String accountId, String addressId);
+                      String accountId, String addressId, String specialNotes);
 
     /**
      * Indexes radio devices with associated configuration details for operational queries.

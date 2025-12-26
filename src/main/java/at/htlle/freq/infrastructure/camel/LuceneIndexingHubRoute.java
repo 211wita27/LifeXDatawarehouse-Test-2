@@ -163,7 +163,8 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                                 p.getBundleType(),
                                 p.getLifecycleStatus() != null ? p.getLifecycleStatus().name() : null,
                                 p.getAccountID() != null ? p.getAccountID().toString() : null,
-                                p.getAddressID() != null ? p.getAddressID().toString() : null
+                                p.getAddressID() != null ? p.getAddressID().toString() : null,
+                                p.getSpecialNotes()
                         );
                         return;
                     }

@@ -89,6 +89,7 @@ CREATE TABLE Project (
                          LifecycleStatus     VARCHAR(20) NOT NULL,
                          AccountID           UUID NOT NULL,
                          AddressID           UUID NOT NULL,
+                         SpecialNotes        VARCHAR(500),
                          CONSTRAINT uq_project_sap UNIQUE (ProjectSAPID),
                          CONSTRAINT fk_project_variant FOREIGN KEY (DeploymentVariantID)
                              REFERENCES DeploymentVariant(VariantID),
