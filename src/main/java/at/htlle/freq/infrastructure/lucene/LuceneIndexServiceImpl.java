@@ -442,7 +442,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         audioDevice.getAudioDeviceBrand(),
                         audioDevice.getDeviceSerialNr(),
                         audioDevice.getAudioDeviceFirmware(),
-                        audioDevice.getDeviceType()
+                        audioDevice.getDeviceType(),
+                        audioDevice.getDirection()
                 );
             }
             for (City city : cities) {
@@ -455,7 +456,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         client.getClientName(),
                         client.getClientBrand(),
                         client.getClientOS(),
-                        client.getInstallType()
+                        client.getInstallType(),
+                        client.getWorkingPositionType(),
+                        client.getOtherInstalledSoftware()
                 );
             }
             for (Country country : countries) {
@@ -845,8 +848,9 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexClient(String clientId, String siteId, String clientName, String clientBrand, String clientOS, String installType) {
-        indexDocument(clientId, TYPE_CLIENT, clientName, clientBrand, clientOS, installType, siteId);
+    public void indexClient(String clientId, String siteId, String clientName, String clientBrand, String clientOS,
+                           String installType, String workingPositionType, String otherInstalledSoftware) {
+        indexDocument(clientId, TYPE_CLIENT, clientName, clientBrand, clientOS, installType, workingPositionType, otherInstalledSoftware, siteId);
     }
 
     @Override
@@ -855,8 +859,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType) {
-        indexDocument(audioDeviceId, TYPE_AUDIO_DEVICE, brand, serialNr, firmware, deviceType, clientId);
+    public void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType, String direction) {
+        indexDocument(audioDeviceId, TYPE_AUDIO_DEVICE, brand, serialNr, firmware, deviceType, direction, clientId);
     }
 
     @Override

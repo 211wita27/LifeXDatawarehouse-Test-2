@@ -27,7 +27,7 @@ class DomainFactoryTest {
         assertEquals("Vienna", address.getCityID());
 
         AudioDeviceFactory audioDeviceFactory = new AudioDeviceFactory();
-        AudioDevice audioDevice = audioDeviceFactory.create(UUID1, "Brand", "SN", "FW", "HEADSET");
+        AudioDevice audioDevice = audioDeviceFactory.create(UUID1, "Brand", "SN", "FW", "HEADSET", "Input");
         assertEquals(UUID1, audioDevice.getClientID());
         assertEquals("Brand", audioDevice.getAudioDeviceBrand());
 

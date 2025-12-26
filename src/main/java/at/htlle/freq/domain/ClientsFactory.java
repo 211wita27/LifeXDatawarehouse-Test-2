@@ -21,6 +21,13 @@ public class ClientsFactory {
      */
     public Clients create(UUID siteID, String clientName, String clientBrand, String clientSerialNr,
                           String clientOS, String patchLevel, String installType) {
-        return new Clients(null, siteID, clientName, clientBrand, clientSerialNr, clientOS, patchLevel, installType);
+        return create(siteID, clientName, clientBrand, clientSerialNr, clientOS, patchLevel, installType, null, null);
+    }
+
+    public Clients create(UUID siteID, String clientName, String clientBrand, String clientSerialNr,
+                          String clientOS, String patchLevel, String installType,
+                          String workingPositionType, String otherInstalledSoftware) {
+        return new Clients(null, siteID, clientName, clientBrand, clientSerialNr, clientOS, patchLevel, installType,
+                workingPositionType, otherInstalledSoftware);
     }
 }

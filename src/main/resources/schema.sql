@@ -165,6 +165,8 @@ CREATE TABLE Clients (
                          ClientOS       VARCHAR(100),
                          PatchLevel     VARCHAR(50),
                          InstallType    VARCHAR(20) NOT NULL,
+                         WorkingPositionType   VARCHAR(100),
+                         OtherInstalledSoftware VARCHAR(500),
                          CONSTRAINT fk_clients_site FOREIGN KEY (SiteID)
                              REFERENCES Site(SiteID),
                          CONSTRAINT ck_clients_installtype
@@ -202,10 +204,13 @@ CREATE TABLE AudioDevice (
                              DeviceSerialNr      VARCHAR(100),
                              AudioDeviceFirmware VARCHAR(50),
                              DeviceType          VARCHAR(10) NOT NULL,
+                             Direction           VARCHAR(15) NOT NULL,
                              CONSTRAINT fk_audiodevice_client FOREIGN KEY (ClientID)
                                  REFERENCES Clients(ClientID),
                              CONSTRAINT ck_audiodevice_devicetype
-                                 CHECK (DeviceType IN ('HEADSET','SPEAKER','MIC'))
+                                 CHECK (DeviceType IN ('HEADSET','SPEAKER','MIC')),
+                             CONSTRAINT ck_audiodevice_direction
+                                 CHECK (Direction IN ('Input','Output','Input + Output'))
 );
 
 -- =========================================================

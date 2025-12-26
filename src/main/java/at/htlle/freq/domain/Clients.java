@@ -17,10 +17,13 @@ public class Clients {
     private String clientOS;
     private String patchLevel;
     private String installType; // LOCAL / BROWSER
+    private String workingPositionType;
+    private String otherInstalledSoftware;
 
     public Clients() {}
     public Clients(UUID clientID, UUID siteID, String clientName, String clientBrand, String clientSerialNr,
-                   String clientOS, String patchLevel, String installType) {
+                   String clientOS, String patchLevel, String installType,
+                   String workingPositionType, String otherInstalledSoftware) {
         this.clientID = clientID;
         this.siteID = siteID;
         this.clientName = clientName;
@@ -29,6 +32,8 @@ public class Clients {
         this.clientOS = clientOS;
         this.patchLevel = patchLevel;
         this.installType = installType;
+        this.workingPositionType = workingPositionType;
+        this.otherInstalledSoftware = otherInstalledSoftware;
     }
 
     public UUID getClientID() { return clientID; }
@@ -54,4 +59,10 @@ public class Clients {
 
     public String getInstallType() { return installType; }
     public void setInstallType(String installType) { this.installType = installType; }
+
+    public String getWorkingPositionType() { return workingPositionType; }
+    public void setWorkingPositionType(String workingPositionType) { this.workingPositionType = workingPositionType; }
+
+    public String getOtherInstalledSoftware() { return otherInstalledSoftware; }
+    public void setOtherInstalledSoftware(String otherInstalledSoftware) { this.otherInstalledSoftware = otherInstalledSoftware; }
 }

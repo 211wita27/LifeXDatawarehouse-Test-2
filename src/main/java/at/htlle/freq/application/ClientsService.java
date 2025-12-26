@@ -122,6 +122,8 @@ public class ClientsService {
         existing.setClientOS(nvl(patch.getClientOS(), existing.getClientOS()));
         existing.setPatchLevel(nvl(patch.getPatchLevel(), existing.getPatchLevel()));
         existing.setInstallType(nvl(patch.getInstallType(), existing.getInstallType()));
+        existing.setWorkingPositionType(nvl(patch.getWorkingPositionType(), existing.getWorkingPositionType()));
+        existing.setOtherInstalledSoftware(nvl(patch.getOtherInstalledSoftware(), existing.getOtherInstalledSoftware()));
 
         repo.save(existing);
         registerAfterCommitIndexing(existing);
@@ -180,7 +182,9 @@ public class ClientsService {
                     c.getClientName(),
                     c.getClientBrand(),
                     c.getClientOS(),
-                    c.getInstallType()
+                    c.getInstallType(),
+                    c.getWorkingPositionType(),
+                    c.getOtherInstalledSoftware()
             );
             log.debug("Client indexed in Lucene: id={}", c.getClientID());
         } catch (Exception e) {

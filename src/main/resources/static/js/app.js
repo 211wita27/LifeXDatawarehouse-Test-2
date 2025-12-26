@@ -795,9 +795,10 @@ function formatPreview(type, row){
             const v=val(row,k); if(v) parts.push(v);
         });
     } else if (t==='client'){
-        ['ClientBrand','ClientOS'].forEach(k=>{
+        ['ClientBrand','ClientOS','WorkingPositionType'].forEach(k=>{
             const v=val(row,k); if(v) parts.push(v);
         });
+        const other = val(row,'OtherInstalledSoftware'); if(other) parts.push(other);
     } else if (t==='radio'){
         const br=val(row,'RadioBrand'); if (br) parts.push(br);
         const md=val(row,'Mode'); if (md) parts.push(md);

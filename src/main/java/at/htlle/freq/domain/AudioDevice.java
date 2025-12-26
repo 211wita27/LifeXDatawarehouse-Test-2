@@ -15,16 +15,18 @@ public class AudioDevice {
     private String deviceSerialNr;
     private String audioDeviceFirmware;
     private String deviceType; // HEADSET / SPEAKER / MIC
+    private String direction;  // Input / Output / Input + Output
 
     public AudioDevice() {}
     public AudioDevice(UUID audioDeviceID, UUID clientID, String audioDeviceBrand, String deviceSerialNr,
-                       String audioDeviceFirmware, String deviceType) {
+                       String audioDeviceFirmware, String deviceType, String direction) {
         this.audioDeviceID = audioDeviceID;
         this.clientID = clientID;
         this.audioDeviceBrand = audioDeviceBrand;
         this.deviceSerialNr = deviceSerialNr;
         this.audioDeviceFirmware = audioDeviceFirmware;
         this.deviceType = deviceType;
+        this.direction = direction;
     }
 
     public UUID getAudioDeviceID() { return audioDeviceID; }
@@ -44,4 +46,7 @@ public class AudioDevice {
 
     public String getDeviceType() { return deviceType; }
     public void setDeviceType(String deviceType) { this.deviceType = deviceType; }
+
+    public String getDirection() { return direction; }
+    public void setDirection(String direction) { this.direction = direction; }
 }

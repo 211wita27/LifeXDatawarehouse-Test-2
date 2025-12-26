@@ -25,13 +25,14 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
             rs.getString("AudioDeviceBrand"),
             rs.getString("DeviceSerialNr"),
             rs.getString("AudioDeviceFirmware"),
-            rs.getString("DeviceType")
+            rs.getString("DeviceType"),
+            rs.getString("Direction")
     );
 
     @Override
     public Optional<AudioDevice> findById(UUID id) {
         String sql = """
-            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction
             FROM AudioDevice WHERE AudioDeviceID = :id
             """;
         try { return Optional.ofNullable(jdbc.queryForObject(sql, new MapSqlParameterSource("id", id), mapper)); }
@@ -41,7 +42,7 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
     @Override
     public List<AudioDevice> findByClient(UUID clientId) {
         String sql = """
-            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction
             FROM AudioDevice WHERE ClientID = :cid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("cid", clientId), mapper);
@@ -50,7 +51,7 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
     @Override
     public List<AudioDevice> findAll() {
         return jdbc.query("""
-            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType
+            SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction
             FROM AudioDevice
             """, mapper);
     }
@@ -72,8 +73,8 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
         boolean isNew = d.getAudioDeviceID() == null;
         if (isNew) {
             String sql = """
-                INSERT INTO AudioDevice (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType)
-                VALUES (:client, :brand, :sn, :fw, :type)
+                INSERT INTO AudioDevice (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction)
+                VALUES (:client, :brand, :sn, :fw, :type, :direction)
                 RETURNING AudioDeviceID
                 """;
             UUID id = jdbc.queryForObject(sql, new MapSqlParameterSource()
@@ -81,13 +82,14 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
                     .addValue("brand", d.getAudioDeviceBrand())
                     .addValue("sn", d.getDeviceSerialNr())
                     .addValue("fw", d.getAudioDeviceFirmware())
-                    .addValue("type", d.getDeviceType()), UUID.class);
+                    .addValue("type", d.getDeviceType())
+                    .addValue("direction", d.getDirection()), UUID.class);
             d.setAudioDeviceID(id);
         } else {
             String sql = """
                 UPDATE AudioDevice SET
                     ClientID = :client, AudioDeviceBrand = :brand, DeviceSerialNr = :sn,
-                    AudioDeviceFirmware = :fw, DeviceType = :type
+                    AudioDeviceFirmware = :fw, DeviceType = :type, Direction = :direction
                 WHERE AudioDeviceID = :id
                 """;
             jdbc.update(sql, new MapSqlParameterSource()
@@ -96,7 +98,8 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
                     .addValue("brand", d.getAudioDeviceBrand())
                     .addValue("sn", d.getDeviceSerialNr())
                     .addValue("fw", d.getAudioDeviceFirmware())
-                    .addValue("type", d.getDeviceType()));
+                    .addValue("type", d.getDeviceType())
+                    .addValue("direction", d.getDirection()));
         }
         return d;
     }

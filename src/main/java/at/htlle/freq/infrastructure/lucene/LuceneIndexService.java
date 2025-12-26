@@ -63,7 +63,8 @@ public interface LuceneIndexService {
     /**
      * Indexes client metadata together with deployment context details, enabling entity-level lookup.
      */
-    void indexClient(String clientId, String siteId, String clientName, String clientBrand, String clientOS, String installType);
+    void indexClient(String clientId, String siteId, String clientName, String clientBrand, String clientOS,
+                     String installType, String workingPositionType, String otherInstalledSoftware);
 
     /**
      * Indexes country records for quick lookup via ISO code or display name.
@@ -73,7 +74,7 @@ public interface LuceneIndexService {
     /**
      * Indexes audio device metadata belonging to a client, updating searchable hardware information.
      */
-    void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType);
+    void indexAudioDevice(String audioDeviceId, String clientId, String brand, String serialNr, String firmware, String deviceType, String direction);
 
     /**
      * Indexes deployment variant information including lifecycle flags for project planning.
