@@ -8,10 +8,10 @@ import java.util.Locale;
  * consumers to check if a project is currently operational.
  */
 public enum ProjectLifecycleStatus {
-    PLANNED,
+    OFFERED,
     ACTIVE,
     MAINTENANCE,
-    RETIRED;
+    EOL;
 
     public static ProjectLifecycleStatus fromString(String value) {
         if (value == null) {
@@ -32,10 +32,10 @@ public enum ProjectLifecycleStatus {
 
     public String getDisplayLabel() {
         return switch (this) {
-            case PLANNED -> "Planned";
+            case OFFERED -> "Offered";
             case ACTIVE -> "Active";
             case MAINTENANCE -> "Maintenance";
-            case RETIRED -> "Retired";
+            case EOL -> "EOL";
         };
     }
 
