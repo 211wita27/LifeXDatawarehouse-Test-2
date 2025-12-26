@@ -43,13 +43,13 @@ public class ProjectController {
     public List<Map<String, Object>> findByAccount(@RequestParam(required = false) String accountId) {
         if (accountId != null) {
             return jdbc.queryForList("""
-                SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime
+                SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime, SpecialNotes
                 FROM Project
                 WHERE AccountID = :accId
                 """, new MapSqlParameterSource("accId", accountId));
         }
         return jdbc.queryForList("""
-            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime
+            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime, SpecialNotes
             FROM Project
             """, new HashMap<>());
     }
@@ -65,7 +65,7 @@ public class ProjectController {
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
         var rows = jdbc.queryForList("""
-            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime
+            SELECT ProjectID, ProjectName, DeploymentVariantID, BundleType, AccountID, AddressID, LifecycleStatus, CreateDateTime, SpecialNotes
             FROM Project
             WHERE ProjectID = :id
             """, new MapSqlParameterSource("id", id));
@@ -109,8 +109,8 @@ public class ProjectController {
         }
 
         String sql = """
-            INSERT INTO Project (ProjectSAPID, ProjectName, DeploymentVariantID, BundleType, CreateDateTime, LifecycleStatus, AccountID, AddressID)
-            VALUES (:projectSAPID, :projectName, :deploymentVariantID, :bundleType, CURRENT_DATE, :lifecycleStatus, :accountID, :addressID)
+            INSERT INTO Project (ProjectSAPID, ProjectName, DeploymentVariantID, BundleType, CreateDateTime, LifecycleStatus, AccountID, AddressID, SpecialNotes)
+            VALUES (:projectSAPID, :projectName, :deploymentVariantID, :bundleType, CURRENT_DATE, :lifecycleStatus, :accountID, :addressID, :specialNotes)
             """;
 
         Object statusRaw = Optional.ofNullable(body.get("lifecycleStatus"))
@@ -134,12 +134,13 @@ public class ProjectController {
         MapSqlParameterSource params = new MapSqlParameterSource();
         body.forEach((key, value) -> {
             String normalized = key == null ? "" : key.toLowerCase(Locale.ROOT);
-            if (!"lifecyclestatus".equals(normalized) && !"lifecycle_status".equals(normalized)) {
+            if (!"lifecyclestatus".equals(normalized) && !"lifecycle_status".equals(normalized) && !"specialnotes".equals(normalized)) {
                 params.addValue(key, value);
             }
         });
         params.addValue("projectSAPID", sapId);
         params.addValue("lifecycleStatus", status.name());
+        params.addValue("specialNotes", extractSpecialNotes(body));
 
         jdbc.update(sql, params);
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
@@ -194,8 +195,13 @@ public class ProjectController {
         body.forEach((key, value) -> {
             String normalized = key == null ? "" : key.toLowerCase(Locale.ROOT);
             if (!"lifecyclestatus".equals(normalized) && !"lifecycle_status".equals(normalized)) {
-                sets.add(key + " = :" + key);
-                params.addValue(key, value);
+                if ("specialnotes".equals(normalized)) {
+                    sets.add("SpecialNotes = :specialNotes");
+                    params.addValue("specialNotes", normalizeNotes(value));
+                } else {
+                    sets.add(key + " = :" + key);
+                    params.addValue(key, value);
+                }
             }
         });
 
@@ -247,6 +253,21 @@ public class ProjectController {
                 .map(e -> e.getValue() != null ? e.getValue().toString() : null)
                 .findFirst()
                 .orElse(null);
+    }
+
+    private String extractSpecialNotes(Map<String, Object> body) {
+        return body.entrySet().stream()
+                .filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase("specialnotes"))
+                .map(Map.Entry::getValue)
+                .map(this::normalizeNotes)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String normalizeNotes(Object value) {
+        if (value == null) return null;
+        String trimmed = value.toString().trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {

@@ -124,6 +124,7 @@ public class ProjectService {
             existing.setLifecycleStatus(patch.getLifecycleStatus() != null ? patch.getLifecycleStatus() : existing.getLifecycleStatus());
             existing.setAccountID(patch.getAccountID() != null ? patch.getAccountID() : existing.getAccountID());
             existing.setAddressID(patch.getAddressID() != null ? patch.getAddressID() : existing.getAddressID());
+            existing.setSpecialNotes(nvl(trimToNull(patch.getSpecialNotes()), existing.getSpecialNotes()));
 
             trimIdentifiers(existing);
             validateRequiredIdentifiers(existing);
@@ -200,6 +201,7 @@ public class ProjectService {
         if (project.getCreateDateTime() != null) {
             project.setCreateDateTime(project.getCreateDateTime().trim());
         }
+        project.setSpecialNotes(trimToNull(project.getSpecialNotes()));
     }
 
     private void indexToLucene(Project p) {
@@ -212,7 +214,8 @@ public class ProjectService {
                     p.getBundleType(),
                     p.getLifecycleStatus() != null ? p.getLifecycleStatus().name() : null,
                     p.getAccountID() != null ? p.getAccountID().toString() : null,
-                    p.getAddressID() != null ? p.getAddressID().toString() : null
+                    p.getAddressID() != null ? p.getAddressID().toString() : null,
+                    p.getSpecialNotes()
             );
             log.debug("Project indexed in Lucene: id={}", p.getProjectID());
         } catch (Exception e) {
@@ -228,5 +231,11 @@ public class ProjectService {
 
     private static String nvl(String in, String fallback) {
         return in != null ? in : fallback;
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

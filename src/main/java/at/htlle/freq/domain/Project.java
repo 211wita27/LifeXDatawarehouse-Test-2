@@ -6,7 +6,8 @@ import java.util.UUID;
  * Aggregates all information about a deployment project that is executed for
  * a customer {@link Account}. Projects reference the {@link DeploymentVariant}
  * that governs the technical scope, track lifecycle state via
- * {@link ProjectLifecycleStatus}, and own subordinate {@link Site} locations.
+ * {@link ProjectLifecycleStatus}, capture special installation notes, and own
+ * subordinate {@link Site} locations.
  */
 public class Project {
     private UUID projectID;
@@ -18,11 +19,12 @@ public class Project {
     private ProjectLifecycleStatus lifecycleStatus;
     private UUID accountID;
     private UUID addressID;
+    private String specialNotes;
 
     public Project() {}
     public Project(UUID projectID, String projectSAPID, String projectName, UUID deploymentVariantID,
                    String bundleType, String createDateTime, ProjectLifecycleStatus lifecycleStatus,
-                   UUID accountID, UUID addressID) {
+                   UUID accountID, UUID addressID, String specialNotes) {
         this.projectID = projectID;
         this.projectSAPID = projectSAPID;
         this.projectName = projectName;
@@ -32,6 +34,7 @@ public class Project {
         this.lifecycleStatus = lifecycleStatus;
         this.accountID = accountID;
         this.addressID = addressID;
+        this.specialNotes = specialNotes;
     }
 
     public UUID getProjectID() { return projectID; }
@@ -60,4 +63,7 @@ public class Project {
 
     public UUID getAddressID() { return addressID; }
     public void setAddressID(UUID addressID) { this.addressID = addressID; }
+
+    public String getSpecialNotes() { return specialNotes; }
+    public void setSpecialNotes(String specialNotes) { this.specialNotes = specialNotes; }
 }

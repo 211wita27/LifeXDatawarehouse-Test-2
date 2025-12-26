@@ -501,7 +501,8 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
                         project.getBundleType(),
                         project.getLifecycleStatus() != null ? project.getLifecycleStatus().name() : null,
                         toStringOrNull(project.getAccountID()),
-                        toStringOrNull(project.getAddressID())
+                        toStringOrNull(project.getAddressID()),
+                        project.getSpecialNotes()
                 );
             }
             for (Radio radio : radios) {
@@ -897,7 +898,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
 
     @Override
     public void indexProject(String projectId, String projectSAPId, String projectName, String deploymentVariantId, String bundleType, String lifecycleStatus,
-                             String accountId, String addressId) {
+                             String accountId, String addressId, String specialNotes) {
         String status = lifecycleStatus == null ? "" : lifecycleStatus.trim();
         String statusLabel = status.replace('_', ' ').toLowerCase(Locale.ROOT);
         if (!statusLabel.isEmpty()) {
@@ -905,7 +906,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         }
         String statusToken = tokenWithPrefix("status", status);
         indexDocument(projectId, TYPE_PROJECT, projectName, bundleType,
-                status, statusLabel, statusToken, projectSAPId, deploymentVariantId, accountId, addressId);
+                status, statusLabel, statusToken, projectSAPId, deploymentVariantId, accountId, addressId, specialNotes);
     }
 
     @Override
