@@ -1,5 +1,6 @@
 package at.htlle.freq.web;
 
+import at.htlle.freq.application.ProjectSiteAssignmentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -17,12 +18,14 @@ import static org.mockito.Mockito.*;
 class ProjectControllerTest {
 
     private NamedParameterJdbcTemplate jdbc;
+    private ProjectSiteAssignmentService projectSites;
     private ProjectController controller;
 
     @BeforeEach
     void setUp() {
         jdbc = mock(NamedParameterJdbcTemplate.class);
-        controller = new ProjectController(jdbc);
+        projectSites = mock(ProjectSiteAssignmentService.class);
+        controller = new ProjectController(jdbc, projectSites);
         when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Integer.class))).thenReturn(0);
     }
 
@@ -43,11 +46,9 @@ class ProjectControllerTest {
 
         controller.create(body);
 
-        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
-        verify(jdbc).update(sqlCaptor.capture(), paramsCaptor.capture());
+        verify(jdbc).update(anyString(), paramsCaptor.capture(), any(), any(String[].class));
 
-        assertTrue(sqlCaptor.getValue().contains(":lifecycleStatus"));
         assertEquals("ACTIVE", paramsCaptor.getValue().getValue("lifecycleStatus"));
     }
 
@@ -58,7 +59,7 @@ class ProjectControllerTest {
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(body));
         assertEquals(HttpStatus.CONFLICT, ex.getStatusCode());
-        verify(jdbc, never()).update(anyString(), any(MapSqlParameterSource.class));
+        verify(jdbc, never()).update(anyString(), any(MapSqlParameterSource.class), any(), any(String[].class));
     }
 
     @Test
@@ -68,7 +69,7 @@ class ProjectControllerTest {
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(body));
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
-        verify(jdbc, never()).update(anyString(), any(MapSqlParameterSource.class));
+        verify(jdbc, never()).update(anyString(), any(MapSqlParameterSource.class), any(), any(String[].class));
     }
 
     @Test
@@ -79,7 +80,7 @@ class ProjectControllerTest {
         controller.create(body);
 
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
-        verify(jdbc).update(anyString(), paramsCaptor.capture());
+        verify(jdbc).update(anyString(), paramsCaptor.capture(), any(), any(String[].class));
 
         assertEquals("On-site radio cabling", paramsCaptor.getValue().getValue("specialNotes"));
     }
@@ -92,7 +93,7 @@ class ProjectControllerTest {
         controller.create(body);
 
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
-        verify(jdbc).update(anyString(), paramsCaptor.capture());
+        verify(jdbc).update(anyString(), paramsCaptor.capture(), any(), any(String[].class));
 
         assertEquals("EOL", paramsCaptor.getValue().getValue("lifecycleStatus"));
     }
@@ -105,7 +106,7 @@ class ProjectControllerTest {
         controller.create(body);
 
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
-        verify(jdbc).update(anyString(), paramsCaptor.capture());
+        verify(jdbc).update(anyString(), paramsCaptor.capture(), any(), any(String[].class));
 
         assertEquals("ACTIVE", paramsCaptor.getValue().getValue("lifecycleStatus"));
     }

@@ -51,6 +51,7 @@ class SiteControllerIntegrationTest {
 
         Map<String, Object> payload = new HashMap<>();
         payload.put("projectID", projectId);
+        payload.put("projectIds", List.of(projectId));
         payload.put("addressID", addressId);
         payload.put("siteName", siteName);
         payload.put("fireZone", "Zulu");
@@ -94,6 +95,14 @@ class SiteControllerIntegrationTest {
         assertEquals(12, siteRow.get("tenants"));
         assertEquals(3, siteRow.get("redundant"));
 
+        List<Map<String, Object>> links = jdbc.queryForList("""
+                SELECT ProjectID
+                FROM ProjectSite
+                WHERE SiteID = :sid
+                """, new MapSqlParameterSource("sid", generatedSiteId));
+        assertEquals(1, links.size());
+        assertEquals(projectId, links.get(0).get("ProjectID"));
+
         List<Map<String, Object>> assignments = jdbc.queryForList("""
                 SELECT InstalledSoftwareID AS id,
                        SoftwareID          AS sw,
@@ -135,8 +144,54 @@ class SiteControllerIntegrationTest {
         mockMvc.perform(get("/sites/{id}/detail", siteId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.SiteID").value(siteId))
+                .andExpect(jsonPath("$.ProjectIDs").isArray())
                 .andExpect(jsonPath("$.softwareAssignments").isArray())
                 .andExpect(jsonPath("$.softwareAssignments[0].installedSoftwareId").exists());
+    }
+
+    @Test
+    @Transactional
+    void updateReplacesProjectAssignmentsWithoutDuplicates() throws Exception {
+        UUID siteId = UUID.fromString("9356ae01-fce4-4d24-84ca-080000000001");
+        UUID newProject = UUID.fromString("2b0d9a59-e2b6-4fbe-b257-070000000002");
+
+        Map<String, Object> payload = Map.of("projectIds", List.of(newProject, newProject));
+
+        mockMvc.perform(post("/sites/{id}", siteId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isMethodNotAllowed());
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put("/sites/{id}", siteId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(payload)))
+                .andExpect(status().isOk());
+
+        List<Map<String, Object>> assignments = jdbc.queryForList("""
+                SELECT ProjectID
+                FROM ProjectSite
+                WHERE SiteID = :sid
+                """, new MapSqlParameterSource("sid", siteId));
+        assertEquals(1, assignments.size(), "duplicate assignments should be ignored");
+        assertEquals(newProject, assignments.get(0).get("ProjectID"));
+
+        UUID siteProjectColumn = jdbc.queryForObject("SELECT ProjectID FROM Site WHERE SiteID = :sid",
+                new MapSqlParameterSource("sid", siteId), UUID.class);
+        assertEquals(newProject, siteProjectColumn);
+    }
+
+    @Test
+    @Transactional
+    void deleteRemovesProjectSiteLinks() throws Exception {
+        UUID siteId = UUID.fromString("7e723334-3ac1-454c-8e6d-080000000002");
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/sites/{id}", siteId))
+                .andExpect(status().isNoContent());
+
+        Integer remaining = jdbc.queryForObject("SELECT COUNT(*) FROM ProjectSite WHERE SiteID = :sid",
+                new MapSqlParameterSource("sid", siteId), Integer.class);
+        assertEquals(0, remaining);
     }
 
     private String toIso(Object value) {

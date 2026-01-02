@@ -4,6 +4,7 @@ import at.htlle.freq.domain.InstalledSoftware;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
 import at.htlle.freq.domain.Site;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 public record SiteUpsertRequest(
         String siteName,
         UUID projectID,
+        List<UUID> projectIds,
         UUID addressID,
         String fireZone,
         Integer tenantCount,
@@ -26,8 +28,8 @@ public record SiteUpsertRequest(
         if (isBlank(siteName)) {
             throw new IllegalArgumentException("SiteName is required");
         }
-        if (projectID == null) {
-            throw new IllegalArgumentException("ProjectID is required");
+        if (normalizedProjectIds().isEmpty()) {
+            throw new IllegalArgumentException("At least one ProjectID is required");
         }
         if (addressID == null) {
             throw new IllegalArgumentException("AddressID is required");
@@ -74,7 +76,7 @@ public record SiteUpsertRequest(
     public Site toSite() {
         Site site = new Site();
         site.setSiteName(siteName);
-        site.setProjectID(projectID);
+        site.setProjectID(primaryProjectId());
         site.setAddressID(addressID);
         site.setFireZone(fireZone);
         site.setTenantCount(tenantCount);
@@ -85,6 +87,17 @@ public record SiteUpsertRequest(
 
     public List<SiteSoftwareAssignmentDto> normalizedAssignments() {
         return softwareAssignments == null ? List.of() : softwareAssignments;
+    }
+
+    public List<UUID> normalizedProjectIds() {
+        List<UUID> ids = new ArrayList<>();
+        if (projectID != null) ids.add(projectID);
+        if (projectIds != null) ids.addAll(projectIds);
+        return ids.stream().filter(Objects::nonNull).distinct().toList();
+    }
+
+    public UUID primaryProjectId() {
+        return normalizedProjectIds().stream().findFirst().orElse(null);
     }
 
     public List<InstalledSoftware> toInstalledSoftware(UUID siteId) {

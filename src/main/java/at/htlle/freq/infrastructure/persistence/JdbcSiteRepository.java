@@ -46,8 +46,10 @@ public class JdbcSiteRepository implements SiteRepository {
     @Override
     public List<Site> findByProject(UUID projectId) {
         String sql = """
-            SELECT SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount, RedundantServers, HighAvailability
-            FROM Site WHERE ProjectID = :pid
+            SELECT s.SiteID, s.SiteName, s.ProjectID, s.AddressID, s.FireZone, s.TenantCount, s.RedundantServers, s.HighAvailability
+            FROM Site s
+            JOIN ProjectSite ps ON ps.SiteID = s.SiteID
+            WHERE ps.ProjectID = :pid
             """;
         return jdbc.query(sql, new MapSqlParameterSource("pid", projectId), mapper);
     }

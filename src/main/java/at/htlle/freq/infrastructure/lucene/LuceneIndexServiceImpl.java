@@ -26,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -548,7 +549,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
             for (Site site : sites) {
                 indexSite(
                         toStringOrNull(site.getSiteID()),
-                        toStringOrNull(site.getProjectID()),
+                        site.getProjectID() != null ? List.of(site.getProjectID().toString()) : List.of(),
                         toStringOrNull(site.getAddressID()),
                         site.getSiteName(),
                         site.getFireZone(),
@@ -935,7 +936,7 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
     }
 
     @Override
-    public void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone,
+    public void indexSite(String siteId, Collection<String> projectIds, String addressId, String siteName, String fireZone,
                           Integer tenantCount, Integer redundantServers, boolean highAvailability) {
         String tenants = tenantCount != null ? tenantCount.toString() : "";
         String redundant = redundantServers != null ? redundantServers.toString() : "";
@@ -943,7 +944,10 @@ public class LuceneIndexServiceImpl implements LuceneIndexService {
         String redundantToken = tokenWithPrefix("redundancy", redundant);
         String haValue = String.valueOf(highAvailability);
         String haToken = tokenWithPrefix("ha", haValue);
-        indexDocument(siteId, TYPE_SITE, siteName, fireZone, zoneToken, tenants, redundant, redundantToken, haValue, haToken, projectId, addressId);
+        List<String> projectTokens = projectIds == null ? List.of() : projectIds.stream().filter(Objects::nonNull).toList();
+        List<String> fields = new ArrayList<>(List.of(siteName, fireZone, zoneToken, tenants, redundant, redundantToken, haValue, haToken, addressId));
+        fields.addAll(projectTokens);
+        indexDocument(siteId, TYPE_SITE, fields.toArray(String[]::new));
     }
 
     @Override
