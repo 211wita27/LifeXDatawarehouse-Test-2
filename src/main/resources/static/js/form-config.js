@@ -277,7 +277,7 @@
             ] },
             { id: 'accId', label: 'Select account', component: 'asyncSelect', source: 'accounts', allowManual: false, name: 'AccountID' },
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID' },
-            { id: 'siteIds', label: 'Link existing sites', component: 'asyncSelect', source: 'sites', allowManual: false, placeholder: 'Select one or more sites', name: 'SiteIDs', required: false, multiple: true, dependsOn: 'accId', dependsOnMessage: 'Select account first', hint: 'Assign already-created sites to this project.' }
+            { id: 'siteIds', label: 'Link existing sites', component: 'asyncSelect', source: 'sites', allowManual: false, placeholder: 'Select sites for the chosen account', name: 'SiteIDs', required: false, dependsOn: 'accId', dependsOnMessage: 'Please select an account first', hint: 'Sites become available after choosing an account and list all entries for that account.' }
         ],
         Radio: [
             { id: 'siteId', label: 'Select site', component: 'asyncSelect', source: 'sites', allowManual: false, name: 'SiteID', hint: 'Radios are installed at a specific site.' },
