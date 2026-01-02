@@ -49,7 +49,8 @@ final class TestFixtures {
     }
 
     static Project project() {
-        return new Project(UUID3, "SAP-1", "Project", UUID2, "Bundle", "2024-01-01", ProjectLifecycleStatus.ACTIVE, UUID4, UUID5);
+        return new Project(UUID3, "SAP-1", "Project", UUID2, "Bundle", "2024-01-01", ProjectLifecycleStatus.ACTIVE, UUID4, UUID5,
+                "Requires on-site coordination");
     }
 
     static Site site() {
