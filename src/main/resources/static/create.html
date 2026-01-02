@@ -2050,7 +2050,7 @@
             case 'Site':
                 if(accountId) context.accountId=accountId;
                 if(projectId){
-                    await ensureAsyncValue('pIds', [projectId], {lock:true});
+                    await ensureAsyncValue('projectIds', [projectId], {lock:true});
                     context.projectId=projectId;
                 }
                 break;
@@ -2195,7 +2195,7 @@
 
             case 'Site':
                 url='/sites';
-                const projectIds = normalizeIdList(mv('pIds'));
+                const projectIds = normalizeIdList(mv('projectIds'));
                 selectedProjectIds = projectIds;
                 const tenantRaw=v('tenant');
                 const tenantCount=tenantRaw ? Number(tenantRaw) : null;
