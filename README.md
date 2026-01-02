@@ -216,6 +216,12 @@ erDiagram
 - **Local checks** – Before commits, `mvn test` runs alongside manual UI checks (autocomplete, debouncing, API fallbacks).
 - **Static analysis** – Checkstyle and SpotBugs remain on the roadmap.
 
+## 🧪 Manual QA (UI)
+
+- Create a project and pick multiple existing sites from the new multi-select; confirm the form reports saved site assignments and the main index still lists only project rows (no join-table noise).
+- Create or edit a site while selecting multiple projects; submission should succeed and keep the project/site associations intact.
+- Clear all selections in either form and resubmit to ensure assignments can be removed from both directions without exposing join-table entries in the index view.
+
 ---
 
 ## 🚧 Roadmap

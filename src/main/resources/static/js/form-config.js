@@ -259,7 +259,8 @@
                 { value: 'EOL', label: 'EOL' }
             ] },
             { id: 'accId', label: 'Select account', component: 'asyncSelect', source: 'accounts', allowManual: false, name: 'AccountID' },
-            { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID' }
+            { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID' },
+            { id: 'siteIds', label: 'Link existing sites (optional)', component: 'asyncSelect', source: 'sites', allowManual: false, placeholder: 'Select one or more sites', name: 'SiteIDs', required: false, multiple: true, hint: 'Assign already-created sites to this project.' }
         ],
         Radio: [
             { id: 'siteId', label: 'Select site', component: 'asyncSelect', source: 'sites', allowManual: false, name: 'SiteID', hint: 'Radios are installed at a specific site.' },
@@ -289,7 +290,7 @@
             { id: 'endDate', label: 'End Date', component: 'input', inputType: 'date', name: 'EndDate', hint: 'End date may remain empty for ongoing contracts.' }
         ],
         Site: [
-            { id: 'pId', label: 'Select project', component: 'asyncSelect', source: 'projects', allowManual: false, name: 'ProjectID', hint: 'Each site must belong to an existing project.' },
+            { id: 'pIds', label: 'Select project(s)', component: 'asyncSelect', source: 'projects', allowManual: false, name: 'ProjectIDs', placeholder: 'Select one or more projects', multiple: true, hint: 'Sites can now be linked to multiple projects.' },
             { id: 'name', label: 'Site Name', component: 'input', name: 'SiteName' },
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID', hint: 'Choose the physical location for this site.' },
             { id: 'zone', label: 'FireZone', component: 'input', name: 'FireZone', required: false },

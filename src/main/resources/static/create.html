@@ -1044,8 +1044,14 @@
             filter=null,
             name=null,
             value=null,
-            wrapperClass='form-field'
+            wrapperClass='form-field',
+            multiple=false
         } = options;
+        if(multiple){
+            const normalizedValues=Array.isArray(value)?value.filter(Boolean):value?[String(value)]:[];
+            asyncSelectConfigs[id]={sourceKey, required, allowManual:false, placeholder, dependsOn, emptyText, filter, name, initialValues: normalizedValues, multiple:true};
+            return renderAsyncMultiSelect(id,label,placeholder,{required, dependsOn, emptyText, name, values: normalizedValues, wrapperClass, sourceKey});
+        }
         asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter free text</button>` : '';
         const manualValue = value ?? '';
@@ -1063,6 +1069,30 @@
                 ${comboHtml}
                 ${manualInput}
                 ${manualToggle}
+            </div>
+        </label>`;
+    }
+
+    function renderAsyncMultiSelect(id,label,placeholder,options={}){
+        const {
+            required=true,
+            dependsOn=null,
+            emptyText='No entries available',
+            name=null,
+            values=[],
+            wrapperClass='form-field',
+            sourceKey=null
+        } = options;
+        const dependsAttr = dependsOn ? ` data-depends-on="${dependsOn}"` : '';
+        const requiredAttr = required ? 'required' : '';
+        const selectedHint = values && values.length ? ` (${values.length} preselected)` : '';
+        return `<label class="${wrapperClass}" for="${escapeAttr(id)}"><span class="form-field__label">${label}${selectedHint}</span>
+            <div class="async-select async-multi" data-field="${id}" data-source="${escapeAttr(sourceKey||'')}" data-required="${required}" data-placeholder="${escapeAttr(placeholder)}" data-empty-text="${escapeAttr(emptyText)}"${dependsAttr}>
+                <div class="async-multi__controls">
+                    <button type="button" class="async-multi__clear" data-target="${escapeAttr(id)}">Clear selection</button>
+                </div>
+                <select id="${escapeAttr(id)}" name="${escapeAttr(name||id)}" multiple ${requiredAttr} aria-label="${escapeAttr(label)}"></select>
+                <p class="form-hint async-multi__hint">${escapeHtml(placeholder || 'Select one or more items')}</p>
             </div>
         </label>`;
     }
@@ -1085,6 +1115,14 @@
         if(hidden.value===newValue) return;
         hidden.value=newValue;
         hidden.dispatchEvent(new CustomEvent('value-changed',{bubbles:true,detail:{value:newValue}}));
+    }
+
+    function getSelectedValues(select){
+        if(!select) return [];
+        const values=Array.from(select.selectedOptions||[])
+            .map(opt=>opt.value?.trim())
+            .filter(Boolean);
+        return values;
     }
 
     function getAsyncContainer(id){
@@ -1143,18 +1181,29 @@
         if(!config) return;
         const container=getAsyncContainer(id);
         if(!container) return;
+        const isMulti = config.multiple === true;
         const combo=container.querySelector('[data-component="filterable-select"]');
         const manual=container.querySelector(`#${id}-manual`);
-        if(!combo) return;
+        const multiSelect = container.querySelector('select[multiple]');
+        if(!combo && !multiSelect) return;
         const dependencyId=config.dependsOn;
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
-            setFilterableSelectOptions(combo,[]);
-            updateFilterableSelectPlaceholder(combo,'Please select the dependent option first');
-            setFilterableSelectDisabled(combo,true);
-            if(manual){
-                manual.value='';
-                if(container.dataset.mode!=='manual') updateValueProxy(id,'');
+            if(isMulti && multiSelect){
+                multiSelect.innerHTML='';
+                multiSelect.dispatchEvent(new Event('change',{bubbles:true}));
+                multiSelect.disabled=true;
+                multiSelect.setAttribute('aria-disabled','true');
+                multiSelect.title='Please select the dependent option first';
+            }
+            if(!isMulti){
+                setFilterableSelectOptions(combo,[]);
+                updateFilterableSelectPlaceholder(combo,'Please select the dependent option first');
+                setFilterableSelectDisabled(combo,true);
+                if(manual){
+                    manual.value='';
+                    if(container.dataset.mode!=='manual') updateValueProxy(id,'');
+                }
             }
             return;
         }
@@ -1172,8 +1221,16 @@
             return;
         }
 
-        setFilterableSelectDisabled(combo,true);
-        updateFilterableSelectPlaceholder(combo,'Loading data…');
+        if(isMulti){
+            if(multiSelect){
+                multiSelect.disabled=true;
+                multiSelect.setAttribute('aria-disabled','true');
+                multiSelect.title='Loading data…';
+            }
+        }else{
+            setFilterableSelectDisabled(combo,true);
+            updateFilterableSelectPlaceholder(combo,'Loading data…');
+        }
         try{
             const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
             const data=await fetchJson(url);
@@ -1181,41 +1238,80 @@
             if(typeof config.filter==='function'){
                 entries=entries.filter(entry=>config.filter(entry, dependencyValue));
             }
-            setFilterableSelectOptions(combo,entries);
-            const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : (config.placeholder||'Please select');
-            updateFilterableSelectPlaceholder(combo,placeholderText);
-            setFilterableSelectDisabled(combo,false);
-            const initialValue=config.initialValue;
-            if(container.dataset.mode!=='manual'){
-                const hidden=document.getElementById(id);
-                const desiredValue=initialValue!=null?initialValue:(hidden?.value||'');
-                if(desiredValue){
-                    const matched=applyFilterableValue(combo,desiredValue,{silent:true});
-                    if(matched){
-                        updateValueProxy(id,desiredValue);
+            if(isMulti && multiSelect){
+                multiSelect.innerHTML='';
+                if(entries.length===0){
+                    const placeholderOpt=document.createElement('option');
+                    placeholderOpt.value='';
+                    placeholderOpt.textContent=config.emptyText||'No entries available';
+                    placeholderOpt.disabled=true;
+                    placeholderOpt.hidden=true;
+                    multiSelect.appendChild(placeholderOpt);
+                }else{
+                    entries.forEach(entry=>{
+                        const opt=document.createElement('option');
+                        opt.value=entry.value;
+                        opt.textContent=entry.label||entry.value;
+                        multiSelect.appendChild(opt);
+                    });
+                }
+                const initialValues=Array.isArray(config.initialValues)?config.initialValues.map(v=>String(v)):[];
+                if(initialValues.length){
+                    multiSelect.querySelectorAll('option').forEach(opt=>{
+                        if(initialValues.includes(String(opt.value))){
+                            opt.selected=true;
+                        }
+                    });
+                }
+                multiSelect.disabled=false;
+                multiSelect.removeAttribute('aria-disabled');
+                multiSelect.title='';
+                config.initialValues=undefined;
+                multiSelect.dispatchEvent(new Event('change',{bubbles:true}));
+            }else{
+                setFilterableSelectOptions(combo,entries);
+                const placeholderText = entries.length===0 ? (config.emptyText||config.placeholder) : (config.placeholder||'Please select');
+                updateFilterableSelectPlaceholder(combo,placeholderText);
+                setFilterableSelectDisabled(combo,false);
+                const initialValue=config.initialValue;
+                if(container.dataset.mode!=='manual'){
+                    const hidden=document.getElementById(id);
+                    const desiredValue=initialValue!=null?initialValue:(hidden?.value||'');
+                    if(desiredValue){
+                        const matched=applyFilterableValue(combo,desiredValue,{silent:true});
+                        if(matched){
+                            updateValueProxy(id,desiredValue);
+                        }else{
+                            clearFilterableSelection(combo,{notify:true});
+                        }
                     }else{
                         clearFilterableSelection(combo,{notify:true});
                     }
-                }else{
-                    clearFilterableSelection(combo,{notify:true});
                 }
-            }
-            if(entries.length===0 && config.allowManual!==false){
-                if(manual){
-                    manual.value=initialValue??'';
-                    setManualMode(id,'manual');
+                if(entries.length===0 && config.allowManual!==false){
+                    if(manual){
+                        manual.value=initialValue??'';
+                        setManualMode(id,'manual');
+                    }
+                }else if(container.dataset.mode!=='manual'){
+                    setManualMode(id,'select');
                 }
-            }else if(container.dataset.mode!=='manual'){
-                setManualMode(id,'select');
+                config.initialValue=undefined;
             }
-            config.initialValue=undefined;
         }catch(err){
             console.error(err);
-            setFilterableSelectOptions(combo,[]);
-            updateFilterableSelectPlaceholder(combo,'Error loading data');
-            setFilterableSelectDisabled(combo,true);
-            if(config.allowManual!==false){
-                setManualMode(id,'manual');
+            if(isMulti && multiSelect){
+                multiSelect.innerHTML='';
+                multiSelect.disabled=true;
+                multiSelect.setAttribute('aria-disabled','true');
+                multiSelect.title='Error loading data';
+            }else{
+                setFilterableSelectOptions(combo,[]);
+                updateFilterableSelectPlaceholder(combo,'Error loading data');
+                setFilterableSelectDisabled(combo,true);
+                if(config.allowManual!==false){
+                    setManualMode(id,'manual');
+                }
             }
         }
     }
@@ -1229,6 +1325,24 @@
             const toggle=container.querySelector('.toggle-manual');
             const hidden=form.querySelector(`#${id}`);
             const cfg=asyncSelectConfigs[id]||{};
+            if(cfg.multiple){
+                const select=container.querySelector('select[multiple]');
+                const clearBtn=container.querySelector('.async-multi__clear');
+                if(select){
+                    select.addEventListener('change',()=>{
+                        const selected=getSelectedValues(select);
+                        select.dataset.selectedCount=String(selected.length);
+                        select.dispatchEvent(new CustomEvent('value-changed',{bubbles:true,detail:{value:selected}}));
+                    });
+                }
+                if(clearBtn && select){
+                    clearBtn.addEventListener('click',()=>{
+                        Array.from(select.options||[]).forEach(opt=>opt.selected=false);
+                        select.dispatchEvent(new Event('change',{bubbles:true}));
+                    });
+                }
+                return;
+            }
             if(hidden && cfg.initialValue!=null) hidden.value=cfg.initialValue;
             if(combo && cfg.initialValue!=null){
                 applyFilterableValue(combo,cfg.initialValue,{silent:true});
@@ -1272,6 +1386,24 @@
         if(!normalized) return;
         const container=getAsyncContainer(fieldId);
         if(container){
+            const cfg=asyncSelectConfigs[fieldId];
+            if(cfg?.multiple){
+                const select=container.querySelector('select[multiple]');
+                if(select){
+                    await loadOptionsForField(fieldId);
+                    const desired=Array.isArray(value)?value:[value];
+                    const normalizedDesired=desired.map(v=>String(v));
+                    select.querySelectorAll('option').forEach(opt=>{
+                        opt.selected=normalizedDesired.includes(String(opt.value));
+                    });
+                    select.dispatchEvent(new Event('change',{bubbles:true}));
+                    if(options.lock){
+                        select.disabled=true;
+                        select.setAttribute('aria-disabled','true');
+                    }
+                }
+                return;
+            }
             if(container.dataset.mode==='manual'){
                 setManualMode(fieldId,'select');
             }
@@ -1424,6 +1556,21 @@
     }
 
     const v=id=>document.getElementById(id)?.value?.trim();
+    const mv=id=>{
+        const el=document.getElementById(id);
+        if(!el) return [];
+        if(el.multiple){
+            return getSelectedValues(el);
+        }
+        const raw=el.value?.trim();
+        return raw?[raw]:[];
+    };
+
+    const normalizeIdList=list=>{
+        if(!list) return [];
+        const arr=Array.isArray(list)?list:[list];
+        return Array.from(new Set(arr.map(v=>String(v??'').trim()).filter(Boolean)));
+    };
     const toNull=value=>value && value.length>0 ? value : null;
 
     async function initializeFromQuery(){
@@ -1464,7 +1611,7 @@
             case 'Site':
                 if(accountId) context.accountId=accountId;
                 if(projectId){
-                    await ensureAsyncValue('pId', projectId, {lock:true});
+                    await ensureAsyncValue('pIds', [projectId], {lock:true});
                     context.projectId=projectId;
                 }
                 break;
@@ -1518,6 +1665,20 @@
         showEntityMessage(option.value, context);
     }
 
+    async function submitProjectSiteAssignments(projectId, siteIds){
+        const normalizedSites=normalizeIdList(siteIds);
+        if(!projectId || !normalizedSites.length) return {applied:false};
+        const endpoint='/projects/site-assignments';
+        try{
+            const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId, siteIds: normalizedSites})});
+            const responseText=await res.text();
+            return {applied:true, ok:res.ok, status:res.status, message:responseText?.trim()};
+        }catch(err){
+            console.error('Assignment request failed', err);
+            return {applied:true, ok:false, status:null, message:'Network error while assigning sites'};
+        }
+    }
+
     async function submitForm(e){
         e.preventDefault();
         const t=e.target.dataset.type; result.textContent=''; result.setAttribute('aria-busy','true');
@@ -1528,6 +1689,8 @@
         };
         let url='',p={};
         let siteSoftwareEntries=[];
+        let selectedSites=[];
+        let selectedProjectIds=[];
 
         switch(t){
             case 'Account':
@@ -1552,18 +1715,22 @@
 
             case 'Project':
                 url='/projects';
+                selectedSites = normalizeIdList(mv('siteIds'));
                 p={
                     projectSAPID: toNull(v('sap')),
                     projectName: v('pname'),
                     deploymentVariantID: v('variantId'),
                     bundleType: toNull(v('bundle')),
                     accountID: v('accId'),
-                    addressID: v('addrId')
+                    addressID: v('addrId'),
+                    siteIds: selectedSites
                 };
                 break;
 
             case 'Site':
                 url='/sites';
+                const projectIds = normalizeIdList(mv('pIds'));
+                selectedProjectIds = projectIds;
                 const tenantRaw=v('tenant');
                 const tenantCount=tenantRaw ? Number(tenantRaw) : null;
                 if(tenantRaw && Number.isNaN(tenantCount)){
@@ -1591,7 +1758,7 @@
                 }
                 siteSoftwareEntries=softwareCollection.entries;
                 p={
-                    projectID: v('pId'),
+                    projectIds: projectIds,
                     siteName: v('name'),
                     addressID: v('addrId'),
                     fireZone: toNull(v('zone')),
@@ -1766,6 +1933,12 @@
         try{
             const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
             const responseText=await r.text();
+            let parsedResponse=null;
+            try{
+                parsedResponse=JSON.parse(responseText);
+            }catch(_){
+                parsedResponse=null;
+            }
             if(r.ok){
                 e.target.reset();
                 resetSoftwareLists(e.target);
@@ -1774,6 +1947,7 @@
                     await loadOptionsForField(id);
                 }
                 const trimmed=responseText?.trim();
+                const createdId=parsedResponse?.ProjectID||parsedResponse?.projectID||parsedResponse?.projectId||parsedResponse?.id||trimmed||null;
                 let successMessage=`${t} created.`;
                 if(t==='Site'){
                     const count=siteSoftwareEntries.length;
@@ -1782,6 +1956,17 @@
                         successMessage=`${t} created with ${count} ${noun}.`;
                     }else{
                         successMessage=`${t} created. No software entries were submitted.`;
+                    }
+                }
+                if(t==='Project' && selectedSites.length){
+                    const assignmentResult=await submitProjectSiteAssignments(createdId, selectedSites);
+                    if(assignmentResult.applied){
+                        if(assignmentResult.ok){
+                            successMessage+=` Site assignments saved.${assignmentResult.message?` ${assignmentResult.message}`:''}`;
+                        }else{
+                            const details=assignmentResult.message?` ${assignmentResult.message}`:'';
+                            successMessage+=` Site assignment failed (${assignmentResult.status??'n/a'}).${details}`;
+                        }
                     }
                 }
                 if(trimmed){
