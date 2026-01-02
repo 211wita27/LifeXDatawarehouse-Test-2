@@ -70,7 +70,7 @@ class ProjectServiceTest {
 
         Project saved = service.createOrUpdateProject(value);
         assertSame(value, saved);
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()));
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), isNull());
     }
 
     @Test
@@ -109,18 +109,18 @@ class ProjectServiceTest {
         assertEquals(1, synchronizations.size());
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()));
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), isNull());
     }
 
     @Test
     void createProjectContinuesWhenLuceneFails() {
         Project value = project();
         when(repo.save(value)).thenReturn(value);
-        doThrow(new RuntimeException("Lucene error")).when(lucene).indexProject(any(), any(), any(), any(), any(), any(), any(), any());
+        doThrow(new RuntimeException("Lucene error")).when(lucene).indexProject(any(), any(), any(), any(), any(), any(), any(), any(), any());
 
         Project saved = service.createOrUpdateProject(value);
         assertSame(value, saved);
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()));
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), isNull());
     }
 
     @Test
@@ -148,7 +148,7 @@ class ProjectServiceTest {
         });
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("EOL"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()));
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("EOL"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()), isNull());
     }
 
     @Test
