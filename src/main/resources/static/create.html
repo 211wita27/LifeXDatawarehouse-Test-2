@@ -2119,14 +2119,16 @@
         return String(candidates[0]).trim();
     }
 
-    async function submitProjectSiteAssignments(projectId, siteIds){
+    async function submitProjectSiteAssignments(projectIdOrIds, siteIds){
         const normalizedSites=normalizeIdList(siteIds);
-        if(!projectId || !normalizedSites.length) return {applied:false};
+        const projectIds=normalizeIdList(projectIdOrIds);
+        if(!projectIds.length || !normalizedSites.length) return {applied:false};
         const endpoint='/projects/site-assignments';
         try{
-            const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({projectId, siteIds: normalizedSites})});
+            const payload=projectIds.length===1 ? {projectId: projectIds[0], siteIds: normalizedSites} : {projectIds, siteIds: normalizedSites};
+            const res=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
             const responseText=await res.text();
-            return {applied:true, ok:res.ok, status:res.status, message:responseText?.trim()};
+            return {applied:true, ok:res.ok, status:res.status, message:responseText?.trim(), projectIds};
         }catch(err){
             console.error('Assignment request failed', err);
             return {applied:true, ok:false, status:null, message:'Network error while assigning sites'};
@@ -2136,13 +2138,8 @@
     async function submitSiteProjectAssignments(siteId, projectIds){
         const normalizedProjects=normalizeIdList(projectIds);
         const normalizedSite=siteId?String(siteId).trim():'';
-        if(!normalizedSite || !normalizedProjects.length) return [];
-        const results=[];
-        for(const projectId of normalizedProjects){
-            const assignment=await submitProjectSiteAssignments(projectId,[normalizedSite]);
-            results.push({...assignment, projectId});
-        }
-        return results;
+        if(!normalizedSite || !normalizedProjects.length) return {applied:false};
+        return submitProjectSiteAssignments(normalizedProjects,[normalizedSite]);
     }
 
     async function submitForm(e){
@@ -2436,17 +2433,13 @@
                     }
                 }
                 if(t==='Site' && selectedProjectIds.length){
-                    const assignmentResults=await submitSiteProjectAssignments(createdId, selectedProjectIds);
-                    if(assignmentResults.length){
-                        const failed=assignmentResults.filter(r=>r.applied && !r.ok);
-                        const succeeded=assignmentResults.filter(r=>r.applied && r.ok);
-                        if(failed.length===0){
-                            const messages=succeeded.map(r=>r.message).filter(Boolean);
-                            const suffix=messages.length?` ${messages.join(' ')}`:'';
-                            successMessage+=` Project assignments saved.${suffix}`;
+                    const assignmentResult=await submitSiteProjectAssignments(createdId, selectedProjectIds);
+                    if(assignmentResult.applied){
+                        if(assignmentResult.ok){
+                            successMessage+=` Project assignments saved.${assignmentResult.message?` ${assignmentResult.message}`:''}`;
                         }else{
-                            const details=failed.map(r=>`[Project ${r.projectId}: ${r.status??'n/a'}${r.message?` ${r.message}`:''}]`).join(' ');
-                            successMessage+=` Project assignment failed for some projects. ${details}`;
+                            const details=assignmentResult.message?` ${assignmentResult.message}`:'';
+                            successMessage+=` Project assignment failed (${assignmentResult.status??'n/a'}).${details}`;
                         }
                     }else if(selectedProjectIds.length){
                         successMessage+=` Project assignments skipped (missing site ID or projects).`;
