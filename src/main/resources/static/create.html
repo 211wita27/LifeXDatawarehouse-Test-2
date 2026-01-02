@@ -918,6 +918,7 @@
                 emptyText: config.emptyText,
                 name: config.name,
                 value: config.value,
+                multiple: config.multiple===true,
                 wrapperClass: config.wrapperClass||'form-field'
             });
         }
@@ -1052,7 +1053,7 @@
             asyncSelectConfigs[id]={sourceKey, required, allowManual:false, placeholder, dependsOn, emptyText, filter, name, initialValues: normalizedValues, multiple:true};
             return renderAsyncMultiSelect(id,label,placeholder,{required, dependsOn, emptyText, name, values: normalizedValues, wrapperClass, sourceKey});
         }
-        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value};
+        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value, multiple:false};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter free text</button>` : '';
         const manualValue = value ?? '';
         const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="manual-input hidden" placeholder="Enter UUID" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
