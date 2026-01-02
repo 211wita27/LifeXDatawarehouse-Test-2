@@ -97,19 +97,44 @@ public class SiteController {
      * @return 200 OK with sites as JSON.
      */
     @GetMapping
-    public List<Map<String, Object>> findByProject(@RequestParam(required = false) String projectId) {
-        if (projectId != null) {
-            return jdbc.queryForList("""
-                SELECT s.SiteID, s.SiteName, s.FireZone, s.TenantCount, s.RedundantServers, s.HighAvailability, s.AddressID, s.ProjectID
+    public List<Map<String, Object>> findByProject(@RequestParam(required = false) String projectId,
+                                                   @RequestParam(required = false, name = "accountId") String accountId) {
+        boolean filterByProject = projectId != null && !projectId.isBlank();
+        boolean filterByAccount = accountId != null && !accountId.isBlank();
+
+        if (filterByProject || filterByAccount) {
+            StringBuilder sql = new StringBuilder("""
+                SELECT DISTINCT s.SiteID, s.SiteName, s.FireZone, s.TenantCount, s.RedundantServers, s.HighAvailability, s.AddressID, s.ProjectID
                 FROM Site s
                 JOIN ProjectSite ps ON ps.SiteID = s.SiteID
-                WHERE ps.ProjectID = :pid
-                """, new MapSqlParameterSource("pid", projectId));
+                """);
+
+            MapSqlParameterSource params = new MapSqlParameterSource();
+            if (filterByAccount) {
+                sql.append(" JOIN Project p ON p.ProjectID = ps.ProjectID\n");
+                params.addValue("accId", accountId);
+            }
+
+            List<String> where = new ArrayList<>();
+            if (filterByProject) {
+                params.addValue("pid", projectId);
+                where.add("ps.ProjectID = :pid");
+            }
+            if (filterByAccount) {
+                where.add("p.AccountID = :accId");
+            }
+            if (!where.isEmpty()) {
+                sql.append(" WHERE ").append(String.join(" AND ", where)).append("\n");
+            }
+            sql.append(" ORDER BY s.SiteName NULLS LAST, s.SiteID");
+
+            return jdbc.queryForList(sql.toString(), params);
         }
 
         return jdbc.queryForList("""
             SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, HighAvailability, AddressID, ProjectID
             FROM Site
+            ORDER BY SiteName NULLS LAST, SiteID
             """, new HashMap<>());
     }
 

@@ -50,12 +50,13 @@
             url:(dependencyValue,meta={})=>{
                 const params=new URLSearchParams();
                 const dependsOnKey=String(meta.dependsOn||'').toLowerCase();
+                const normalizedDependency=typeof dependencyValue==='string'?dependencyValue.trim():dependencyValue;
                 const query=meta.searchTerm?.trim();
-                if(dependencyValue){
+                if(normalizedDependency){
                     if(dependsOnKey.includes('acc')){
-                        params.set('accountId',dependencyValue);
+                        params.set('accountId',normalizedDependency);
                     }else{
-                        params.set('projectId',dependencyValue);
+                        params.set('projectId',normalizedDependency);
                     }
                 }
                 if(query){
