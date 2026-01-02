@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -151,6 +152,27 @@ class SiteControllerIntegrationTest {
     }
 
     @Test
+    void detailEndpointRejectsInvalidId() throws Exception {
+        mockMvc.perform(get("/sites/{id}/detail", "bad-id"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("SiteID must be a valid UUID"));
+    }
+
+    @Test
+    void softwareOverviewRejectsInvalidId() throws Exception {
+        mockMvc.perform(get("/sites/{id}/software", "bad-id"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("SiteID must be a valid UUID"));
+    }
+
+    @Test
+    void softwareSummaryRejectsUnknownStatus() throws Exception {
+        mockMvc.perform(get("/sites/software-summary").queryParam("status", "NotAStatus"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Unsupported installed software status: NotAStatus"));
+    }
+
+    @Test
     @Transactional
     void updateReplacesProjectAssignmentsWithoutDuplicates() throws Exception {
         UUID siteId = UUID.fromString("9356ae01-fce4-4d24-84ca-080000000001");
@@ -202,6 +224,13 @@ class SiteControllerIntegrationTest {
         Integer remaining = jdbc.queryForObject("SELECT COUNT(*) FROM ProjectSite WHERE SiteID = :sid",
                 new MapSqlParameterSource("sid", siteId), Integer.class);
         assertEquals(0, remaining);
+    }
+
+    @Test
+    void deleteRejectsInvalidId() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/sites/{id}", "bad-id"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("SiteID must be a valid UUID"));
     }
 
     private String toIso(Object value) {

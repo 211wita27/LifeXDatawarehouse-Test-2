@@ -26,11 +26,14 @@ class IndexAdminControllerTest {
     private ListAppender<ILoggingEvent> appender;
     private Logger logger;
     private Level originalLevel;
+    private boolean originalAdditive;
 
     private void attachAppender() {
         logger = (Logger) LoggerFactory.getLogger(IndexAdminController.class);
         originalLevel = logger.getLevel();
+        originalAdditive = logger.isAdditive();
         logger.setLevel(Level.DEBUG);
+        logger.setAdditive(false);
         appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
@@ -41,6 +44,7 @@ class IndexAdminControllerTest {
         if (logger != null && appender != null) {
             logger.detachAppender(appender);
             logger.setLevel(originalLevel);
+            logger.setAdditive(originalAdditive);
         }
     }
 

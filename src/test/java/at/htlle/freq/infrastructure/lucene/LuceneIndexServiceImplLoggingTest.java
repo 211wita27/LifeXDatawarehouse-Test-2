@@ -31,11 +31,14 @@ class LuceneIndexServiceImplLoggingTest {
     private ListAppender<ILoggingEvent> appender;
     private Logger logger;
     private Level originalLevel;
+    private boolean originalAdditive;
 
     private void attachAppender(Class<?> target) {
         logger = (Logger) LoggerFactory.getLogger(target);
         originalLevel = logger.getLevel();
+        originalAdditive = logger.isAdditive();
         logger.setLevel(Level.DEBUG);
+        logger.setAdditive(false);
         appender = new ListAppender<>();
         appender.start();
         logger.addAppender(appender);
@@ -46,6 +49,7 @@ class LuceneIndexServiceImplLoggingTest {
         if (logger != null && appender != null) {
             logger.detachAppender(appender);
             logger.setLevel(originalLevel);
+            logger.setAdditive(originalAdditive);
         }
     }
 

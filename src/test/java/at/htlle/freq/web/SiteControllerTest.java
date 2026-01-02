@@ -91,6 +91,26 @@ class SiteControllerTest {
     }
 
     @Test
+    void createRejectsInvalidRequest() {
+        SiteUpsertRequest request = new SiteUpsertRequest(
+                "   ",
+                null,
+                List.of(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of()
+        );
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        verifyNoInteractions(siteService, installedSoftwareService);
+    }
+
+    @Test
     void createWrapsDomainErrors() {
         SiteUpsertRequest request = new SiteUpsertRequest(
                 "Test Site",
@@ -109,6 +129,32 @@ class SiteControllerTest {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(request));
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
         verifyNoInteractions(installedSoftwareService);
+    }
+
+    @Test
+    void createWrapsAssignmentErrors() {
+        UUID siteId = UUID.randomUUID();
+        SiteUpsertRequest request = new SiteUpsertRequest(
+                "Test Site",
+                UUID.randomUUID(),
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID(),
+                "Zone",
+                1,
+                1,
+                true,
+                List.of(new SiteSoftwareAssignmentDto(null, UUID.randomUUID(), "Installed", null, null, null, null))
+        );
+        Site saved = new Site();
+        saved.setSiteID(siteId);
+        when(siteService.createOrUpdateSite(any(Site.class), anyList())).thenReturn(saved);
+        doThrow(new IllegalArgumentException("bad assignment"))
+                .when(installedSoftwareService)
+                .replaceAssignmentsForSite(eq(siteId), anyList());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
     @Test
@@ -139,6 +185,28 @@ class SiteControllerTest {
     }
 
     @Test
+    void updateRejectsInvalidRequest() {
+        UUID siteId = UUID.randomUUID();
+        SiteUpsertRequest request = new SiteUpsertRequest(
+                " ",
+                null,
+                null,
+                null,
+                null,
+                null,
+                -1,
+                null,
+                List.of()
+        );
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.update(siteId.toString(), request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        verifyNoInteractions(siteService, installedSoftwareService);
+    }
+
+    @Test
     void updateDelegatesToInstalledSoftwareService() {
         UUID siteId = UUID.randomUUID();
         UUID software = UUID.randomUUID();
@@ -159,6 +227,46 @@ class SiteControllerTest {
 
         verify(installedSoftwareService).replaceAssignmentsForSite(eq(siteId),
                 argThat(list -> list.size() == 1 && software.equals(list.get(0).getSoftwareID())));
+    }
+
+    @Test
+    void updateWrapsDomainErrors() {
+        UUID siteId = UUID.randomUUID();
+        SiteUpsertRequest request = emptyRequest();
+        when(siteService.updateSite(eq(siteId), any(Site.class), any()))
+                .thenThrow(new IllegalArgumentException("bad update"));
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.update(siteId.toString(), request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        verifyNoInteractions(installedSoftwareService);
+    }
+
+    @Test
+    void updateWrapsAssignmentErrors() {
+        UUID siteId = UUID.randomUUID();
+        SiteUpsertRequest request = new SiteUpsertRequest(
+                "Updated Site",
+                UUID.randomUUID(),
+                List.of(UUID.randomUUID()),
+                UUID.randomUUID(),
+                "Zone",
+                1,
+                1,
+                true,
+                List.of(new SiteSoftwareAssignmentDto(null, UUID.randomUUID(), "Installed", null, null, null, null))
+        );
+        when(siteService.updateSite(eq(siteId), any(Site.class), any()))
+                .thenReturn(Optional.of(new Site()));
+        doThrow(new IllegalArgumentException("bad assignment"))
+                .when(installedSoftwareService)
+                .replaceAssignmentsForSite(eq(siteId), anyList());
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.update(siteId.toString(), request));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
     }
 
     @Test
@@ -240,6 +348,14 @@ class SiteControllerTest {
     }
 
     @Test
+    void findDetailRejectsInvalidIdWithMessage() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.findDetail("not-a-uuid"));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("SiteID must be a valid UUID", ex.getReason());
+    }
+
+    @Test
     void getSoftwareSummaryDefaultsToInstalled() {
         List<SiteSoftwareSummary> summaries = List.of(
                 new SiteSoftwareSummary(UUID.randomUUID(), "Site A", 2, "Installed")
@@ -255,6 +371,23 @@ class SiteControllerTest {
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
         verify(jdbc).query(sqlCaptor.capture(), paramsCaptor.capture(), any(RowMapper.class));
         assertTrue(sqlCaptor.getValue().contains("InstalledSoftware"));
+        assertEquals("Installed", paramsCaptor.getValue().getValue("status"));
+    }
+
+    @Test
+    void getSoftwareSummaryDefaultsToInstalledWhenBlank() {
+        List<SiteSoftwareSummary> summaries = List.of(
+                new SiteSoftwareSummary(UUID.randomUUID(), "Site A", 2, "Installed")
+        );
+        doReturn(summaries)
+                .when(jdbc)
+                .query(anyString(), any(MapSqlParameterSource.class), any(RowMapper.class));
+
+        List<SiteSoftwareSummary> result = controller.getSoftwareSummary("   ");
+
+        assertSame(summaries, result);
+        ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbc).query(anyString(), paramsCaptor.capture(), any(RowMapper.class));
         assertEquals("Installed", paramsCaptor.getValue().getValue("status"));
     }
 
@@ -316,6 +449,27 @@ class SiteControllerTest {
     }
 
     @Test
+    void findByProjectFiltersByProjectAndAccount() {
+        List<Map<String, Object>> rows = List.of(Map.of("SiteID", UUID.randomUUID()));
+        doReturn(rows).when(jdbc).queryForList(anyString(), any(MapSqlParameterSource.class));
+        String projectId = UUID.randomUUID().toString();
+        String accountId = UUID.randomUUID().toString();
+
+        List<Map<String, Object>> result = controller.findByProject(projectId, accountId);
+
+        assertSame(rows, result);
+        ArgumentCaptor<String> sqlCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+        verify(jdbc).queryForList(sqlCaptor.capture(), paramsCaptor.capture());
+        assertTrue(sqlCaptor.getValue().contains("ProjectSite"));
+        assertTrue(sqlCaptor.getValue().contains("JOIN Project p"));
+        assertTrue(sqlCaptor.getValue().contains("ps.ProjectID = :pid"));
+        assertTrue(sqlCaptor.getValue().contains("p.AccountID = :accId"));
+        assertEquals(projectId, paramsCaptor.getValue().getValue("pid"));
+        assertEquals(accountId, paramsCaptor.getValue().getValue("accId"));
+    }
+
+    @Test
     void findByIdReturnsRow() {
         UUID siteId = UUID.randomUUID();
         Map<String, Object> row = new HashMap<>();
@@ -341,6 +495,7 @@ class SiteControllerTest {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> controller.updateSoftwareStatus(UUID.randomUUID().toString(), UUID.randomUUID().toString(), null));
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("status is required", ex.getReason());
     }
 
     @Test
@@ -425,6 +580,15 @@ class SiteControllerTest {
                 () -> controller.delete(siteId.toString()));
         assertEquals(HttpStatus.NOT_FOUND, ex.getStatusCode());
         verify(siteService, never()).deleteSite(any());
+    }
+
+    @Test
+    void deleteRejectsInvalidIdWithMessage() {
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> controller.delete("bad-id"));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("SiteID must be a valid UUID", ex.getReason());
+        verifyNoInteractions(siteService);
     }
 
     @Test
