@@ -1,6 +1,7 @@
 package at.htlle.freq.web;
 
 import at.htlle.freq.application.InstalledSoftwareService;
+import at.htlle.freq.application.ProjectSiteAssignmentService;
 import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
@@ -31,14 +32,17 @@ public class SiteController {
     private final NamedParameterJdbcTemplate jdbc;
     private final SiteService siteService;
     private final InstalledSoftwareService installedSoftwareService;
+    private final ProjectSiteAssignmentService projectSites;
     private static final Logger log = LoggerFactory.getLogger(SiteController.class);
     private static final String TABLE = "Site";
 
     public SiteController(NamedParameterJdbcTemplate jdbc, SiteService siteService,
-                          InstalledSoftwareService installedSoftwareService) {
+                          InstalledSoftwareService installedSoftwareService,
+                          ProjectSiteAssignmentService projectSites) {
         this.jdbc = jdbc;
         this.siteService = siteService;
         this.installedSoftwareService = installedSoftwareService;
+        this.projectSites = projectSites;
     }
 
     /**
@@ -96,9 +100,10 @@ public class SiteController {
     public List<Map<String, Object>> findByProject(@RequestParam(required = false) String projectId) {
         if (projectId != null) {
             return jdbc.queryForList("""
-                SELECT SiteID, SiteName, FireZone, TenantCount, RedundantServers, HighAvailability, AddressID, ProjectID
-                FROM Site
-                WHERE ProjectID = :pid
+                SELECT s.SiteID, s.SiteName, s.FireZone, s.TenantCount, s.RedundantServers, s.HighAvailability, s.AddressID, s.ProjectID
+                FROM Site s
+                JOIN ProjectSite ps ON ps.SiteID = s.SiteID
+                WHERE ps.ProjectID = :pid
                 """, new MapSqlParameterSource("pid", projectId));
         }
 
@@ -143,12 +148,14 @@ public class SiteController {
         UUID siteId = parseUuid(id, "SiteID");
         Site site = siteService.getSiteById(siteId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Site not found"));
+        List<UUID> projectIds = projectSites.getProjectsForSite(siteId);
         List<SiteSoftwareOverviewEntry> assignments = installedSoftwareService.getSiteSoftwareOverview(siteId);
 
         return new SiteDetailResponse(
                 site.getSiteID(),
                 site.getSiteName(),
                 site.getProjectID(),
+                projectIds,
                 site.getAddressID(),
                 site.getFireZone(),
                 site.getTenantCount(),
@@ -227,7 +234,7 @@ public class SiteController {
 
         Site saved;
         try {
-            saved = siteService.createOrUpdateSite(request.toSite());
+            saved = siteService.createOrUpdateSite(request.toSite(), request.normalizedProjectIds());
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
@@ -265,7 +272,7 @@ public class SiteController {
         Site patch = request.toSite();
         Optional<Site> updated;
         try {
-            updated = siteService.updateSite(siteId, patch);
+            updated = siteService.updateSite(siteId, patch, request.normalizedProjectIds());
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
@@ -293,13 +300,12 @@ public class SiteController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
-        int count = jdbc.update("DELETE FROM Site WHERE SiteID = :id",
-                new MapSqlParameterSource("id", id));
-
-        if (count == 0) {
+        UUID siteId = parseUuid(id, "SiteID");
+        if (siteService.getSiteById(siteId).isEmpty()) {
             log.warn("[{}] delete failed: identifiers={}", TABLE, Map.of("SiteID", id));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no site deleted");
         }
+        siteService.deleteSite(siteId);
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("SiteID", id));
     }
 

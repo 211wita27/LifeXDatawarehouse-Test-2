@@ -1,11 +1,14 @@
 package at.htlle.freq.web;
 
+import at.htlle.freq.application.ProjectSiteAssignmentService;
 import at.htlle.freq.domain.ProjectLifecycleStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,11 +24,13 @@ import java.util.*;
 public class ProjectController {
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final ProjectSiteAssignmentService projectSites;
     private static final Logger log = LoggerFactory.getLogger(ProjectController.class);
     private static final String TABLE = "Project";
 
-    public ProjectController(NamedParameterJdbcTemplate jdbc) {
+    public ProjectController(NamedParameterJdbcTemplate jdbc, ProjectSiteAssignmentService projectSites) {
         this.jdbc = jdbc;
+        this.projectSites = projectSites;
     }
 
     // READ operations: list all projects or filter by account
@@ -142,7 +147,13 @@ public class ProjectController {
         params.addValue("lifecycleStatus", status.name());
         params.addValue("specialNotes", extractSpecialNotes(body));
 
-        jdbc.update(sql, params);
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(sql, params, keyHolder, new String[]{"ProjectID"});
+        UUID projectId = fetchProjectId(sapId, keyHolder);
+        List<UUID> siteIds = extractUuidList(body, "siteIds");
+        if (siteIds != null) {
+            projectSites.replaceSitesForProject(projectId, siteIds);
+        }
         log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
     }
 
@@ -221,6 +232,10 @@ public class ProjectController {
             log.warn("[{}] update failed: identifiers={}, payloadKeys={}", TABLE, Map.of("ProjectID", id), body.keySet());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no project updated");
         }
+        List<UUID> siteIds = extractUuidList(body, "siteIds");
+        if (siteIds != null) {
+            projectSites.replaceSitesForProject(UUID.fromString(id), siteIds);
+        }
         log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("ProjectID", id), body.keySet());
     }
 
@@ -278,5 +293,58 @@ public class ProjectController {
             }
         });
         return ids;
+    }
+
+    private UUID fetchProjectId(String sapId, KeyHolder keyHolder) {
+        UUID fromKey = extractUuidFromKeyHolder(keyHolder);
+        if (fromKey != null) {
+            return fromKey;
+        }
+        return jdbc.queryForObject("SELECT ProjectID FROM Project WHERE ProjectSAPID = :sap",
+                new MapSqlParameterSource("sap", sapId), UUID.class);
+    }
+
+    private UUID extractUuidFromKeyHolder(KeyHolder keyHolder) {
+        if (keyHolder == null) return null;
+        Map<String, Object> keys = keyHolder.getKeys();
+        if (keys != null) {
+            for (Object value : keys.values()) {
+                UUID converted = coerceUuid(value);
+                if (converted != null) return converted;
+            }
+        }
+        return coerceUuid(keyHolder.getKey());
+    }
+
+    private UUID coerceUuid(Object value) {
+        if (value == null) return null;
+        if (value instanceof UUID uuid) return uuid;
+        try {
+            return UUID.fromString(value.toString());
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    private List<UUID> extractUuidList(Map<String, Object> body, String key) {
+        for (Map.Entry<String, Object> entry : body.entrySet()) {
+            if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(key)) {
+                Object raw = entry.getValue();
+                if (raw == null) return List.of();
+                if (raw instanceof Collection<?> collection) {
+                    try {
+                        return collection.stream()
+                                .filter(Objects::nonNull)
+                                .map(Object::toString)
+                                .map(UUID::fromString)
+                                .toList();
+                    } catch (IllegalArgumentException ex) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " must contain valid UUIDs", ex);
+                    }
+                }
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " must be an array");
+            }
+        }
+        return null;
     }
 }

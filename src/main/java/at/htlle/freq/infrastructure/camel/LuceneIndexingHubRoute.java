@@ -1,6 +1,7 @@
 // src/main/java/at/htlle/freq/infrastructure/camel/LuceneIndexingHubRoute.java
 package at.htlle.freq.infrastructure.camel;
 
+import at.htlle.freq.application.ProjectSiteAssignmentService;
 import at.htlle.freq.domain.*;
 import at.htlle.freq.infrastructure.lucene.LuceneIndexService;
 import org.apache.camel.Exchange;
@@ -9,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+
+import java.util.UUID;
 
 /*
  * Camel routing hub for all Lucene write operations.
@@ -34,9 +37,11 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
 
     private static final Logger log = LoggerFactory.getLogger(LuceneIndexingHubRoute.class);
     private final LuceneIndexService lucene;
+    private final ProjectSiteAssignmentService projectSites;
 
-    public LuceneIndexingHubRoute(LuceneIndexService lucene) {
+    public LuceneIndexingHubRoute(LuceneIndexService lucene, ProjectSiteAssignmentService projectSites) {
         this.lucene = lucene;
+        this.projectSites = projectSites;
     }
 
     @Override
@@ -218,7 +223,9 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
                     if (body instanceof Site s) {
                         lucene.indexSite(
                                 s.getSiteID() != null ? s.getSiteID().toString() : null,
-                                s.getProjectID() != null ? s.getProjectID().toString() : null,
+                                projectSites.getProjectsForSite(s.getSiteID()).stream()
+                                        .map(UUID::toString)
+                                        .toList(),
                                 s.getAddressID() != null ? s.getAddressID().toString() : null,
                                 s.getSiteName(),
                                 s.getFireZone(),

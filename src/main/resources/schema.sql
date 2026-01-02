@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS AudioDevice;
 DROP TABLE IF EXISTS Radio;
 DROP TABLE IF EXISTS Clients;
 DROP TABLE IF EXISTS Server;
+DROP TABLE IF EXISTS ProjectSite;
 DROP TABLE IF EXISTS Site;
 DROP TABLE IF EXISTS Project;
 DROP TABLE IF EXISTS Software;
@@ -98,6 +99,20 @@ CREATE TABLE Project (
                          CONSTRAINT fk_project_address FOREIGN KEY (AddressID)
                              REFERENCES Address(AddressID)
 );
+
+-- =========================================================
+-- 11.2 ProjectSite junction table (many-to-many between Project and Site)
+-- =========================================================
+CREATE TABLE ProjectSite (
+    ProjectSiteID UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+    ProjectID     UUID NOT NULL,
+    SiteID        UUID NOT NULL,
+    CONSTRAINT fk_projectsite_project FOREIGN KEY (ProjectID) REFERENCES Project(ProjectID),
+    CONSTRAINT fk_projectsite_site FOREIGN KEY (SiteID) REFERENCES Site(SiteID),
+    CONSTRAINT uq_projectsite UNIQUE (ProjectID, SiteID)
+);
+CREATE INDEX idx_projectsite_project ON ProjectSite(ProjectID);
+CREATE INDEX idx_projectsite_site ON ProjectSite(SiteID);
 
 -- =========================================================
 -- 12.1 Site table

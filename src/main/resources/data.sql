@@ -280,6 +280,10 @@ INSERT INTO Site (SiteID, SiteName, ProjectID, AddressID, FireZone, TenantCount,
     ('72cff023-c18a-47b0-8392-080000000055', 'Harbor 18 Hub 1', '0ba17419-b102-44d3-bb42-070000000038', 'ad738fe8-47a8-4d1b-8f15-030000000038', 'Bravo', 21, 1, FALSE)
 ;
 
+INSERT INTO ProjectSite (ProjectID, SiteID)
+SELECT DISTINCT ProjectID, SiteID
+FROM Site;
+
 -- Servers (hardware inventory per site)
 INSERT INTO Server (ServerID, SiteID, ServerName, ServerBrand, ServerSerialNr, ServerOS, PatchLevel, VirtualPlatform, VirtualVersion) VALUES
     ('2fba4c90-c0fd-4663-9b71-090000000001', '9356ae01-fce4-4d24-84ca-080000000001', 'SRV-100', 'Lenovo', 'LE-001', 'Windows Server 2022', '2025.01', 'vSphere', '8.0'),

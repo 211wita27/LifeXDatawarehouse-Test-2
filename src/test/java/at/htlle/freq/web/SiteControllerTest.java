@@ -1,6 +1,7 @@
 package at.htlle.freq.web;
 
 import at.htlle.freq.application.InstalledSoftwareService;
+import at.htlle.freq.application.ProjectSiteAssignmentService;
 import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.Site;
@@ -26,6 +27,7 @@ class SiteControllerTest {
     private NamedParameterJdbcTemplate jdbc;
     private SiteService siteService;
     private InstalledSoftwareService installedSoftwareService;
+    private ProjectSiteAssignmentService projectSites;
     private SiteController controller;
 
     @BeforeEach
@@ -33,7 +35,8 @@ class SiteControllerTest {
         jdbc = mock(NamedParameterJdbcTemplate.class);
         siteService = mock(SiteService.class);
         installedSoftwareService = mock(InstalledSoftwareService.class);
-        controller = new SiteController(jdbc, siteService, installedSoftwareService);
+        projectSites = mock(ProjectSiteAssignmentService.class);
+        controller = new SiteController(jdbc, siteService, installedSoftwareService, projectSites);
     }
 
     @Test
@@ -44,6 +47,7 @@ class SiteControllerTest {
         SiteUpsertRequest request = new SiteUpsertRequest(
                 "Test Site",
                 project,
+                List.of(project),
                 address,
                 "Zone",
                 5,
@@ -55,14 +59,14 @@ class SiteControllerTest {
         Site saved = new Site();
         UUID siteId = UUID.randomUUID();
         saved.setSiteID(siteId);
-        when(siteService.createOrUpdateSite(any(Site.class))).thenReturn(saved);
+        when(siteService.createOrUpdateSite(any(Site.class), anyList())).thenReturn(saved);
 
         controller.create(request);
 
         verify(siteService).createOrUpdateSite(argThat(site ->
                 "Test Site".equals(site.getSiteName()) &&
                         project.equals(site.getProjectID()) &&
-                        address.equals(site.getAddressID())));
+                        address.equals(site.getAddressID())), eq(List.of(project)));
         verify(installedSoftwareService).replaceAssignmentsForSite(eq(siteId),
                 argThat(list -> list.size() == 1 && software.equals(list.get(0).getSoftwareID())));
     }
@@ -72,6 +76,7 @@ class SiteControllerTest {
         SiteUpsertRequest request = new SiteUpsertRequest(
                 "Test Site",
                 UUID.randomUUID(),
+                List.of(UUID.randomUUID()),
                 UUID.randomUUID(),
                 null,
                 null,
@@ -79,7 +84,7 @@ class SiteControllerTest {
                 true,
                 List.of()
         );
-        when(siteService.createOrUpdateSite(any(Site.class)))
+        when(siteService.createOrUpdateSite(any(Site.class), anyList()))
                 .thenThrow(new IllegalArgumentException("invalid"));
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.create(request));
@@ -98,9 +103,10 @@ class SiteControllerTest {
                 null,
                 null,
                 null,
+                null,
                 List.of()
         );
-        when(siteService.updateSite(eq(siteId), any(Site.class))).thenReturn(Optional.empty());
+        when(siteService.updateSite(eq(siteId), any(Site.class), any())).thenReturn(Optional.empty());
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class,
                 () -> controller.update(siteId.toString(), request));
@@ -111,6 +117,7 @@ class SiteControllerTest {
     @Test
     void updateRejectsInvalidUuid() {
         SiteUpsertRequest request = new SiteUpsertRequest(
+                null,
                 null,
                 null,
                 null,
@@ -132,6 +139,7 @@ class SiteControllerTest {
         SiteUpsertRequest request = new SiteUpsertRequest(
                 "Updated Site",
                 UUID.randomUUID(),
+                List.of(UUID.randomUUID()),
                 UUID.randomUUID(),
                 "Zone",
                 20,
@@ -139,7 +147,7 @@ class SiteControllerTest {
                 true,
                 List.of(new SiteSoftwareAssignmentDto(UUID.randomUUID(), software, "Installed", null, "2024-02-02", null, null))
         );
-        when(siteService.updateSite(eq(siteId), any(Site.class))).thenReturn(Optional.of(new Site()));
+        when(siteService.updateSite(eq(siteId), any(Site.class), any())).thenReturn(Optional.of(new Site()));
 
         controller.update(siteId.toString(), request);
 
@@ -161,6 +169,7 @@ class SiteControllerTest {
         site.setTenantCount(3);
         site.setRedundantServers(2);
         site.setHighAvailability(true);
+        when(projectSites.getProjectsForSite(siteId)).thenReturn(List.of(projectId));
 
         List<SiteSoftwareOverviewEntry> assignments = List.of(new SiteSoftwareOverviewEntry(
                 UUID.randomUUID(),
@@ -186,6 +195,7 @@ class SiteControllerTest {
         assertEquals(siteId, response.siteId());
         assertEquals("Detail Site", response.siteName());
         assertEquals(projectId, response.projectId());
+        assertEquals(List.of(projectId), response.projectIds());
         assertEquals(addressId, response.addressId());
         assertEquals(2, response.redundantServers());
         assertEquals(1, response.softwareAssignments().size());

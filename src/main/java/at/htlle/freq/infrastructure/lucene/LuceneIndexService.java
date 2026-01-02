@@ -5,6 +5,7 @@ import at.htlle.freq.infrastructure.search.SearchHit;
 import org.apache.lucene.search.Query;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -118,7 +119,7 @@ public interface LuceneIndexService {
     /**
      * Indexes site information with address linkage and optional tenancy details.
      */
-    void indexSite(String siteId, String projectId, String addressId, String siteName, String fireZone,
+    void indexSite(String siteId, Collection<String> projectIds, String addressId, String siteName, String fireZone,
                    Integer tenantCount, Integer redundantServers, boolean highAvailability);
 
     /**

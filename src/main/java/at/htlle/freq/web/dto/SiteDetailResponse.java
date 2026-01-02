@@ -13,6 +13,7 @@ public record SiteDetailResponse(
         @JsonProperty("SiteID") UUID siteId,
         @JsonProperty("SiteName") String siteName,
         @JsonProperty("ProjectID") UUID projectId,
+        @JsonProperty("ProjectIDs") List<UUID> projectIds,
         @JsonProperty("AddressID") UUID addressId,
         @JsonProperty("FireZone") String fireZone,
         @JsonProperty("TenantCount") Integer tenantCount,
