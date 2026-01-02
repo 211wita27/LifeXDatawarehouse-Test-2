@@ -70,7 +70,7 @@ class ProjectServiceTest {
 
         Project saved = service.createOrUpdateProject(value);
         assertSame(value, saved);
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), isNull());
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), eq("Requires on-site coordination"));
     }
 
     @Test
@@ -109,7 +109,7 @@ class ProjectServiceTest {
         assertEquals(1, synchronizations.size());
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), isNull());
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), eq("Requires on-site coordination"));
     }
 
     @Test
@@ -120,7 +120,7 @@ class ProjectServiceTest {
 
         Project saved = service.createOrUpdateProject(value);
         assertSame(value, saved);
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), isNull());
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-1"), eq("Project"), eq(UUID2.toString()), eq("Bundle"), eq("ACTIVE"), eq(UUID4.toString()), eq(UUID5.toString()), eq("Requires on-site coordination"));
     }
 
     @Test
@@ -148,7 +148,7 @@ class ProjectServiceTest {
         });
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
-        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("EOL"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()), isNull());
+        verify(lucene).indexProject(eq(UUID3.toString()), eq("SAP-NEW"), eq("New Project"), eq(existing.getDeploymentVariantID().toString()), eq("New Bundle"), eq("EOL"), eq(existing.getAccountID().toString()), eq(existing.getAddressID().toString()), eq(existing.getSpecialNotes()));
     }
 
     @Test

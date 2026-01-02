@@ -57,6 +57,7 @@ class SiteControllerIntegrationTest {
         payload.put("fireZone", "Zulu");
         payload.put("tenantCount", 12);
         payload.put("redundantServers", 3);
+        payload.put("highAvailability", true);
         payload.put("softwareAssignments", List.of(
                 Map.of(
                         "softwareId", softwareInstalled,
@@ -185,6 +186,15 @@ class SiteControllerIntegrationTest {
     @Transactional
     void deleteRemovesProjectSiteLinks() throws Exception {
         UUID siteId = UUID.fromString("7e723334-3ac1-454c-8e6d-080000000002");
+        MapSqlParameterSource params = new MapSqlParameterSource("sid", siteId);
+        jdbc.update("DELETE FROM AudioDevice WHERE ClientID IN (SELECT ClientID FROM Clients WHERE SiteID = :sid)", params);
+        jdbc.update("DELETE FROM Radio WHERE SiteID = :sid OR AssignedClientID IN (SELECT ClientID FROM Clients WHERE SiteID = :sid)", params);
+        jdbc.update("DELETE FROM PhoneIntegration WHERE SiteID = :sid", params);
+        jdbc.update("DELETE FROM InstalledSoftware WHERE SiteID = :sid", params);
+        jdbc.update("DELETE FROM UpgradePlan WHERE SiteID = :sid", params);
+        jdbc.update("DELETE FROM ServiceContract WHERE SiteID = :sid", params);
+        jdbc.update("DELETE FROM Clients WHERE SiteID = :sid", params);
+        jdbc.update("DELETE FROM Server WHERE SiteID = :sid", params);
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/sites/{id}", siteId))
                 .andExpect(status().isNoContent());

@@ -43,6 +43,19 @@ class AccountControllerTest {
     }
 
     @Test
+    void findByIdReturnsAccount() {
+        UUID id = UUID.randomUUID();
+        Account account = new Account();
+        account.setAccountID(id);
+        when(service.getAccountById(id)).thenReturn(Optional.of(account));
+
+        ResponseEntity<Account> response = controller.findById(id);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(account, response.getBody());
+    }
+
+    @Test
     void createReturns201WithLocationHeader() {
         UUID id = UUID.randomUUID();
         Account account = new Account();

@@ -66,7 +66,8 @@ class DomainFactoryTest {
         assertEquals("TYPE", phoneIntegration.getPhoneType());
 
         ProjectFactory projectFactory = new ProjectFactory();
-        Project project = projectFactory.create("SAP", "Project", UUID1, "Bundle", "2024-01-01", ProjectLifecycleStatus.ACTIVE, UUID1, UUID2);
+        Project project = projectFactory.create("SAP", "Project", UUID1, "Bundle", "2024-01-01",
+                ProjectLifecycleStatus.ACTIVE, UUID1, UUID2, null);
         assertEquals("SAP", project.getProjectSAPID());
         assertEquals(ProjectLifecycleStatus.ACTIVE, project.getLifecycleStatus());
 

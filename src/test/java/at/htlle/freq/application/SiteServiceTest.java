@@ -130,7 +130,7 @@ class SiteServiceTest {
         synchronizations.forEach(TransactionSynchronization::afterCommit);
 
         verify(projectSites).replaceProjectsForSite(eq(UUID4), eq(List.of(patch.getProjectID())));
-        verify(lucene).indexSite(eq(UUID4.toString()), eq(List.of(existing.getProjectID().toString(), patch.getProjectID().toString())), eq(existing.getAddressID().toString()), eq("NewSite"), eq("NewZone"), eq(42), eq(5), eq(false));
+        verify(lucene).indexSite(eq(UUID4.toString()), eq(List.of(patch.getProjectID().toString())), eq(existing.getAddressID().toString()), eq("NewSite"), eq("NewZone"), eq(42), eq(5), eq(false));
     }
 
     @Test

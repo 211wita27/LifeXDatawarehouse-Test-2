@@ -688,7 +688,7 @@ public final class SeedDataGenerator {
                         str(phone.type()),
                         str(phone.brand()),
                         str(phone.interfaceName()),
-                        str(phone.capacity()),
+                        number(phone.capacity()),
                         str(phone.firmware())
                 ))
                 .collect(Collectors.toList()));
