@@ -22,6 +22,10 @@ public class Clients {
 
     public Clients() {}
     public Clients(UUID clientID, UUID siteID, String clientName, String clientBrand, String clientSerialNr,
+                   String clientOS, String patchLevel, String installType) {
+        this(clientID, siteID, clientName, clientBrand, clientSerialNr, clientOS, patchLevel, installType, null, null);
+    }
+    public Clients(UUID clientID, UUID siteID, String clientName, String clientBrand, String clientSerialNr,
                    String clientOS, String patchLevel, String installType,
                    String workingPositionType, String otherInstalledSoftware) {
         this.clientID = clientID;
