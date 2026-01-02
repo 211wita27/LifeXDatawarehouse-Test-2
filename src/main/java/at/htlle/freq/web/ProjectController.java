@@ -28,6 +28,12 @@ public class ProjectController {
     private static final Logger log = LoggerFactory.getLogger(ProjectController.class);
     private static final String TABLE = "Project";
 
+    /**
+     * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used for project queries.
+     * @param projectSites service that maintains project/site assignments.
+     */
     public ProjectController(NamedParameterJdbcTemplate jdbc, ProjectSiteAssignmentService projectSites) {
         this.jdbc = jdbc;
         this.projectSites = projectSites;
@@ -262,6 +268,12 @@ public class ProjectController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("ProjectID", id));
     }
 
+    /**
+     * Extracts the project SAP identifier from the incoming payload.
+     *
+     * @param body request payload.
+     * @return SAP ID value or null when missing.
+     */
     private String extractProjectSapId(Map<String, Object> body) {
         return body.entrySet().stream()
                 .filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase("projectsapid"))
@@ -270,6 +282,12 @@ public class ProjectController {
                 .orElse(null);
     }
 
+    /**
+     * Extracts and normalizes the special notes field from the payload.
+     *
+     * @param body request payload.
+     * @return normalized notes or null when missing.
+     */
     private String extractSpecialNotes(Map<String, Object> body) {
         return body.entrySet().stream()
                 .filter(e -> e.getKey() != null && e.getKey().equalsIgnoreCase("specialnotes"))
@@ -279,12 +297,24 @@ public class ProjectController {
                 .orElse(null);
     }
 
+    /**
+     * Normalizes free-form notes to trimmed text or null when empty.
+     *
+     * @param value input value.
+     * @return trimmed notes or null.
+     */
     private String normalizeNotes(Object value) {
         if (value == null) return null;
         String trimmed = value.toString().trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    /**
+     * Extracts identifier-like entries from the payload for logging.
+     *
+     * @param body request payload.
+     * @return key/value pairs whose names end with {@code id} (case-insensitive).
+     */
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
         Map<String, Object> ids = new LinkedHashMap<>();
         body.forEach((key, value) -> {
@@ -295,6 +325,13 @@ public class ProjectController {
         return ids;
     }
 
+    /**
+     * Resolves the project ID from the insert result or by querying the SAP identifier.
+     *
+     * @param sapId SAP identifier used for fallback lookup.
+     * @param keyHolder key holder returned by the insert.
+     * @return resolved project identifier.
+     */
     private UUID fetchProjectId(String sapId, KeyHolder keyHolder) {
         UUID fromKey = extractUuidFromKeyHolder(keyHolder);
         if (fromKey != null) {
@@ -304,6 +341,12 @@ public class ProjectController {
                 new MapSqlParameterSource("sap", sapId), UUID.class);
     }
 
+    /**
+     * Extracts a UUID value from the JDBC {@link KeyHolder}.
+     *
+     * @param keyHolder key holder returned by the insert.
+     * @return extracted UUID or null when unavailable.
+     */
     private UUID extractUuidFromKeyHolder(KeyHolder keyHolder) {
         if (keyHolder == null) return null;
         Map<String, Object> keys = keyHolder.getKeys();
@@ -316,6 +359,12 @@ public class ProjectController {
         return coerceUuid(keyHolder.getKey());
     }
 
+    /**
+     * Coerces a value into a {@link UUID} when possible.
+     *
+     * @param value raw value from JDBC.
+     * @return UUID value or null when conversion fails.
+     */
     private UUID coerceUuid(Object value) {
         if (value == null) return null;
         if (value instanceof UUID uuid) return uuid;
@@ -326,6 +375,13 @@ public class ProjectController {
         }
     }
 
+    /**
+     * Extracts a UUID list from the payload when the given key is present.
+     *
+     * @param body request payload.
+     * @param key key that should map to a UUID array.
+     * @return list of UUIDs, an empty list when explicitly empty, or null when absent.
+     */
     private List<UUID> extractUuidList(Map<String, Object> body, String key) {
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             if (entry.getKey() != null && entry.getKey().equalsIgnoreCase(key)) {

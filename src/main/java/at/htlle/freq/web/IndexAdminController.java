@@ -26,6 +26,12 @@ public class IndexAdminController {
     private final LuceneIndexService lucene;
     private final TaskExecutor taskExecutor;
 
+    /**
+     * Creates an admin controller for triggering Lucene reindexing.
+     *
+     * @param lucene service that performs indexing work.
+     * @param taskExecutor executor for running reindexing asynchronously.
+     */
     public IndexAdminController(LuceneIndexService lucene, TaskExecutor taskExecutor) {
         this.lucene = lucene;
         this.taskExecutor = taskExecutor;
@@ -80,6 +86,12 @@ public class IndexAdminController {
         }
     }
 
+    /**
+     * Resolves an actor label for log messages.
+     *
+     * @param principal authenticated principal, when available.
+     * @return actor label derived from the principal or request ID.
+     */
     private String resolveActor(Principal principal) {
         if (principal != null) {
             return "principal=" + principal.getName();

@@ -22,6 +22,11 @@ public class AddressController {
 
     private final AddressService service;
 
+    /**
+     * Creates a controller that delegates address operations to {@link AddressService}.
+     *
+     * @param service service used for address CRUD operations.
+     */
     public AddressController(AddressService service) {
         this.service = service;
     }

@@ -138,6 +138,11 @@ public class ClientsService {
 // therefore the controller does not expose a delete endpoint at this time.
 // ----------------------------
 /*
+    /**
+     * Deletes the record from the underlying store.
+     * @param id identifier.
+     * @return true when the condition is met; otherwise false.
+     */
     @Transactional
     public boolean delete(UUID id) {
         Objects.requireNonNull(id, "id must not be null");
@@ -164,6 +169,10 @@ public class ClientsService {
     // Lucene Indexing Helpers
     // ----------------------------
 
+    /**
+     * Registers the After Commit Indexing for deferred execution.
+     * @param c c.
+     */
     private void registerAfterCommitIndexing(Clients c) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             indexToLucene(c);
@@ -174,6 +183,10 @@ public class ClientsService {
         });
     }
 
+    /**
+     * Indexes the To Lucene for search operations.
+     * @param c c.
+     */
     private void indexToLucene(Clients c) {
         try {
             lucene.indexClient(
@@ -197,7 +210,20 @@ public class ClientsService {
     // Utility
     // ----------------------------
 
+    /**
+     * Checks whether a string is null or blank.
+     *
+     * @param s input string.
+     * @return true when the string is null, empty, or whitespace.
+     */
     private static boolean isBlank(String s) { return s == null || s.trim().isEmpty(); }
 
+    /**
+     * Returns the fallback when the input is null.
+     *
+     * @param in input value.
+     * @param fallback fallback value.
+     * @return input when non-null, otherwise fallback.
+     */
     private static <T> T nvl(T in, T fallback) { return in != null ? in : fallback; }
 }

@@ -22,6 +22,11 @@ public class AccountController {
 
     private final AccountService accountService;
 
+    /**
+     * Creates a controller that delegates account operations to {@link AccountService}.
+     *
+     * @param accountService service used for account CRUD operations.
+     */
     public AccountController(AccountService accountService) {
         this.accountService = accountService;
     }

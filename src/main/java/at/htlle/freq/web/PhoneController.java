@@ -31,6 +31,11 @@ public class PhoneController {
             "PhoneFirmware"
     );
 
+    /**
+     * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used for phone integration queries.
+     */
     public PhoneController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
@@ -184,6 +189,12 @@ public class PhoneController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("PhoneIntegrationID", id));
     }
 
+    /**
+     * Extracts identifier-like entries from the payload for logging.
+     *
+     * @param body request payload.
+     * @return key/value pairs whose names end with {@code id} (case-insensitive).
+     */
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
         Map<String, Object> ids = new LinkedHashMap<>();
         body.forEach((key, value) -> {

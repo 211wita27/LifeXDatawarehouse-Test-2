@@ -20,6 +20,11 @@ public class ClientController {
 
     private final ClientsService service;
 
+    /**
+     * Creates a controller that delegates client operations to {@link ClientsService}.
+     *
+     * @param service service used for client CRUD operations.
+     */
     public ClientController(ClientsService service) {
         this.service = service;
     }

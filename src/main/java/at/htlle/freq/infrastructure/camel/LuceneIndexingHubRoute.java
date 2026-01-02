@@ -31,6 +31,9 @@ import java.util.UUID;
  *  - Serves as the bridge between Camel and LuceneIndexServiceImpl.
  *  - Consumes entities from the repositories (see UnifiedIndexingRoutes) and mirrors their structure one-to-one in the indexing methods.
  */
+/**
+ * Component that provides Lucene Indexing Hub Route behavior.
+ */
 @Component("LuceneIndexingHubRoute")
 @ConditionalOnProperty(value = "lifex.lucene.camel.enabled", havingValue = "true", matchIfMissing = true)
 public class LuceneIndexingHubRoute extends RouteBuilder {
@@ -39,6 +42,11 @@ public class LuceneIndexingHubRoute extends RouteBuilder {
     private final LuceneIndexService lucene;
     private final ProjectSiteAssignmentService projectSites;
 
+    /**
+     * Creates a new LuceneIndexingHubRoute instance and initializes it with the provided values.
+     * @param lucene lucene.
+     * @param projectSites project sites.
+     */
     public LuceneIndexingHubRoute(LuceneIndexService lucene, ProjectSiteAssignmentService projectSites) {
         this.lucene = lucene;
         this.projectSites = projectSites;

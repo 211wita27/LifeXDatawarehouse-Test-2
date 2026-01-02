@@ -25,6 +25,11 @@ public class GenericCrudController {
 
     private final NamedParameterJdbcTemplate jdbc;
 
+    /**
+     * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used to query the whitelisted tables.
+     */
     public GenericCrudController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
@@ -104,10 +109,29 @@ public class GenericCrudController {
         DATE_COLUMNS = Collections.unmodifiableMap(d);
     }
 
+    /**
+     * Logs a warning and returns a {@link ResponseStatusException} with the given status.
+     *
+     * @param status HTTP status to return.
+     * @param table table name involved in the failed action.
+     * @param action action label used for logging.
+     * @param reason message returned to the client.
+     * @return configured {@link ResponseStatusException}.
+     */
     private ResponseStatusException logAndThrow(HttpStatus status, String table, String action, String reason) {
         return logAndThrow(status, table, action, reason, null);
     }
 
+    /**
+     * Logs a warning and returns a {@link ResponseStatusException} with the given status.
+     *
+     * @param status HTTP status to return.
+     * @param table table name involved in the failed action.
+     * @param action action label used for logging.
+     * @param reason message returned to the client.
+     * @param logReason optional log-only message, used when client-facing reason differs.
+     * @return configured {@link ResponseStatusException}.
+     */
     private ResponseStatusException logAndThrow(HttpStatus status, String table, String action, String reason, String logReason) {
         String actionLabel = action == null ? "(unknown action)" : action;
         String tableLabel = table == null ? "(unknown table)" : table;
@@ -116,6 +140,12 @@ public class GenericCrudController {
         return new ResponseStatusException(status, reason);
     }
 
+    /**
+     * Normalizes the Table to a canonical form.
+     *
+     * @param name table alias supplied by the caller.
+     * @return canonical table name from the whitelist.
+     */
     private String normalizeTable(String name) {
         if (name == null) throw logAndThrow(HttpStatus.BAD_REQUEST, null, "normalizeTable", "table missing");
         String key = name.trim().toLowerCase();
@@ -126,10 +156,23 @@ public class GenericCrudController {
         return table;
     }
 
+    /**
+     * Checks whether the primary key for a table is a string-based identifier.
+     *
+     * @param table canonical table name.
+     * @return true when the primary key is string-based.
+     */
     private static boolean pkIsString(String table) {
         return "Country".equals(table) || "City".equals(table);
     }
 
+    /**
+     * Filters incoming JSON body to only allowed column names for the table.
+     *
+     * @param table canonical table name.
+     * @param body raw JSON payload.
+     * @return sanitized column map with disallowed keys removed.
+     */
     private Map<String, Object> sanitizeColumns(String table, Map<String, Object> body) {
         Set<String> allowed = COLUMNS.get(table);
         if (allowed == null) {
@@ -160,7 +203,7 @@ public class GenericCrudController {
      * Reads multiple rows from an allowed table.
      *
      * <p>Path: {@code GET /table/{name}}</p>
-     * <p>Path variable: {@code name} – table alias from the whitelist.</p>
+     * <p>Path variable: {@code name} - table alias from the whitelist.</p>
      * <p>Query parameter: {@code limit} (optional, 1-500) limits the result size.</p>
      *
      * @param name  table alias.
@@ -309,6 +352,13 @@ public class GenericCrudController {
         log.info("Deleted {} {} with fields {}", table, id, Collections.singleton(pk));
     }
 
+    /**
+     * Converts configured date columns from strings into {@link LocalDate} values.
+     *
+     * @param table canonical table name.
+     * @param values values submitted by the client.
+     * @return converted values map with parsed dates.
+     */
     private Map<String, Object> convertTemporalValues(String table, Map<String, Object> values) {
         Set<String> dateColumns = DATE_COLUMNS.get(table);
         if (dateColumns == null || dateColumns.isEmpty()) {

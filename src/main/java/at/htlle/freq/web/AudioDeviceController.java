@@ -30,6 +30,11 @@ public class AudioDeviceController {
             "input+output", "Input + Output"
     );
 
+    /**
+     * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used for audio device queries.
+     */
     public AudioDeviceController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
@@ -179,6 +184,12 @@ public class AudioDeviceController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("AudioDeviceID", id));
     }
 
+    /**
+     * Extracts identifier-like entries from the payload for logging.
+     *
+     * @param body request payload.
+     * @return key/value pairs whose names end with {@code id} (case-insensitive).
+     */
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
         Map<String, Object> ids = new LinkedHashMap<>();
         body.forEach((key, value) -> {
@@ -189,6 +200,12 @@ public class AudioDeviceController {
         return ids;
     }
 
+    /**
+     * Normalizes the {@code DeviceType} value to the expected canonical form.
+     *
+     * @param body request payload (mutated in place).
+     * @return optional normalized value when provided.
+     */
     private Optional<String> normalizeDeviceType(Map<String, Object> body) {
         String[] keys = {"DeviceType", "deviceType"};
         String detectedKey = null;
@@ -224,6 +241,12 @@ public class AudioDeviceController {
         return Optional.of(normalized);
     }
 
+    /**
+     * Normalizes the {@code Direction} value to the expected canonical form.
+     *
+     * @param body request payload (mutated in place).
+     * @return optional normalized value when provided.
+     */
     private Optional<String> normalizeDirection(Map<String, Object> body) {
         String[] keys = {"Direction", "direction"};
         String detectedKey = null;

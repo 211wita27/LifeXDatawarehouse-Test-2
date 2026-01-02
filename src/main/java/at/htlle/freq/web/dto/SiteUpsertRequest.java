@@ -24,6 +24,9 @@ public record SiteUpsertRequest(
         Boolean highAvailability,
         List<SiteSoftwareAssignmentDto> softwareAssignments
 ) {
+    /**
+     * Validates required fields for a create request.
+     */
     public void validateForCreate() {
         if (isBlank(siteName)) {
             throw new IllegalArgumentException("SiteName is required");
@@ -49,6 +52,9 @@ public record SiteUpsertRequest(
         validateAssignments();
     }
 
+    /**
+     * Validates fields for an update request.
+     */
     public void validateForUpdate() {
         if (siteName != null && siteName.trim().isEmpty()) {
             throw new IllegalArgumentException("SiteName must not be blank");
@@ -62,6 +68,9 @@ public record SiteUpsertRequest(
         validateAssignments();
     }
 
+    /**
+     * Validates installed software assignment entries.
+     */
     private void validateAssignments() {
         for (SiteSoftwareAssignmentDto assignment : normalizedAssignments()) {
             if (assignment.softwareId() == null) {
@@ -73,6 +82,11 @@ public record SiteUpsertRequest(
         }
     }
 
+    /**
+     * Maps this request to a {@link Site} instance.
+     *
+     * @return site entity containing core fields.
+     */
     public Site toSite() {
         Site site = new Site();
         site.setSiteName(siteName);
@@ -85,10 +99,20 @@ public record SiteUpsertRequest(
         return site;
     }
 
+    /**
+     * Returns a non-null list of software assignments.
+     *
+     * @return list of assignment DTOs.
+     */
     public List<SiteSoftwareAssignmentDto> normalizedAssignments() {
         return softwareAssignments == null ? List.of() : softwareAssignments;
     }
 
+    /**
+     * Normalizes project identifiers into a unique list.
+     *
+     * @return distinct project IDs in request order.
+     */
     public List<UUID> normalizedProjectIds() {
         List<UUID> ids = new ArrayList<>();
         if (projectID != null) ids.add(projectID);
@@ -96,10 +120,21 @@ public record SiteUpsertRequest(
         return ids.stream().filter(Objects::nonNull).distinct().toList();
     }
 
+    /**
+     * Returns the first project identifier, when available.
+     *
+     * @return primary project ID or null.
+     */
     public UUID primaryProjectId() {
         return normalizedProjectIds().stream().findFirst().orElse(null);
     }
 
+    /**
+     * Converts assignment DTOs into {@link InstalledSoftware} entities for a site.
+     *
+     * @param siteId site identifier.
+     * @return list of installed software entities.
+     */
     public List<InstalledSoftware> toInstalledSoftware(UUID siteId) {
         Objects.requireNonNull(siteId, "siteId must not be null");
         return normalizedAssignments().stream()
@@ -107,6 +142,12 @@ public record SiteUpsertRequest(
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Checks whether a string is null or blank.
+     *
+     * @param value input string.
+     * @return true when the string is null, empty, or whitespace.
+     */
     private static boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }

@@ -18,6 +18,11 @@ public class JdbcProjectRepository implements ProjectRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
 
+    /**
+     * Creates a repository backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used for all project queries.
+     */
     public JdbcProjectRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     private final RowMapper<Project> mapper = (rs, n) -> new Project(
@@ -33,6 +38,12 @@ public class JdbcProjectRepository implements ProjectRepository {
             rs.getString("SpecialNotes")
     );
 
+    /**
+     * Loads a project by its primary key.
+     *
+     * @param id identifier of the project row.
+     * @return optional project when found.
+     */
     @Override
     public Optional<Project> findById(UUID id) {
         String sql = """
@@ -45,6 +56,12 @@ public class JdbcProjectRepository implements ProjectRepository {
         } catch (Exception e) { return Optional.empty(); }
     }
 
+    /**
+     * Loads a project by its SAP identifier.
+     *
+     * @param sapId SAP identifier stored in {@code ProjectSAPID}.
+     * @return optional project when found.
+     */
     @Override
     public Optional<Project> findBySapId(String sapId) {
         String sql = """
@@ -57,6 +74,11 @@ public class JdbcProjectRepository implements ProjectRepository {
         } catch (Exception e) { return Optional.empty(); }
     }
 
+    /**
+     * Retrieves every project row.
+     *
+     * @return all projects from the {@code Project} table.
+     */
     @Override
     public List<Project> findAll() {
         String sql = """
@@ -67,6 +89,11 @@ public class JdbcProjectRepository implements ProjectRepository {
         return jdbc.query(sql, mapper);
     }
 
+    /**
+     * Deletes a project row by its primary key.
+     *
+     * @param id identifier of the project to remove.
+     */
     @Override
     public void deleteById(UUID id) {
         String sql = "DELETE FROM Project WHERE ProjectID = :id";
@@ -77,8 +104,8 @@ public class JdbcProjectRepository implements ProjectRepository {
      * Persists projects while setting every column explicitly.
      * <p>
      * The INSERT statement leverages {@code RETURNING ProjectID} to capture the database-generated
-     * primary key. UPDATE statements bind all attributes—including optional
-     * {@link ProjectLifecycleStatus} values—to keep the RowMapper mapping aligned and to
+     * primary key. UPDATE statements bind all attributes, including optional
+     * {@link ProjectLifecycleStatus} values, to keep the {@link RowMapper} mapping aligned and to
      * synchronize dependent foreign keys.
      * </p>
      *

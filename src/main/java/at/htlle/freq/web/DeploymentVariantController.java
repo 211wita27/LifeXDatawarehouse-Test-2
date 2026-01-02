@@ -20,6 +20,11 @@ public class DeploymentVariantController {
 
     private final DeploymentVariantService service;
 
+    /**
+     * Creates a controller that delegates deployment variant operations to {@link DeploymentVariantService}.
+     *
+     * @param service service used for variant CRUD operations.
+     */
     public DeploymentVariantController(DeploymentVariantService service) {
         this.service = service;
     }

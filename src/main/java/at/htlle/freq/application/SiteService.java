@@ -173,12 +173,20 @@ public class SiteService {
 
     // ---------- Internals ----------
 
+    /**
+     * Registers the After Commit Indexing for deferred execution.
+     * @param s s.
+     * @param projectIds project identifiers.
+     */
     private void registerAfterCommitIndexing(Site s, List<UUID> projectIds) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             indexToLucene(s, projectIds);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            /**
+             * Indexes the site after the transaction commits.
+             */
             @Override
             public void afterCommit() {
                 indexToLucene(s, projectIds);
@@ -186,6 +194,12 @@ public class SiteService {
         });
     }
 
+    /**
+     * Indexes a site in Lucene for search operations.
+     *
+     * @param s site entity to index.
+     * @param projectIds project identifiers associated with the site.
+     */
     private void indexToLucene(Site s, List<UUID> projectIds) {
         try {
             lucene.indexSite(
@@ -209,14 +223,34 @@ public class SiteService {
 
     // ---------- Utils ----------
 
+    /**
+     * Checks whether a string is null or blank.
+     *
+     * @param s input string.
+     * @return true when the string is null, empty, or whitespace.
+     */
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
 
+    /**
+     * Returns the fallback when the input is null.
+     *
+     * @param in input value.
+     * @param fallback fallback value.
+     * @return input when non-null, otherwise fallback.
+     */
     private static String nvl(String in, String fallback) {
         return in != null ? in : fallback;
     }
 
+    /**
+     * Normalizes project identifiers into a unique list.
+     *
+     * @param projects list of project IDs.
+     * @param singleProject optional single project ID.
+     * @return distinct project IDs in request order.
+     */
     private List<UUID> normalizeProjects(List<UUID> projects, UUID singleProject) {
         List<UUID> list = new ArrayList<>();
         if (singleProject != null) list.add(singleProject);
@@ -224,6 +258,15 @@ public class SiteService {
         return list.stream().filter(Objects::nonNull).distinct().toList();
     }
 
+    /**
+     * Resolves the updated project assignments for a site.
+     *
+     * @param siteId site identifier.
+     * @param existing current site state.
+     * @param patch incoming update payload.
+     * @param projectIds project IDs supplied directly.
+     * @return resolved project IDs to persist.
+     */
     private List<UUID> resolveUpdatedProjects(UUID siteId, Site existing, Site patch, List<UUID> projectIds) {
         List<UUID> incoming = normalizeProjects(projectIds, patch.getProjectID());
         if (!incoming.isEmpty()) {

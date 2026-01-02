@@ -141,12 +141,19 @@ public class PhoneIntegrationService {
 
     // ---------- Internals ----------
 
+    /**
+     * Registers the After Commit Indexing for deferred execution.
+     * @param p p.
+     */
     private void registerAfterCommitIndexing(PhoneIntegration p) {
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
             indexToLucene(p);
             return;
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            /**
+             * Indexes the phone integration after the transaction commits.
+             */
             @Override
             public void afterCommit() {
                 indexToLucene(p);
@@ -154,6 +161,11 @@ public class PhoneIntegrationService {
         });
     }
 
+    /**
+     * Indexes a phone integration in Lucene for search operations.
+     *
+     * @param p phone integration entity to index.
+     */
     private void indexToLucene(PhoneIntegration p) {
         try {
             lucene.indexPhoneIntegration(
@@ -173,10 +185,23 @@ public class PhoneIntegrationService {
 
     // ---------- Utils ----------
 
+    /**
+     * Checks whether a string is null or blank.
+     *
+     * @param s input string.
+     * @return true when the string is null, empty, or whitespace.
+     */
     private static boolean isBlank(String s) {
         return s == null || s.trim().isEmpty();
     }
 
+    /**
+     * Returns the fallback when the input is null.
+     *
+     * @param in input value.
+     * @param fallback fallback value.
+     * @return input when non-null, otherwise fallback.
+     */
     private static <T> T nvl(T in, T fallback) {
         return in != null ? in : fallback;
     }

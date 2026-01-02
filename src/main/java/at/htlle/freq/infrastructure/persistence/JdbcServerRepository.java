@@ -17,6 +17,10 @@ public class JdbcServerRepository implements ServerRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
 
+    /**
+     * Creates a new JdbcServerRepository instance and initializes it with the provided values.
+     * @param jdbc jdbc.
+     */
     public JdbcServerRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     private final RowMapper<Server> mapper = (rs, n) -> new Server(
@@ -31,6 +35,11 @@ public class JdbcServerRepository implements ServerRepository {
             rs.getString("VirtualVersion")
     );
 
+    /**
+     * Finds By ID using the supplied criteria and returns the matching data.
+     * @param id identifier.
+     * @return the matching By ID.
+     */
     @Override
     public Optional<Server> findById(UUID id) {
         String sql = """
@@ -42,6 +51,11 @@ public class JdbcServerRepository implements ServerRepository {
         catch (Exception e) { return Optional.empty(); }
     }
 
+    /**
+     * Finds By Site using the supplied criteria and returns the matching data.
+     * @param siteId site identifier.
+     * @return the matching By Site.
+     */
     @Override
     public List<Server> findBySite(UUID siteId) {
         String sql = """
@@ -52,6 +66,10 @@ public class JdbcServerRepository implements ServerRepository {
         return jdbc.query(sql, new MapSqlParameterSource("sid", siteId), mapper);
     }
 
+    /**
+     * Finds All using the supplied criteria and returns the matching data.
+     * @return the matching All.
+     */
     @Override
     public List<Server> findAll() {
         String sql = """
@@ -62,6 +80,10 @@ public class JdbcServerRepository implements ServerRepository {
         return jdbc.query(sql, mapper);
     }
 
+    /**
+     * Deletes the By ID from the underlying store.
+     * @param id identifier.
+     */
     @Override
     public void deleteById(UUID id) {
         String sql = "DELETE FROM Server WHERE ServerID = :id";

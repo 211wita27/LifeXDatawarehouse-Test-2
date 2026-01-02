@@ -23,6 +23,11 @@ public class RadioController {
     private static final Logger log = LoggerFactory.getLogger(RadioController.class);
     private static final String TABLE = "Radio";
 
+    /**
+     * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used for radio queries.
+     */
     public RadioController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
@@ -159,6 +164,12 @@ public class RadioController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("RadioID", id));
     }
 
+    /**
+     * Extracts identifier-like entries from the payload for logging.
+     *
+     * @param body request payload.
+     * @return key/value pairs whose names end with {@code id} (case-insensitive).
+     */
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
         Map<String, Object> ids = new LinkedHashMap<>();
         body.forEach((key, value) -> {

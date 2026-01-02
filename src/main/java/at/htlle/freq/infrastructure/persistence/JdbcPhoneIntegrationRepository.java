@@ -17,6 +17,10 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
 
     private final NamedParameterJdbcTemplate jdbc;
 
+    /**
+     * Creates a new JdbcPhoneIntegrationRepository instance and initializes it with the provided values.
+     * @param jdbc jdbc.
+     */
     public JdbcPhoneIntegrationRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     private final RowMapper<PhoneIntegration> mapper = (rs, n) -> new PhoneIntegration(
@@ -29,6 +33,11 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
             rs.getString("PhoneFirmware")
     );
 
+    /**
+     * Finds By ID using the supplied criteria and returns the matching data.
+     * @param id identifier.
+     * @return the matching By ID.
+     */
     @Override
     public Optional<PhoneIntegration> findById(UUID id) {
         String sql = """
@@ -39,6 +48,11 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
         catch (Exception e) { return Optional.empty(); }
     }
 
+    /**
+     * Finds By Site using the supplied criteria and returns the matching data.
+     * @param siteId site identifier.
+     * @return the matching By Site.
+     */
     @Override
     public List<PhoneIntegration> findBySite(UUID siteId) {
         String sql = """
@@ -48,6 +62,10 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
         return jdbc.query(sql, new MapSqlParameterSource("sid", siteId), mapper);
     }
 
+    /**
+     * Finds All using the supplied criteria and returns the matching data.
+     * @return the matching All.
+     */
     @Override
     public List<PhoneIntegration> findAll() {
         return jdbc.query("""
@@ -56,6 +74,10 @@ public class JdbcPhoneIntegrationRepository implements PhoneIntegrationRepositor
             """, mapper);
     }
 
+    /**
+     * Deletes the By ID from the underlying store.
+     * @param id identifier.
+     */
     @Override
     public void deleteById(UUID id) {
         String sql = "DELETE FROM PhoneIntegration WHERE PhoneIntegrationID = :id";

@@ -11,9 +11,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.*;
 
 /**
- * Fully featured CRUD controller for servers.
+ * REST controller for server inventory endpoints.
  *
- * <p>Uses {@link NamedParameterJdbcTemplate} for database access.</p>
+ * <p>Uses {@link NamedParameterJdbcTemplate} to execute SQL queries directly against the
+ * {@code Server} table.</p>
  */
 @RestController
 @RequestMapping("/servers")
@@ -23,6 +24,11 @@ public class ServerController {
     private static final Logger log = LoggerFactory.getLogger(ServerController.class);
     private static final String TABLE = "Server";
 
+    /**
+     * Creates a controller backed by the provided JDBC template.
+     *
+     * @param jdbc JDBC access component for SQL queries.
+     */
     public ServerController(NamedParameterJdbcTemplate jdbc) {
         this.jdbc = jdbc;
     }
@@ -165,6 +171,12 @@ public class ServerController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("ServerID", id));
     }
 
+    /**
+     * Extracts identifier-like keys from the request payload for logging.
+     *
+     * @param body raw request payload.
+     * @return map of keys ending in {@code id} (case-insensitive).
+     */
     private Map<String, Object> extractIdentifiers(Map<String, Object> body) {
         Map<String, Object> ids = new LinkedHashMap<>();
         body.forEach((key, value) -> {

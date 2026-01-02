@@ -17,6 +17,10 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
 
     private final NamedParameterJdbcTemplate jdbc;
 
+    /**
+     * Creates a new JdbcAudioDeviceRepository instance and initializes it with the provided values.
+     * @param jdbc jdbc.
+     */
     public JdbcAudioDeviceRepository(NamedParameterJdbcTemplate jdbc) { this.jdbc = jdbc; }
 
     private final RowMapper<AudioDevice> mapper = (rs, n) -> new AudioDevice(
@@ -29,6 +33,11 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
             rs.getString("Direction")
     );
 
+    /**
+     * Finds By ID using the supplied criteria and returns the matching data.
+     * @param id identifier.
+     * @return the matching By ID.
+     */
     @Override
     public Optional<AudioDevice> findById(UUID id) {
         String sql = """
@@ -39,6 +48,11 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
         catch (Exception e) { return Optional.empty(); }
     }
 
+    /**
+     * Finds By Client using the supplied criteria and returns the matching data.
+     * @param clientId client identifier.
+     * @return the matching By Client.
+     */
     @Override
     public List<AudioDevice> findByClient(UUID clientId) {
         String sql = """
@@ -48,6 +62,10 @@ public class JdbcAudioDeviceRepository implements AudioDeviceRepository {
         return jdbc.query(sql, new MapSqlParameterSource("cid", clientId), mapper);
     }
 
+    /**
+     * Finds All using the supplied criteria and returns the matching data.
+     * @return the matching All.
+     */
     @Override
     public List<AudioDevice> findAll() {
         return jdbc.query("""

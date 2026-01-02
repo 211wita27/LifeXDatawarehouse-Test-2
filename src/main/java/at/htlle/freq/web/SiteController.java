@@ -36,6 +36,14 @@ public class SiteController {
     private static final Logger log = LoggerFactory.getLogger(SiteController.class);
     private static final String TABLE = "Site";
 
+    /**
+     * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
+     *
+     * @param jdbc JDBC template used for ad-hoc site queries.
+     * @param siteService service used for site CRUD operations.
+     * @param installedSoftwareService service managing installed software assignments.
+     * @param projectSites service that maintains site/project relationships.
+     */
     public SiteController(NamedParameterJdbcTemplate jdbc, SiteService siteService,
                           InstalledSoftwareService installedSoftwareService,
                           ProjectSiteAssignmentService projectSites) {
@@ -190,6 +198,12 @@ public class SiteController {
         );
     }
 
+    /**
+     * Returns installed software assignments for the requested site.
+     *
+     * @param id site identifier.
+     * @return list of software overview entries for the site.
+     */
     @GetMapping({"/{id}/software", "/{id}/software/overview"})
     public List<SiteSoftwareOverviewEntry> softwareOverview(@PathVariable String id) {
         UUID siteId = parseUuid(id, "SiteID");
@@ -334,6 +348,12 @@ public class SiteController {
         log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("SiteID", id));
     }
 
+    /**
+     * Persists installed software assignments for the site.
+     *
+     * @param siteId site identifier.
+     * @param request request payload with assignments.
+     */
     private void persistAssignments(UUID siteId, SiteUpsertRequest request) {
         try {
             installedSoftwareService.replaceAssignmentsForSite(siteId, request.toInstalledSoftware(siteId));
@@ -342,6 +362,13 @@ public class SiteController {
         }
     }
 
+    /**
+     * Parses a UUID and converts parsing errors into a {@link ResponseStatusException}.
+     *
+     * @param raw raw string value.
+     * @param fieldName field label used in the error message.
+     * @return parsed UUID.
+     */
     private UUID parseUuid(String raw, String fieldName) {
         try {
             return UUID.fromString(raw);
@@ -351,6 +378,12 @@ public class SiteController {
         }
     }
 
+    /**
+     * Summarizes which fields are set on the patch for audit logging.
+     *
+     * @param patch site values supplied in the update.
+     * @return set of updated field names.
+     */
     private Set<String> summarizeUpdatedFields(Site patch) {
         Set<String> fields = new LinkedHashSet<>();
         if (patch.getSiteName() != null) fields.add("SiteName");
