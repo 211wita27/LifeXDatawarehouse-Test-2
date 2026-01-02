@@ -423,6 +423,9 @@
     };
 
     const filterableMultiState=new WeakMap();
+    const asyncSearchTimers=new Map();
+    const asyncOptionsCache=new Map();
+    const asyncRequestTokens=new Map();
 
     const getFilterableMultiState=container=>{
         if(!filterableMultiState.has(container)){
@@ -662,7 +665,13 @@
                 openFilterableMultiSelect(container);
             });
             input.addEventListener('input',()=>{
-                filterFilterableMultiOptions(container,input.value||'');
+                const query=input.value||'';
+                filterFilterableMultiOptions(container,query);
+                const asyncWrapper=container.closest('.async-select');
+                const asyncFieldId=asyncWrapper?.dataset.field;
+                if(asyncFieldId){
+                    scheduleAsyncSearch(asyncFieldId,query);
+                }
             });
             input.addEventListener('keydown',event=>{
                 const state=getFilterableMultiState(container);
@@ -885,6 +894,18 @@
         return false;
     };
 
+    const scheduleAsyncSearch=(fieldId,searchTerm='')=>{
+        if(!fieldId) return;
+        const existing=asyncSearchTimers.get(fieldId);
+        if(existing){
+            clearTimeout(existing);
+        }
+        const timer=setTimeout(()=>{
+            loadOptionsForField(fieldId,{searchTerm});
+        },250);
+        asyncSearchTimers.set(fieldId,timer);
+    };
+
     const initializeFilterableSelect=container=>{
         if(!container || container.dataset.enhanced==='true') return;
         container.dataset.enhanced='true';
@@ -918,6 +939,11 @@
             openFilterableSelect(container);
             markFilterableSelection(container,false);
             updateValueProxy(fieldId,'');
+            const asyncWrapper=container.closest('.async-select');
+            const asyncFieldId=asyncWrapper?.dataset.field;
+            if(asyncFieldId){
+                scheduleAsyncSearch(asyncFieldId,current);
+            }
         };
 
         input?.addEventListener('input',handleInput);
@@ -1534,7 +1560,38 @@
         }
     }
 
-    async function loadOptionsForField(id){
+    const buildAsyncCacheKey=(sourceKey,dependencyValue,searchTerm='')=>{
+        return [sourceKey||'unknown',dependencyValue||'',searchTerm||''].join('|');
+    };
+
+    const clearAsyncCacheForSource=sourceKey=>{
+        if(!sourceKey) return;
+        Array.from(asyncOptionsCache.keys()).forEach(key=>{
+            if(key.startsWith(`${sourceKey}|`)){
+                asyncOptionsCache.delete(key);
+            }
+        });
+    };
+
+    const applyDefaultSearchParams=(url,{hasSearchTerm})=>{
+        if(!url) return url;
+        try{
+            const urlObj=new URL(url,window.location.origin);
+            if(!hasSearchTerm){
+                if(!urlObj.searchParams.has('q')){
+                    urlObj.searchParams.set('q','*');
+                }
+                if(!urlObj.searchParams.has('size') && !urlObj.searchParams.has('limit')){
+                    urlObj.searchParams.set('size','25');
+                }
+            }
+            return urlObj.toString();
+        }catch(_){
+            return url;
+        }
+    };
+
+    async function loadOptionsForField(id,{searchTerm:providedSearchTerm}={}){
         const config=asyncSelectConfigs[id];
         if(!config) return;
         const container=getAsyncContainer(id);
@@ -1588,24 +1645,13 @@
             return;
         }
 
-        if(isMulti){
-            if(multiSelect){
-                setFilterableMultiDisabled(multiSelect,true);
-                updateFilterableMultiPlaceholder(multiSelect,'Loading data…');
-            }
-        }else{
-            setFilterableSelectDisabled(combo,true);
-            updateFilterableSelectPlaceholder(combo,'Loading data…');
-        }
         const searchInput = isMulti ? multiSelect?.querySelector('.filterable-select-input') : combo?.querySelector('.filterable-select-input');
-        const searchTerm = searchInput?.value?.trim();
-        try{
-            const url=typeof source.url==='function'?source.url(dependencyValue,{fieldId:id, dependsOn: dependencyId, searchTerm}):source.url;
-            const data=await fetchJson(url);
-            let entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
-            if(typeof config.filter==='function'){
-                entries=entries.filter(entry=>config.filter(entry, dependencyValue));
-            }
+        const rawSearch = providedSearchTerm ?? searchInput?.value;
+        const normalizedSearchTerm = typeof rawSearch==='string'?rawSearch.trim():'';
+        const effectiveSearchTerm = normalizedSearchTerm || '*';
+        const cacheKey=buildAsyncCacheKey(config.sourceKey,dependencyValue||'',normalizedSearchTerm);
+        const requestToken=Symbol('async-options');
+        const applyEntries=entries=>{
             if(isMulti && multiSelect){
                 setFilterableMultiOptions(multiSelect,entries);
                 const placeholderText=entries.length===0 ? (config.emptyText||config.placeholder||'No entries available') : (config.placeholder||'Select items');
@@ -1646,6 +1692,41 @@
                 }
                 config.initialValue=undefined;
             }
+        };
+        const startLoading=()=>{
+            if(isMulti && multiSelect){
+                multiSelect.dataset.loading='true';
+                setFilterableMultiDisabled(multiSelect,true);
+                updateFilterableMultiPlaceholder(multiSelect,'Loading data…');
+            }else{
+                setFilterableSelectDisabled(combo,true);
+                updateFilterableSelectPlaceholder(combo,'Loading data…');
+            }
+        };
+        const endLoading=()=>{
+            if(asyncRequestTokens.get(id)!==requestToken) return;
+            asyncRequestTokens.delete(id);
+            if(isMulti && multiSelect){
+                delete multiSelect.dataset.loading;
+            }
+        };
+        if(asyncOptionsCache.has(cacheKey)){
+            applyEntries(asyncOptionsCache.get(cacheKey));
+            return;
+        }
+        asyncRequestTokens.set(id,requestToken);
+        startLoading();
+        try{
+            let url=typeof source.url==='function'?source.url(dependencyValue,{fieldId:id, dependsOn: dependencyId, searchTerm: effectiveSearchTerm}):source.url;
+            url=applyDefaultSearchParams(url,{hasSearchTerm:Boolean(normalizedSearchTerm)});
+            const data=await fetchJson(url);
+            let entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
+            if(typeof config.filter==='function'){
+                entries=entries.filter(entry=>config.filter(entry, dependencyValue));
+            }
+            asyncOptionsCache.set(cacheKey,entries);
+            if(asyncRequestTokens.get(id)!==requestToken) return;
+            applyEntries(entries);
         }catch(err){
             console.error(err);
             if(isMulti && multiSelect){
@@ -1662,6 +1743,8 @@
                     setManualMode(id,'manual');
                 }
             }
+        }finally{
+            endLoading();
         }
     }
 
@@ -1717,7 +1800,10 @@
             if(config.dependsOn){
                 const dep=document.getElementById(config.dependsOn);
                 if(dep){
-                    dep.addEventListener('value-changed',()=>loadOptionsForField(id));
+                    dep.addEventListener('value-changed',()=>{
+                        clearAsyncCacheForSource(config.sourceKey);
+                        loadOptionsForField(id);
+                    });
                 }
             }
             loadOptionsForField(id);
