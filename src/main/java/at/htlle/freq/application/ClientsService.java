@@ -137,34 +137,6 @@ public class ClientsService {
 // Deletion support would be useful, but the Lucene integration cannot remove entries yet,
 // therefore the controller does not expose a delete endpoint at this time.
 // ----------------------------
-/*
-    /**
-     * Deletes the record from the underlying store.
-     * @param id identifier.
-     * @return true when the condition is met; otherwise false.
-     */
-    @Transactional
-    public boolean delete(UUID id) {
-        Objects.requireNonNull(id, "id must not be null");
-
-        var existing = repo.findById(id);
-        if (existing.isEmpty()) {
-            return false;
-        }
-
-        repo.deleteById(id);
-        log.info("Client deleted: id={}", id);
-
-        // Optionally remove the Lucene entry once the Lucene service offers delete support.
-        try {
-            lucene.deleteClient(id.toString());
-        } catch (Exception e) {
-            log.warn("Lucene deletion for client {} failed", id, e);
-        }
-
-        return true;
-    }
- */
     // ----------------------------
     // Lucene Indexing Helpers
     // ----------------------------
