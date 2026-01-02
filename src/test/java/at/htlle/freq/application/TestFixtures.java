@@ -30,7 +30,18 @@ final class TestFixtures {
     }
 
     static Clients client() {
-        return new Clients(UUID1, UUID2, "Client", "Brand", "SN", "OS", "Patch", "LOCAL");
+        return new Clients(
+                UUID1,
+                UUID2,
+                "Client",
+                "Brand",
+                "SN",
+                "OS",
+                "Patch",
+                "LOCAL",
+                "Dispatcher",
+                "Office Suite"
+        );
     }
 
     static DeploymentVariant deploymentVariant() {
