@@ -47,7 +47,23 @@
             }
         },
         sites:{
-            url:projectId=>projectId?`/sites?projectId=${encodeURIComponent(projectId)}`:'/sites',
+            url:(dependencyValue,meta={})=>{
+                const params=new URLSearchParams();
+                const dependsOnKey=String(meta.dependsOn||'').toLowerCase();
+                const query=meta.searchTerm?.trim();
+                if(dependencyValue){
+                    if(dependsOnKey.includes('acc')){
+                        params.set('accountId',dependencyValue);
+                    }else{
+                        params.set('projectId',dependencyValue);
+                    }
+                }
+                if(query){
+                    params.set('q',query);
+                }
+                const qs=params.toString();
+                return qs?`/sites?${qs}`:'/sites';
+            },
             map:item=>{
                 const value = pick(item,'siteID','siteId','SiteID');
                 const name = pick(item,'siteName','SiteName');
@@ -260,7 +276,7 @@
             ] },
             { id: 'accId', label: 'Select account', component: 'asyncSelect', source: 'accounts', allowManual: false, name: 'AccountID' },
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID' },
-            { id: 'siteIds', label: 'Link existing sites', component: 'asyncSelect', source: 'sites', allowManual: false, placeholder: 'Select one or more sites', name: 'SiteIDs', required: false, multiple: true, hint: 'Assign already-created sites to this project.' }
+            { id: 'siteIds', label: 'Link existing sites', component: 'asyncSelect', source: 'sites', allowManual: false, placeholder: 'Select one or more sites', name: 'SiteIDs', required: false, multiple: true, dependsOn: 'accId', hint: 'Assign already-created sites to this project.' }
         ],
         Radio: [
             { id: 'siteId', label: 'Select site', component: 'asyncSelect', source: 'sites', allowManual: false, name: 'SiteID', hint: 'Radios are installed at a specific site.' },

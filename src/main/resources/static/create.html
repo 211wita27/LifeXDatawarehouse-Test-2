@@ -1597,8 +1597,10 @@
             setFilterableSelectDisabled(combo,true);
             updateFilterableSelectPlaceholder(combo,'Loading data…');
         }
+        const searchInput = isMulti ? multiSelect?.querySelector('.filterable-select-input') : combo?.querySelector('.filterable-select-input');
+        const searchTerm = searchInput?.value?.trim();
         try{
-            const url=typeof source.url==='function'?source.url(dependencyValue):source.url;
+            const url=typeof source.url==='function'?source.url(dependencyValue,{fieldId:id, dependsOn: dependencyId, searchTerm}):source.url;
             const data=await fetchJson(url);
             let entries=(Array.isArray(data)?data:[]).map(source.map).filter(Boolean);
             if(typeof config.filter==='function'){
