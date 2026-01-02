@@ -2104,6 +2104,21 @@
         showEntityMessage(option.value, context);
     }
 
+    function resolveCreatedId(parsedResponse, fallback){
+        const candidates=[
+            parsedResponse?.ProjectID,
+            parsedResponse?.projectID,
+            parsedResponse?.projectId,
+            parsedResponse?.SiteID,
+            parsedResponse?.siteID,
+            parsedResponse?.siteId,
+            parsedResponse?.id,
+            fallback
+        ].filter(Boolean);
+        if(!candidates.length) return null;
+        return String(candidates[0]).trim();
+    }
+
     async function submitProjectSiteAssignments(projectId, siteIds){
         const normalizedSites=normalizeIdList(siteIds);
         if(!projectId || !normalizedSites.length) return {applied:false};
@@ -2116,6 +2131,18 @@
             console.error('Assignment request failed', err);
             return {applied:true, ok:false, status:null, message:'Network error while assigning sites'};
         }
+    }
+
+    async function submitSiteProjectAssignments(siteId, projectIds){
+        const normalizedProjects=normalizeIdList(projectIds);
+        const normalizedSite=siteId?String(siteId).trim():'';
+        if(!normalizedSite || !normalizedProjects.length) return [];
+        const results=[];
+        for(const projectId of normalizedProjects){
+            const assignment=await submitProjectSiteAssignments(projectId,[normalizedSite]);
+            results.push({...assignment, projectId});
+        }
+        return results;
     }
 
     async function submitForm(e){
@@ -2386,7 +2413,7 @@
                     await loadOptionsForField(id);
                 }
                 const trimmed=responseText?.trim();
-                const createdId=parsedResponse?.ProjectID||parsedResponse?.projectID||parsedResponse?.projectId||parsedResponse?.id||trimmed||null;
+                const createdId=resolveCreatedId(parsedResponse, trimmed);
                 let successMessage=`${t} created.`;
                 if(t==='Site'){
                     const count=siteSoftwareEntries.length;
@@ -2406,6 +2433,23 @@
                             const details=assignmentResult.message?` ${assignmentResult.message}`:'';
                             successMessage+=` Site assignment failed (${assignmentResult.status??'n/a'}).${details}`;
                         }
+                    }
+                }
+                if(t==='Site' && selectedProjectIds.length){
+                    const assignmentResults=await submitSiteProjectAssignments(createdId, selectedProjectIds);
+                    if(assignmentResults.length){
+                        const failed=assignmentResults.filter(r=>r.applied && !r.ok);
+                        const succeeded=assignmentResults.filter(r=>r.applied && r.ok);
+                        if(failed.length===0){
+                            const messages=succeeded.map(r=>r.message).filter(Boolean);
+                            const suffix=messages.length?` ${messages.join(' ')}`:'';
+                            successMessage+=` Project assignments saved.${suffix}`;
+                        }else{
+                            const details=failed.map(r=>`[Project ${r.projectId}: ${r.status??'n/a'}${r.message?` ${r.message}`:''}]`).join(' ');
+                            successMessage+=` Project assignment failed for some projects. ${details}`;
+                        }
+                    }else if(selectedProjectIds.length){
+                        successMessage+=` Project assignments skipped (missing site ID or projects).`;
                     }
                 }
                 if(trimmed){
