@@ -1417,6 +1417,7 @@
             allowManual=false,
             placeholder='Please select',
             dependsOn=null,
+            dependsOnMessage=null,
             emptyText='No entries available',
             filter=null,
             name=null,
@@ -1426,10 +1427,10 @@
         } = options;
         if(multiple){
             const normalizedValues=Array.isArray(value)?value.filter(Boolean):value?[String(value)]:[];
-            asyncSelectConfigs[id]={sourceKey, required, allowManual:false, placeholder, dependsOn, emptyText, filter, name, initialValues: normalizedValues, multiple:true};
-            return renderAsyncMultiSelect(id,label,placeholder,{required, dependsOn, emptyText, name, values: normalizedValues, wrapperClass, sourceKey});
+            asyncSelectConfigs[id]={sourceKey, required, allowManual:false, placeholder, dependsOn, dependsOnMessage, emptyText, filter, name, initialValues: normalizedValues, multiple:true};
+            return renderAsyncMultiSelect(id,label,placeholder,{required, dependsOn, dependsOnMessage, emptyText, name, values: normalizedValues, wrapperClass, sourceKey});
         }
-        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, emptyText, filter, name, initialValue:value, multiple:false};
+        asyncSelectConfigs[id]={sourceKey, required, allowManual, placeholder, dependsOn, dependsOnMessage, emptyText, filter, name, initialValue:value, multiple:false};
         const manualToggle = allowManual ? `<button type="button" class="toggle-manual" data-field="${id}">Enter free text</button>` : '';
         const manualValue = value ?? '';
         const manualInput = allowManual ? `<input type="text" id="${id}-manual" class="manual-input hidden" placeholder="Enter UUID" value="${escapeAttr(manualValue)}" ${required?'required':''}>` : '';
@@ -1454,6 +1455,7 @@
         const {
             required=true,
             dependsOn=null,
+            dependsOnMessage=null,
             emptyText='No entries available',
             name=null,
             values=[],
@@ -1604,16 +1606,17 @@
         const dependencyId=config.dependsOn;
         const dependencyValue=dependencyId?document.getElementById(dependencyId)?.value?.trim():undefined;
         if(dependencyId && !dependencyValue){
+            const dependencyPrompt=config.dependsOnMessage||'Please select the dependent option first';
             if(isMulti && multiSelect){
                 clearFilterableMultiSelection(multiSelect,{notify:true});
                 setFilterableMultiOptions(multiSelect,[]);
-                updateFilterableMultiPlaceholder(multiSelect,'Please select the dependent option first');
+                updateFilterableMultiPlaceholder(multiSelect,dependencyPrompt);
                 setFilterableMultiDisabled(multiSelect,true);
             }
             if(!isMulti){
                 if(combo){
                     setFilterableSelectOptions(combo,[]);
-                    updateFilterableSelectPlaceholder(combo,'Please select the dependent option first');
+                    updateFilterableSelectPlaceholder(combo,dependencyPrompt);
                     setFilterableSelectDisabled(combo,true);
                 }
                 if(manual){
