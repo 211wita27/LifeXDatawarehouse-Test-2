@@ -2049,10 +2049,6 @@
                 break;
             case 'Site':
                 if(accountId) context.accountId=accountId;
-                if(projectId){
-                    await ensureAsyncValue('pIds', [projectId], {lock:true});
-                    context.projectId=projectId;
-                }
                 break;
             case 'Server':
             case 'WorkingPosition':
@@ -2135,13 +2131,6 @@
         }
     }
 
-    async function submitSiteProjectAssignments(siteId, projectIds){
-        const normalizedProjects=normalizeIdList(projectIds);
-        const normalizedSite=siteId?String(siteId).trim():'';
-        if(!normalizedSite || !normalizedProjects.length) return {applied:false};
-        return submitProjectSiteAssignments(normalizedProjects,[normalizedSite]);
-    }
-
     async function submitForm(e){
         e.preventDefault();
         const t=e.target.dataset.type; result.textContent=''; result.setAttribute('aria-busy','true');
@@ -2153,7 +2142,6 @@
         let url='',p={};
         let siteSoftwareEntries=[];
         let selectedSites=[];
-        let selectedProjectIds=[];
 
         switch(t){
             case 'Account':
@@ -2192,8 +2180,6 @@
 
             case 'Site':
                 url='/sites';
-                const projectIds = normalizeIdList(mv('pIds'));
-                selectedProjectIds = projectIds;
                 const tenantRaw=v('tenant');
                 const tenantCount=tenantRaw ? Number(tenantRaw) : null;
                 if(tenantRaw && Number.isNaN(tenantCount)){
@@ -2221,7 +2207,6 @@
                 }
                 siteSoftwareEntries=softwareCollection.entries;
                 p={
-                    projectIds: projectIds,
                     siteName: v('name'),
                     addressID: v('addrId'),
                     fireZone: toNull(v('zone')),
@@ -2430,19 +2415,6 @@
                             const details=assignmentResult.message?` ${assignmentResult.message}`:'';
                             successMessage+=` Site assignment failed (${assignmentResult.status??'n/a'}).${details}`;
                         }
-                    }
-                }
-                if(t==='Site' && selectedProjectIds.length){
-                    const assignmentResult=await submitSiteProjectAssignments(createdId, selectedProjectIds);
-                    if(assignmentResult.applied){
-                        if(assignmentResult.ok){
-                            successMessage+=` Project assignments saved.${assignmentResult.message?` ${assignmentResult.message}`:''}`;
-                        }else{
-                            const details=assignmentResult.message?` ${assignmentResult.message}`:'';
-                            successMessage+=` Project assignment failed (${assignmentResult.status??'n/a'}).${details}`;
-                        }
-                    }else if(selectedProjectIds.length){
-                        successMessage+=` Project assignments skipped (missing site ID or projects).`;
                     }
                 }
                 if(trimmed){
