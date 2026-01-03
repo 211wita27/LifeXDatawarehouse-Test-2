@@ -6,6 +6,7 @@ import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.InstalledSoftware;
 import at.htlle.freq.domain.Site;
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import at.htlle.freq.web.dto.InstalledSoftwareStatusUpdateRequest;
 import at.htlle.freq.web.dto.SiteDetailResponse;
 import at.htlle.freq.web.dto.SiteSoftwareAssignmentDto;
@@ -36,6 +37,7 @@ class SiteControllerTest {
     private SiteService siteService;
     private InstalledSoftwareService installedSoftwareService;
     private ProjectSiteAssignmentService projectSites;
+    private AuditLogger audit;
     private SiteController controller;
 
     @BeforeEach
@@ -44,7 +46,8 @@ class SiteControllerTest {
         siteService = mock(SiteService.class);
         installedSoftwareService = mock(InstalledSoftwareService.class);
         projectSites = mock(ProjectSiteAssignmentService.class);
-        controller = new SiteController(jdbc, siteService, installedSoftwareService, projectSites);
+        audit = mock(AuditLogger.class);
+        controller = new SiteController(jdbc, siteService, installedSoftwareService, projectSites, audit);
     }
 
     private SiteUpsertRequest emptyRequest() {

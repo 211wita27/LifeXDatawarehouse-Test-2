@@ -6,12 +6,11 @@ import at.htlle.freq.application.SiteService;
 import at.htlle.freq.application.dto.SiteSoftwareOverviewEntry;
 import at.htlle.freq.domain.InstalledSoftwareStatus;
 import at.htlle.freq.domain.Site;
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import at.htlle.freq.web.dto.InstalledSoftwareStatusUpdateRequest;
 import at.htlle.freq.web.dto.SiteDetailResponse;
 import at.htlle.freq.web.dto.SiteSoftwareSummary;
 import at.htlle.freq.web.dto.SiteUpsertRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -33,7 +32,7 @@ public class SiteController {
     private final SiteService siteService;
     private final InstalledSoftwareService installedSoftwareService;
     private final ProjectSiteAssignmentService projectSites;
-    private static final Logger log = LoggerFactory.getLogger(SiteController.class);
+    private final AuditLogger audit;
     private static final String TABLE = "Site";
 
     /**
@@ -46,11 +45,13 @@ public class SiteController {
      */
     public SiteController(NamedParameterJdbcTemplate jdbc, SiteService siteService,
                           InstalledSoftwareService installedSoftwareService,
-                          ProjectSiteAssignmentService projectSites) {
+                          ProjectSiteAssignmentService projectSites,
+                          AuditLogger audit) {
         this.jdbc = jdbc;
         this.siteService = siteService;
         this.installedSoftwareService = installedSoftwareService;
         this.projectSites = projectSites;
+        this.audit = audit;
     }
 
     /**
@@ -240,8 +241,9 @@ public class SiteController {
 
         try {
             installedSoftwareService.updateStatus(installationUuid, request.normalizedStatus());
-            log.info("[{}] status updated: installation={} site={} status={}", TABLE,
-                    installationUuid, siteUuid, request.normalizedStatus());
+            audit.updated("InstalledSoftware",
+                    Map.of("InstalledSoftwareID", installationUuid, "SiteID", siteUuid),
+                    Map.of("status", request.normalizedStatus()));
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
         }
@@ -279,8 +281,7 @@ public class SiteController {
         }
 
         persistAssignments(saved.getSiteID(), request);
-        log.info("[{}] create succeeded: id={} assignments={}", TABLE, saved.getSiteID(),
-                request.normalizedAssignments().size());
+        audit.created(TABLE, Map.of("SiteID", saved.getSiteID()), request);
     }
 
     // UPDATE operations
@@ -317,13 +318,11 @@ public class SiteController {
         }
 
         if (updated.isEmpty()) {
-            log.warn("[{}] update failed: identifiers={} ", TABLE, Map.of("SiteID", siteId));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no site updated");
         }
 
         persistAssignments(siteId, request);
-        log.info("[{}] update succeeded: id={} assignments={} keys={}", TABLE, siteId,
-                request.normalizedAssignments().size(), summarizeUpdatedFields(patch));
+        audit.updated(TABLE, Map.of("SiteID", siteId), request);
     }
 
     // DELETE operations
@@ -341,11 +340,10 @@ public class SiteController {
     public void delete(@PathVariable String id) {
         UUID siteId = parseUuid(id, "SiteID");
         if (siteService.getSiteById(siteId).isEmpty()) {
-            log.warn("[{}] delete failed: identifiers={}", TABLE, Map.of("SiteID", id));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no site deleted");
         }
         siteService.deleteSite(siteId);
-        log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("SiteID", id));
+        audit.deleted(TABLE, Map.of("SiteID", id));
     }
 
     /**
@@ -378,20 +376,4 @@ public class SiteController {
         }
     }
 
-    /**
-     * Summarizes which fields are set on the patch for audit logging.
-     *
-     * @param patch site values supplied in the update.
-     * @return set of updated field names.
-     */
-    private Set<String> summarizeUpdatedFields(Site patch) {
-        Set<String> fields = new LinkedHashSet<>();
-        if (patch.getSiteName() != null) fields.add("SiteName");
-        if (patch.getProjectID() != null) fields.add("ProjectID");
-        if (patch.getAddressID() != null) fields.add("AddressID");
-        if (patch.getFireZone() != null) fields.add("FireZone");
-        if (patch.getTenantCount() != null) fields.add("TenantCount");
-        if (patch.getRedundantServers() != null) fields.add("RedundantServers");
-        return fields;
-    }
 }

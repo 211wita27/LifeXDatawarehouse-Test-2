@@ -1,7 +1,6 @@
 package at.htlle.freq.web;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -20,7 +19,7 @@ import java.util.*;
 public class PhoneController {
 
     private final NamedParameterJdbcTemplate jdbc;
-    private static final Logger log = LoggerFactory.getLogger(PhoneController.class);
+    private final AuditLogger audit;
     private static final String TABLE = "PhoneIntegration";
     private static final Set<String> UPDATE_WHITELIST = Set.of(
             "SiteID",
@@ -36,8 +35,9 @@ public class PhoneController {
      *
      * @param jdbc JDBC template used for phone integration queries.
      */
-    public PhoneController(NamedParameterJdbcTemplate jdbc) {
+    public PhoneController(NamedParameterJdbcTemplate jdbc, AuditLogger audit) {
         this.jdbc = jdbc;
+        this.audit = audit;
     }
 
     // READ operations: list all integrations or filter by site
@@ -115,7 +115,7 @@ public class PhoneController {
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(body));
-        log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
+        audit.created(TABLE, extractIdentifiers(body), body);
     }
 
     // UPDATE operations
@@ -139,7 +139,6 @@ public class PhoneController {
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             String key = entry.getKey();
             if (!UPDATE_WHITELIST.contains(key)) {
-                log.warn("[{}] update rejected due to invalid column: {}", TABLE, key);
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
             }
             filteredBody.put(key, entry.getValue());
@@ -161,10 +160,9 @@ public class PhoneController {
         int updated = jdbc.update(sql, params);
 
         if (updated == 0) {
-            log.warn("[{}] update failed: identifiers={}, payloadKeys={}", TABLE, Map.of("PhoneIntegrationID", id), filteredBody.keySet());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no phone integration updated");
         }
-        log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("PhoneIntegrationID", id), filteredBody.keySet());
+        audit.updated(TABLE, Map.of("PhoneIntegrationID", id), filteredBody);
     }
 
     // DELETE operations
@@ -183,10 +181,9 @@ public class PhoneController {
                 new MapSqlParameterSource("id", id));
 
         if (count == 0) {
-            log.warn("[{}] delete failed: identifiers={}", TABLE, Map.of("PhoneIntegrationID", id));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no phone integration deleted");
         }
-        log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("PhoneIntegrationID", id));
+        audit.deleted(TABLE, Map.of("PhoneIntegrationID", id));
     }
 
     /**

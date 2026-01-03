@@ -1,6 +1,7 @@
 package at.htlle.freq.web;
 
 import at.htlle.freq.application.ProjectSiteAssignmentService;
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -19,13 +20,15 @@ class ProjectControllerTest {
 
     private NamedParameterJdbcTemplate jdbc;
     private ProjectSiteAssignmentService projectSites;
+    private AuditLogger audit;
     private ProjectController controller;
 
     @BeforeEach
     void setUp() {
         jdbc = mock(NamedParameterJdbcTemplate.class);
         projectSites = mock(ProjectSiteAssignmentService.class);
-        controller = new ProjectController(jdbc, projectSites);
+        audit = mock(AuditLogger.class);
+        controller = new ProjectController(jdbc, projectSites, audit);
         when(jdbc.queryForObject(anyString(), any(MapSqlParameterSource.class), eq(Integer.class))).thenReturn(0);
     }
 

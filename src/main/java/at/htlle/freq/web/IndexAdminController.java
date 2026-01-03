@@ -53,7 +53,7 @@ public class IndexAdminController {
             MDC.put("principal", principal.getName());
         }
         try {
-            LOG.debug("Manual reindex requested ({})", actorDetail);
+            LOG.info("Manual reindex requested ({})", actorDetail);
 
             Map<String, String> contextMap = MDC.getCopyOfContextMap();
             Runnable task = () -> {
@@ -64,9 +64,9 @@ public class IndexAdminController {
                     MDC.clear();
                 }
                 try {
-                    LOG.debug("Manual reindex task started ({})", actorDetail);
+                    LOG.info("Manual reindex task started ({})", actorDetail);
                     lucene.reindexAll();
-                    LOG.debug("Manual reindex task completed successfully ({})", actorDetail);
+                    LOG.info("Manual reindex task completed successfully ({})", actorDetail);
                 } catch (Exception e) {
                     LOG.error("Manual reindex task failed ({})", actorDetail, e);
                 } finally {

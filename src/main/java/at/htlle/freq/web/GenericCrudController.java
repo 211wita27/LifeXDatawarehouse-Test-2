@@ -1,5 +1,6 @@
 package at.htlle.freq.web;
 
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,14 +25,16 @@ public class GenericCrudController {
     private static final Logger log = LoggerFactory.getLogger(GenericCrudController.class);
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final AuditLogger audit;
 
     /**
      * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
      *
      * @param jdbc JDBC template used to query the whitelisted tables.
      */
-    public GenericCrudController(NamedParameterJdbcTemplate jdbc) {
+    public GenericCrudController(NamedParameterJdbcTemplate jdbc, AuditLogger audit) {
         this.jdbc = jdbc;
+        this.audit = audit;
     }
 
     // -------- Whitelist of allowed tables and aliases --------
@@ -274,7 +277,11 @@ public class GenericCrudController {
             recordId = sanitized.getOrDefault("id", sanitized.getOrDefault("ID", "(unknown)"));
         }
 
-        log.info("Inserted {} {} with fields {}", table, recordId, sanitized.keySet());
+        Map<String, Object> identifiers = new LinkedHashMap<>();
+        if (recordId != null) {
+            identifiers.put(pk == null ? "id" : pk, recordId);
+        }
+        audit.created(table, identifiers, sanitized);
     }
 
     // -------- UPDATE --------
@@ -322,7 +329,7 @@ public class GenericCrudController {
         if (count == 0)
             throw logAndThrow(HttpStatus.NOT_FOUND, table, "update", "no record updated");
 
-        log.info("Updated {} {} with fields {}", table, id, sanitized.keySet());
+        audit.updated(table, Map.of(pk, id), sanitized);
     }
 
     // -------- DELETE --------
@@ -345,11 +352,10 @@ public class GenericCrudController {
         String sql = "DELETE FROM " + table + " WHERE " + pk + " = :id";
         int count = jdbc.update(sql, new MapSqlParameterSource("id", id));
         if (count == 0) {
-            log.warn("Attempted to delete {} {} but no record was found", table, id);
             throw logAndThrow(HttpStatus.NOT_FOUND, table, "delete", "no record deleted");
         }
 
-        log.info("Deleted {} {} with fields {}", table, id, Collections.singleton(pk));
+        audit.deleted(table, Map.of(pk, id));
     }
 
     /**

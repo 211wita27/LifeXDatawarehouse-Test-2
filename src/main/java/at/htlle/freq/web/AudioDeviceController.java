@@ -1,7 +1,6 @@
 package at.htlle.freq.web;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -20,7 +19,7 @@ import java.util.*;
 public class AudioDeviceController {
 
     private final NamedParameterJdbcTemplate jdbc;
-    private static final Logger log = LoggerFactory.getLogger(AudioDeviceController.class);
+    private final AuditLogger audit;
     private static final String TABLE = "AudioDevice";
     private static final Set<String> ALLOWED_DEVICE_TYPES = Set.of("HEADSET", "SPEAKER", "MIC");
     private static final Map<String, String> ALLOWED_DIRECTIONS = Map.of(
@@ -35,8 +34,9 @@ public class AudioDeviceController {
      *
      * @param jdbc JDBC template used for audio device queries.
      */
-    public AudioDeviceController(NamedParameterJdbcTemplate jdbc) {
+    public AudioDeviceController(NamedParameterJdbcTemplate jdbc, AuditLogger audit) {
         this.jdbc = jdbc;
+        this.audit = audit;
     }
 
     // READ operations: list all devices or filter by client
@@ -121,7 +121,7 @@ public class AudioDeviceController {
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(body));
-        log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
+        audit.created(TABLE, extractIdentifiers(body), body);
     }
 
     // UPDATE operations
@@ -156,10 +156,9 @@ public class AudioDeviceController {
         int updated = jdbc.update(sql, params);
 
         if (updated == 0) {
-            log.warn("[{}] update failed: identifiers={}, payloadKeys={}", TABLE, Map.of("AudioDeviceID", id), body.keySet());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no audio device updated");
         }
-        log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("AudioDeviceID", id), body.keySet());
+        audit.updated(TABLE, Map.of("AudioDeviceID", id), body);
     }
 
     // DELETE operations
@@ -178,10 +177,9 @@ public class AudioDeviceController {
                 new MapSqlParameterSource("id", id));
 
         if (count == 0) {
-            log.warn("[{}] delete failed: identifiers={}", TABLE, Map.of("AudioDeviceID", id));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no audio device deleted");
         }
-        log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("AudioDeviceID", id));
+        audit.deleted(TABLE, Map.of("AudioDeviceID", id));
     }
 
     /**

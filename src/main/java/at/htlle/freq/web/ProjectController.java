@@ -2,8 +2,7 @@ package at.htlle.freq.web;
 
 import at.htlle.freq.application.ProjectSiteAssignmentService;
 import at.htlle.freq.domain.ProjectLifecycleStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import at.htlle.freq.infrastructure.logging.AuditLogger;
 import org.springframework.http.HttpStatus;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -25,7 +24,7 @@ public class ProjectController {
 
     private final NamedParameterJdbcTemplate jdbc;
     private final ProjectSiteAssignmentService projectSites;
-    private static final Logger log = LoggerFactory.getLogger(ProjectController.class);
+    private final AuditLogger audit;
     private static final String TABLE = "Project";
 
     /**
@@ -34,9 +33,10 @@ public class ProjectController {
      * @param jdbc JDBC template used for project queries.
      * @param projectSites service that maintains project/site assignments.
      */
-    public ProjectController(NamedParameterJdbcTemplate jdbc, ProjectSiteAssignmentService projectSites) {
+    public ProjectController(NamedParameterJdbcTemplate jdbc, ProjectSiteAssignmentService projectSites, AuditLogger audit) {
         this.jdbc = jdbc;
         this.projectSites = projectSites;
+        this.audit = audit;
     }
 
     // READ operations: list all projects or filter by account
@@ -160,7 +160,14 @@ public class ProjectController {
         if (siteIds != null) {
             projectSites.replaceSitesForProject(projectId, siteIds);
         }
-        log.info("[{}] create succeeded: identifiers={}, keys={}", TABLE, extractIdentifiers(body), body.keySet());
+        Map<String, Object> identifiers = new LinkedHashMap<>();
+        if (projectId != null) {
+            identifiers.put("ProjectID", projectId);
+        }
+        if (sapId != null) {
+            identifiers.put("ProjectSAPID", sapId);
+        }
+        audit.created(TABLE, identifiers, body);
     }
 
     // UPDATE operations
@@ -235,14 +242,13 @@ public class ProjectController {
         int updated = jdbc.update(sql.toString(), params);
 
         if (updated == 0) {
-            log.warn("[{}] update failed: identifiers={}, payloadKeys={}", TABLE, Map.of("ProjectID", id), body.keySet());
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no project updated");
         }
         List<UUID> siteIds = extractUuidList(body, "siteIds");
         if (siteIds != null) {
             projectSites.replaceSitesForProject(UUID.fromString(id), siteIds);
         }
-        log.info("[{}] update succeeded: identifiers={}, keys={}", TABLE, Map.of("ProjectID", id), body.keySet());
+        audit.updated(TABLE, Map.of("ProjectID", id), body);
     }
 
     // DELETE operations
@@ -262,10 +268,9 @@ public class ProjectController {
                 new MapSqlParameterSource("id", id));
 
         if (count == 0) {
-            log.warn("[{}] delete failed: identifiers={}", TABLE, Map.of("ProjectID", id));
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no project deleted");
         }
-        log.info("[{}] delete succeeded: identifiers={}", TABLE, Map.of("ProjectID", id));
+        audit.deleted(TABLE, Map.of("ProjectID", id));
     }
 
     /**
