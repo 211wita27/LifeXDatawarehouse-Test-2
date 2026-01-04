@@ -42,7 +42,7 @@ public class JdbcAddressRepository implements AddressRepository {
         String sql = "SELECT AddressID, Street, CityID FROM Address WHERE AddressID = :id";
         try {
             return Optional.ofNullable(jdbc.queryForObject(sql, new MapSqlParameterSource("id", id), mapper));
-        } catch (Exception e) { return Optional.empty(); }
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) { return Optional.empty(); }
     }
 
     /**

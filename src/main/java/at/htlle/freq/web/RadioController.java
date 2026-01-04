@@ -21,6 +21,22 @@ public class RadioController {
     private final NamedParameterJdbcTemplate jdbc;
     private final AuditLogger audit;
     private static final String TABLE = "Radio";
+    private static final Set<String> CREATE_COLUMNS = Set.of(
+            "siteID",
+            "assignedClientID",
+            "radioBrand",
+            "radioSerialNr",
+            "mode",
+            "digitalStandard"
+    );
+    private static final Set<String> UPDATE_COLUMNS = Set.of(
+            "SiteID",
+            "AssignedClientID",
+            "RadioBrand",
+            "RadioSerialNr",
+            "Mode",
+            "DigitalStandard"
+    );
 
     /**
      * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
@@ -46,11 +62,12 @@ public class RadioController {
     @GetMapping
     public List<Map<String, Object>> findBySite(@RequestParam(required = false) String siteId) {
         if (siteId != null) {
+            UUID siteUuid = parseUuid(siteId, "siteId");
             return jdbc.queryForList("""
                 SELECT RadioID, SiteID, AssignedClientID, RadioBrand, RadioSerialNr, Mode, DigitalStandard
                 FROM Radio
                 WHERE SiteID = :sid
-                """, new MapSqlParameterSource("sid", siteId));
+                """, new MapSqlParameterSource("sid", siteUuid));
         }
         return jdbc.queryForList("""
             SELECT RadioID, SiteID, AssignedClientID, RadioBrand, RadioSerialNr, Mode, DigitalStandard
@@ -68,11 +85,12 @@ public class RadioController {
      */
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
+        UUID radioId = parseUuid(id, "RadioID");
         var rows = jdbc.queryForList("""
             SELECT RadioID, SiteID, AssignedClientID, RadioBrand, RadioSerialNr, Mode, DigitalStandard
             FROM Radio
             WHERE RadioID = :id
-            """, new MapSqlParameterSource("id", id));
+            """, new MapSqlParameterSource("id", radioId));
 
         if (rows.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Radio not found");
@@ -94,17 +112,15 @@ public class RadioController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
-        }
+        Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
 
         String sql = """
             INSERT INTO Radio (SiteID, AssignedClientID, RadioBrand, RadioSerialNr, Mode, DigitalStandard)
             VALUES (:siteID, :assignedClientID, :radioBrand, :radioSerialNr, :mode, :digitalStandard)
             """;
 
-        jdbc.update(sql, new MapSqlParameterSource(body));
-        audit.created(TABLE, extractIdentifiers(body), body);
+        jdbc.update(sql, new MapSqlParameterSource(filteredBody));
+        audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
     }
 
     // UPDATE operations
@@ -121,23 +137,22 @@ public class RadioController {
      */
     @PutMapping("/{id}")
     public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
-        }
+        UUID radioId = parseUuid(id, "RadioID");
+        Map<String, Object> filteredBody = requireAllowedKeys(body, UPDATE_COLUMNS);
 
         List<String> sets = new ArrayList<>();
-        for (String key : body.keySet()) {
+        for (String key : filteredBody.keySet()) {
             sets.add(key + " = :" + key);
         }
 
         String sql = "UPDATE Radio SET " + String.join(", ", sets) + " WHERE RadioID = :id";
-        var params = new MapSqlParameterSource(body).addValue("id", id);
+        var params = new MapSqlParameterSource(filteredBody).addValue("id", radioId);
 
         int updated = jdbc.update(sql, params);
         if (updated == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no radio updated");
         }
-        audit.updated(TABLE, Map.of("RadioID", id), body);
+        audit.updated(TABLE, Map.of("RadioID", radioId), filteredBody);
     }
 
     // DELETE operations
@@ -153,13 +168,14 @@ public class RadioController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
+        UUID radioId = parseUuid(id, "RadioID");
         int count = jdbc.update("DELETE FROM Radio WHERE RadioID = :id",
-                new MapSqlParameterSource("id", id));
+                new MapSqlParameterSource("id", radioId));
 
         if (count == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no radio deleted");
         }
-        audit.deleted(TABLE, Map.of("RadioID", id));
+        audit.deleted(TABLE, Map.of("RadioID", radioId));
     }
 
     /**
@@ -176,5 +192,32 @@ public class RadioController {
             }
         });
         return ids;
+    }
+
+    private Map<String, Object> requireAllowedKeys(Map<String, Object> body, Set<String> allowed) {
+        if (body == null || body.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        Map<String, Object> filtered = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : body.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || !allowed.contains(key)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
+            }
+            filtered.put(key, entry.getValue());
+        }
+        if (filtered.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        return filtered;
+    }
+
+    private UUID parseUuid(String raw, String fieldName) {
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    fieldName + " must be a valid UUID", ex);
+        }
     }
 }

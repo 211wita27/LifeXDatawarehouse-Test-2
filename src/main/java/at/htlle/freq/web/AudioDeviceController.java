@@ -21,6 +21,22 @@ public class AudioDeviceController {
     private final NamedParameterJdbcTemplate jdbc;
     private final AuditLogger audit;
     private static final String TABLE = "AudioDevice";
+    private static final Set<String> CREATE_COLUMNS = Set.of(
+            "clientID",
+            "audioDeviceBrand",
+            "deviceSerialNr",
+            "audioDeviceFirmware",
+            "deviceType",
+            "direction"
+    );
+    private static final Set<String> UPDATE_COLUMNS = Set.of(
+            "ClientID",
+            "AudioDeviceBrand",
+            "DeviceSerialNr",
+            "AudioDeviceFirmware",
+            "DeviceType",
+            "Direction"
+    );
     private static final Set<String> ALLOWED_DEVICE_TYPES = Set.of("HEADSET", "SPEAKER", "MIC");
     private static final Map<String, String> ALLOWED_DIRECTIONS = Map.of(
             "input", "Input",
@@ -52,12 +68,13 @@ public class AudioDeviceController {
     @GetMapping
     public List<Map<String, Object>> findByClient(@RequestParam(required = false) String clientId) {
         if (clientId != null) {
+            UUID clientUuid = parseUuid(clientId, "clientId");
             return jdbc.queryForList("""
                 SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr,
                        AudioDeviceFirmware, DeviceType, Direction
                 FROM AudioDevice
                 WHERE ClientID = :cid
-                """, new MapSqlParameterSource("cid", clientId));
+                """, new MapSqlParameterSource("cid", clientUuid));
         }
 
         return jdbc.queryForList("""
@@ -77,12 +94,13 @@ public class AudioDeviceController {
      */
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
+        UUID deviceId = parseUuid(id, "AudioDeviceID");
         var rows = jdbc.queryForList("""
             SELECT AudioDeviceID, ClientID, AudioDeviceBrand, DeviceSerialNr,
                    AudioDeviceFirmware, DeviceType, Direction
             FROM AudioDevice
             WHERE AudioDeviceID = :id
-            """, new MapSqlParameterSource("id", id));
+            """, new MapSqlParameterSource("id", deviceId));
 
         if (rows.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "AudioDevice not found");
@@ -103,10 +121,6 @@ public class AudioDeviceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
-        }
-
         normalizeDeviceType(body).ifPresent(value -> body.put("deviceType", value));
         Optional<String> direction = normalizeDirection(body);
         direction.ifPresent(value -> body.put("direction", value));
@@ -114,14 +128,16 @@ public class AudioDeviceController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Direction is required");
         }
 
+        Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
+
         String sql = """
             INSERT INTO AudioDevice
             (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction)
             VALUES (:clientID, :audioDeviceBrand, :deviceSerialNr, :audioDeviceFirmware, :deviceType, :direction)
             """;
 
-        jdbc.update(sql, new MapSqlParameterSource(body));
-        audit.created(TABLE, extractIdentifiers(body), body);
+        jdbc.update(sql, new MapSqlParameterSource(filteredBody));
+        audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
     }
 
     // UPDATE operations
@@ -137,28 +153,28 @@ public class AudioDeviceController {
      */
     @PutMapping("/{id}")
     public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
-        }
+        UUID deviceId = parseUuid(id, "AudioDeviceID");
 
         normalizeDeviceType(body);
         normalizeDirection(body);
 
+        Map<String, Object> filteredBody = requireAllowedKeys(body, UPDATE_COLUMNS);
+
         var setClauses = new ArrayList<String>();
-        for (String key : body.keySet()) {
+        for (String key : filteredBody.keySet()) {
             setClauses.add(key + " = :" + key);
         }
 
         String sql = "UPDATE AudioDevice SET " + String.join(", ", setClauses) +
                 " WHERE AudioDeviceID = :id";
 
-        var params = new MapSqlParameterSource(body).addValue("id", id);
+        var params = new MapSqlParameterSource(filteredBody).addValue("id", deviceId);
         int updated = jdbc.update(sql, params);
 
         if (updated == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no audio device updated");
         }
-        audit.updated(TABLE, Map.of("AudioDeviceID", id), body);
+        audit.updated(TABLE, Map.of("AudioDeviceID", deviceId), filteredBody);
     }
 
     // DELETE operations
@@ -173,13 +189,14 @@ public class AudioDeviceController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
+        UUID deviceId = parseUuid(id, "AudioDeviceID");
         int count = jdbc.update("DELETE FROM AudioDevice WHERE AudioDeviceID = :id",
-                new MapSqlParameterSource("id", id));
+                new MapSqlParameterSource("id", deviceId));
 
         if (count == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no audio device deleted");
         }
-        audit.deleted(TABLE, Map.of("AudioDeviceID", id));
+        audit.deleted(TABLE, Map.of("AudioDeviceID", deviceId));
     }
 
     /**
@@ -196,6 +213,33 @@ public class AudioDeviceController {
             }
         });
         return ids;
+    }
+
+    private Map<String, Object> requireAllowedKeys(Map<String, Object> body, Set<String> allowed) {
+        if (body == null || body.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        Map<String, Object> filtered = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : body.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || !allowed.contains(key)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
+            }
+            filtered.put(key, entry.getValue());
+        }
+        if (filtered.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        return filtered;
+    }
+
+    private UUID parseUuid(String raw, String fieldName) {
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    fieldName + " must be a valid UUID", ex);
+        }
     }
 
     /**

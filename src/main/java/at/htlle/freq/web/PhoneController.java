@@ -21,6 +21,14 @@ public class PhoneController {
     private final NamedParameterJdbcTemplate jdbc;
     private final AuditLogger audit;
     private static final String TABLE = "PhoneIntegration";
+    private static final Set<String> CREATE_COLUMNS = Set.of(
+            "siteID",
+            "phoneType",
+            "phoneBrand",
+            "interfaceName",
+            "capacity",
+            "phoneFirmware"
+    );
     private static final Set<String> UPDATE_WHITELIST = Set.of(
             "SiteID",
             "PhoneType",
@@ -53,12 +61,13 @@ public class PhoneController {
     @GetMapping
     public List<Map<String, Object>> findBySite(@RequestParam(required = false) String siteId) {
         if (siteId != null) {
+            UUID siteUuid = parseUuid(siteId, "siteId");
             return jdbc.queryForList("""
                 SELECT PhoneIntegrationID, SiteID, PhoneType, PhoneBrand,
                        InterfaceName, Capacity, PhoneFirmware
                 FROM PhoneIntegration
                 WHERE SiteID = :sid
-                """, new MapSqlParameterSource("sid", siteId));
+                """, new MapSqlParameterSource("sid", siteUuid));
         }
 
         return jdbc.queryForList("""
@@ -78,12 +87,13 @@ public class PhoneController {
      */
     @GetMapping("/{id}")
     public Map<String, Object> findById(@PathVariable String id) {
+        UUID phoneId = parseUuid(id, "PhoneIntegrationID");
         var rows = jdbc.queryForList("""
             SELECT PhoneIntegrationID, SiteID, PhoneType, PhoneBrand,
                    InterfaceName, Capacity, PhoneFirmware
             FROM PhoneIntegration
             WHERE PhoneIntegrationID = :id
-            """, new MapSqlParameterSource("id", id));
+            """, new MapSqlParameterSource("id", phoneId));
 
         if (rows.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "PhoneIntegration not found");
@@ -104,9 +114,7 @@ public class PhoneController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
-        if (body.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
-        }
+        Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
 
         String sql = """
             INSERT INTO PhoneIntegration
@@ -114,8 +122,8 @@ public class PhoneController {
             VALUES (:siteID, :phoneType, :phoneBrand, :interfaceName, :capacity, :phoneFirmware)
             """;
 
-        jdbc.update(sql, new MapSqlParameterSource(body));
-        audit.created(TABLE, extractIdentifiers(body), body);
+        jdbc.update(sql, new MapSqlParameterSource(filteredBody));
+        audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
     }
 
     // UPDATE operations
@@ -131,6 +139,7 @@ public class PhoneController {
      */
     @PutMapping("/{id}")
     public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
+        UUID phoneId = parseUuid(id, "PhoneIntegrationID");
         if (body.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
@@ -156,13 +165,13 @@ public class PhoneController {
         String sql = "UPDATE PhoneIntegration SET " + String.join(", ", setClauses) +
                 " WHERE PhoneIntegrationID = :id";
 
-        var params = new MapSqlParameterSource(filteredBody).addValue("id", id);
+        var params = new MapSqlParameterSource(filteredBody).addValue("id", phoneId);
         int updated = jdbc.update(sql, params);
 
         if (updated == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no phone integration updated");
         }
-        audit.updated(TABLE, Map.of("PhoneIntegrationID", id), filteredBody);
+        audit.updated(TABLE, Map.of("PhoneIntegrationID", phoneId), filteredBody);
     }
 
     // DELETE operations
@@ -177,13 +186,14 @@ public class PhoneController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable String id) {
+        UUID phoneId = parseUuid(id, "PhoneIntegrationID");
         int count = jdbc.update("DELETE FROM PhoneIntegration WHERE PhoneIntegrationID = :id",
-                new MapSqlParameterSource("id", id));
+                new MapSqlParameterSource("id", phoneId));
 
         if (count == 0) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "no phone integration deleted");
         }
-        audit.deleted(TABLE, Map.of("PhoneIntegrationID", id));
+        audit.deleted(TABLE, Map.of("PhoneIntegrationID", phoneId));
     }
 
     /**
@@ -200,5 +210,32 @@ public class PhoneController {
             }
         });
         return ids;
+    }
+
+    private Map<String, Object> requireAllowedKeys(Map<String, Object> body, Set<String> allowed) {
+        if (body == null || body.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        Map<String, Object> filtered = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : body.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || !allowed.contains(key)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
+            }
+            filtered.put(key, entry.getValue());
+        }
+        if (filtered.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+        return filtered;
+    }
+
+    private UUID parseUuid(String raw, String fieldName) {
+        try {
+            return UUID.fromString(raw);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    fieldName + " must be a valid UUID", ex);
+        }
     }
 }
