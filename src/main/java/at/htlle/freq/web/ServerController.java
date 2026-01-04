@@ -23,16 +23,6 @@ public class ServerController {
     private final AuditLogger audit;
     private static final String TABLE = "Server";
     private static final Set<String> CREATE_COLUMNS = Set.of(
-            "siteID",
-            "serverName",
-            "serverBrand",
-            "serverSerialNr",
-            "serverOS",
-            "patchLevel",
-            "virtualPlatform",
-            "virtualVersion"
-    );
-    private static final Set<String> UPDATE_COLUMNS = Set.of(
             "SiteID",
             "ServerName",
             "ServerBrand",
@@ -42,6 +32,7 @@ public class ServerController {
             "VirtualPlatform",
             "VirtualVersion"
     );
+    private static final Set<String> UPDATE_COLUMNS = CREATE_COLUMNS;
 
     /**
      * Creates a controller backed by the provided JDBC template.
@@ -126,8 +117,8 @@ public class ServerController {
         String sql = """
             INSERT INTO Server (SiteID, ServerName, ServerBrand, ServerSerialNr,
                                 ServerOS, PatchLevel, VirtualPlatform, VirtualVersion)
-            VALUES (:siteID, :serverName, :serverBrand, :serverSerialNr,
-                    :serverOS, :patchLevel, :virtualPlatform, :virtualVersion)
+            VALUES (:SiteID, :ServerName, :ServerBrand, :ServerSerialNr,
+                    :ServerOS, :PatchLevel, :VirtualPlatform, :VirtualVersion)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
@@ -210,12 +201,21 @@ public class ServerController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
         Map<String, Object> filtered = new LinkedHashMap<>();
+        Map<String, String> allowedLookup = new HashMap<>();
+        for (String column : allowed) {
+            allowedLookup.put(column.toLowerCase(Locale.ROOT), column);
+        }
+
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             String key = entry.getKey();
-            if (key == null || !allowed.contains(key)) {
+            if (key == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: null");
+            }
+            String canonical = allowedLookup.get(key.toLowerCase(Locale.ROOT));
+            if (canonical == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
             }
-            filtered.put(key, entry.getValue());
+            filtered.put(canonical, entry.getValue());
         }
         if (filtered.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");

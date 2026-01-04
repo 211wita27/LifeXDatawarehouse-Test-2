@@ -44,8 +44,8 @@ class AudioDeviceControllerTest {
 
         ArgumentCaptor<MapSqlParameterSource> paramsCaptor = ArgumentCaptor.forClass(MapSqlParameterSource.class);
         verify(jdbc).update(anyString(), paramsCaptor.capture());
-        assertEquals("SPEAKER", paramsCaptor.getValue().getValue("deviceType"));
-        assertEquals("Input + Output", paramsCaptor.getValue().getValue("direction"));
+        assertEquals("SPEAKER", paramsCaptor.getValue().getValue("DeviceType"));
+        assertEquals("Input + Output", paramsCaptor.getValue().getValue("Direction"));
     }
 
     @Test

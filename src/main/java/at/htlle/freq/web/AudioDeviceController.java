@@ -22,14 +22,6 @@ public class AudioDeviceController {
     private final AuditLogger audit;
     private static final String TABLE = "AudioDevice";
     private static final Set<String> CREATE_COLUMNS = Set.of(
-            "clientID",
-            "audioDeviceBrand",
-            "deviceSerialNr",
-            "audioDeviceFirmware",
-            "deviceType",
-            "direction"
-    );
-    private static final Set<String> UPDATE_COLUMNS = Set.of(
             "ClientID",
             "AudioDeviceBrand",
             "DeviceSerialNr",
@@ -37,6 +29,7 @@ public class AudioDeviceController {
             "DeviceType",
             "Direction"
     );
+    private static final Set<String> UPDATE_COLUMNS = CREATE_COLUMNS;
     private static final Set<String> ALLOWED_DEVICE_TYPES = Set.of("HEADSET", "SPEAKER", "MIC");
     private static final Map<String, String> ALLOWED_DIRECTIONS = Map.of(
             "input", "Input",
@@ -121,9 +114,8 @@ public class AudioDeviceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
-        normalizeDeviceType(body).ifPresent(value -> body.put("deviceType", value));
+        normalizeDeviceType(body);
         Optional<String> direction = normalizeDirection(body);
-        direction.ifPresent(value -> body.put("direction", value));
         if (direction.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Direction is required");
         }
@@ -133,7 +125,7 @@ public class AudioDeviceController {
         String sql = """
             INSERT INTO AudioDevice
             (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction)
-            VALUES (:clientID, :audioDeviceBrand, :deviceSerialNr, :audioDeviceFirmware, :deviceType, :direction)
+            VALUES (:ClientID, :AudioDeviceBrand, :DeviceSerialNr, :AudioDeviceFirmware, :DeviceType, :Direction)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
@@ -219,13 +211,21 @@ public class AudioDeviceController {
         if (body == null || body.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
+        Map<String, String> allowedLookup = new HashMap<>();
+        for (String column : allowed) {
+            allowedLookup.put(column.toLowerCase(Locale.ROOT), column);
+        }
         Map<String, Object> filtered = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             String key = entry.getKey();
-            if (key == null || !allowed.contains(key)) {
+            if (key == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: null");
+            }
+            String canonical = allowedLookup.get(key.toLowerCase(Locale.ROOT));
+            if (canonical == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
             }
-            filtered.put(key, entry.getValue());
+            filtered.put(canonical, entry.getValue());
         }
         if (filtered.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
@@ -249,17 +249,8 @@ public class AudioDeviceController {
      * @return optional normalized value when provided.
      */
     private Optional<String> normalizeDeviceType(Map<String, Object> body) {
-        String[] keys = {"DeviceType", "deviceType"};
-        String detectedKey = null;
-        Object rawValue = null;
-
-        for (String key : keys) {
-            if (body.containsKey(key)) {
-                detectedKey = key;
-                rawValue = body.get(key);
-                break;
-            }
-        }
+        String detectedKey = findKeyIgnoreCase(body, "DeviceType");
+        Object rawValue = detectedKey == null ? null : body.get(detectedKey);
 
         if (detectedKey == null) {
             return Optional.empty();
@@ -275,11 +266,8 @@ public class AudioDeviceController {
                     "DeviceType must be one of HEADSET, SPEAKER, MIC");
         }
 
-        for (String key : keys) {
-            if (body.containsKey(key)) {
-                body.put(key, normalized);
-            }
-        }
+        body.remove(detectedKey);
+        body.put("DeviceType", normalized);
         return Optional.of(normalized);
     }
 
@@ -290,17 +278,8 @@ public class AudioDeviceController {
      * @return optional normalized value when provided.
      */
     private Optional<String> normalizeDirection(Map<String, Object> body) {
-        String[] keys = {"Direction", "direction"};
-        String detectedKey = null;
-        Object rawValue = null;
-
-        for (String key : keys) {
-            if (body.containsKey(key)) {
-                detectedKey = key;
-                rawValue = body.get(key);
-                break;
-            }
-        }
+        String detectedKey = findKeyIgnoreCase(body, "Direction");
+        Object rawValue = detectedKey == null ? null : body.get(detectedKey);
 
         if (detectedKey == null) {
             return Optional.empty();
@@ -319,11 +298,17 @@ public class AudioDeviceController {
                     "Direction must be one of Input, Output, Input + Output");
         }
 
-        for (String key : keys) {
-            if (body.containsKey(key)) {
-                body.put(key, normalized);
+        body.remove(detectedKey);
+        body.put("Direction", normalized);
+        return Optional.of(normalized);
+    }
+
+    private String findKeyIgnoreCase(Map<String, Object> body, String expected) {
+        for (String key : body.keySet()) {
+            if (key != null && key.equalsIgnoreCase(expected)) {
+                return key;
             }
         }
-        return Optional.of(normalized);
+        return null;
     }
 }

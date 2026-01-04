@@ -22,14 +22,6 @@ public class PhoneController {
     private final AuditLogger audit;
     private static final String TABLE = "PhoneIntegration";
     private static final Set<String> CREATE_COLUMNS = Set.of(
-            "siteID",
-            "phoneType",
-            "phoneBrand",
-            "interfaceName",
-            "capacity",
-            "phoneFirmware"
-    );
-    private static final Set<String> UPDATE_WHITELIST = Set.of(
             "SiteID",
             "PhoneType",
             "PhoneBrand",
@@ -37,6 +29,7 @@ public class PhoneController {
             "Capacity",
             "PhoneFirmware"
     );
+    private static final Set<String> UPDATE_WHITELIST = CREATE_COLUMNS;
 
     /**
      * Creates a controller backed by a {@link NamedParameterJdbcTemplate}.
@@ -119,7 +112,7 @@ public class PhoneController {
         String sql = """
             INSERT INTO PhoneIntegration
             (SiteID, PhoneType, PhoneBrand, InterfaceName, Capacity, PhoneFirmware)
-            VALUES (:siteID, :phoneType, :phoneBrand, :interfaceName, :capacity, :phoneFirmware)
+            VALUES (:SiteID, :PhoneType, :PhoneBrand, :InterfaceName, :Capacity, :PhoneFirmware)
             """;
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
@@ -140,17 +133,26 @@ public class PhoneController {
     @PutMapping("/{id}")
     public void update(@PathVariable String id, @RequestBody Map<String, Object> body) {
         UUID phoneId = parseUuid(id, "PhoneIntegrationID");
-        if (body.isEmpty()) {
+        if (body == null || body.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
+        }
+
+        Map<String, String> allowedLookup = new HashMap<>();
+        for (String column : UPDATE_WHITELIST) {
+            allowedLookup.put(column.toLowerCase(Locale.ROOT), column);
         }
 
         Map<String, Object> filteredBody = new LinkedHashMap<>();
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             String key = entry.getKey();
-            if (!UPDATE_WHITELIST.contains(key)) {
+            if (key == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: null");
+            }
+            String canonical = allowedLookup.get(key.toLowerCase(Locale.ROOT));
+            if (canonical == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
             }
-            filteredBody.put(key, entry.getValue());
+            filteredBody.put(canonical, entry.getValue());
         }
 
         if (filteredBody.isEmpty()) {
@@ -217,12 +219,20 @@ public class PhoneController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
         Map<String, Object> filtered = new LinkedHashMap<>();
+        Map<String, String> allowedLookup = new HashMap<>();
+        for (String column : allowed) {
+            allowedLookup.put(column.toLowerCase(Locale.ROOT), column);
+        }
         for (Map.Entry<String, Object> entry : body.entrySet()) {
             String key = entry.getKey();
-            if (key == null || !allowed.contains(key)) {
+            if (key == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: null");
+            }
+            String canonical = allowedLookup.get(key.toLowerCase(Locale.ROOT));
+            if (canonical == null) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "invalid column: " + key);
             }
-            filtered.put(key, entry.getValue());
+            filtered.put(canonical, entry.getValue());
         }
         if (filtered.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
