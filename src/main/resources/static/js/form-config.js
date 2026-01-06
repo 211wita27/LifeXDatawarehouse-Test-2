@@ -343,7 +343,7 @@
         ],
         WorkingPosition: [
             { id: 'siteId', label: 'Select site', component: 'asyncSelect', source: 'sites', allowManual: false, name: 'SiteID', hint: 'Clients are always assigned to a site.' },
-            { id: 'name', label: 'Client Name', component: 'input', name: 'ClientName', hint: 'Pick a name that matches the device label in the field.' },
+            { id: 'name', label: 'Hostname', component: 'input', name: 'ClientName', hint: 'Pick a name that matches the device label in the field.' },
             { id: 'brand', label: 'Brand', component: 'input', name: 'ClientBrand', required: false },
             { id: 'serial', label: 'Serial Number', component: 'input', name: 'ClientSerialNr', required: false },
             { id: 'os', label: 'OS', component: 'input', name: 'ClientOS', required: false },

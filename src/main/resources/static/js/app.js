@@ -705,6 +705,15 @@ function humanizeScopeLabel(value) {
         .join(' ');
 }
 
+function displayColumnLabel(columnName) {
+    const raw = columnName === undefined || columnName === null ? '' : String(columnName);
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === 'servername' || normalized === 'clientname') {
+        return 'Hostname';
+    }
+    return raw;
+}
+
 const TABLE_NAME_LOOKUP = entityTypeRegistry?.TABLE_NAME_LOOKUP || (() => {
     const lookup = {};
     Object.entries(ENTITY_TYPE_MAP).forEach(([key, info]) => {
@@ -1478,7 +1487,7 @@ async function renderSiteTableWithSummary(rows, baseColumns, tableTypeInfo, tabl
             };
         });
 
-        const hdr = allColumns.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+        const hdr = allColumns.map(c => `<th>${escapeHtml(displayColumnLabel(c))}</th>`).join('');
         const body = formattedRows
             .map(r => `<tr>${allColumns.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`)
             .join('');
@@ -1553,7 +1562,7 @@ async function showTable(name) {
             await renderSiteTableWithSummary(rows, cols, tableTypeInfo, name);
             return;
         }
-        const hdr  = cols.map(c => `<th>${escapeHtml(c)}</th>`).join('');
+        const hdr  = cols.map(c => `<th>${escapeHtml(displayColumnLabel(c))}</th>`).join('');
         const body = rows.map(r => `<tr>${cols.map(c => renderTableCell(name, c, r[c])).join('')}</tr>`).join('');
         const { typeToken } = tableTypeInfo;
         const safeName = escapeHtml(name);
