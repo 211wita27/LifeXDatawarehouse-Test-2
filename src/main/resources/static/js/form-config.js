@@ -175,7 +175,7 @@
             fieldHints: {
                 sap: 'SAP ID is required for project creation.',
                 accId: 'Selecting an account filters the available projects in dependent forms.',
-                addrId: 'Choose an address that represents the project's main location.'
+                addrId: 'Choose an address that represents the project\'s main location.'
             }
         },
         Radio: {
