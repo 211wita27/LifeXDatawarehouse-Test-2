@@ -1,4 +1,4 @@
-(function(global){
+﻿(function(global){
     const pick = (obj, ...keys) => {
         if(!obj) return undefined;
         const entries = Object.keys(obj);
@@ -101,7 +101,7 @@
                 const countryCode = country ? String(country).toUpperCase() : undefined;
                 const labelParts = [name, countryCode].filter(Boolean);
                 const short = String(value).split('-')[0];
-                const label = labelParts.length>0 ? `${labelParts.join(' • ')} (${short})` : String(value);
+                const label = labelParts.length>0 ? `${labelParts.join(' â€¢ ')} (${short})` : String(value);
                 return {value, label, countryCode};
             }
         },
@@ -112,7 +112,7 @@
                 if(!value) return null;
                 const name = pick(item,'name','Name');
                 const release = pick(item,'release','Release');
-                const label = [name, release].filter(Boolean).join(' • ');
+                const label = [name, release].filter(Boolean).join(' â€¢ ');
                 return {value, label, displayLabel: label || String(value)};
             }
         },
@@ -124,7 +124,7 @@
                 const code = pick(item,'variantCode','VariantCode');
                 const name = pick(item,'variantName','VariantName');
                 const parts = [code, name].filter(Boolean);
-                const label = parts.length>0 ? parts.join(' – ') : String(value);
+                const label = parts.length>0 ? parts.join(' â€“ ') : String(value);
                 return {value, label};
             }
         }
@@ -173,8 +173,9 @@
             summary: 'Create a project that ties an account to a deployment variant and address.',
             notes: ['A project must belong to an account and typically references the primary installation address.'],
             fieldHints: {
+                sap: 'SAP ID is required for project creation.',
                 accId: 'Selecting an account filters the available projects in dependent forms.',
-                addrId: 'Choose an address that represents the project’s main location.'
+                addrId: 'Choose an address that represents the projectâ€™s main location.'
             }
         },
         Radio: {
@@ -199,6 +200,7 @@
                 'Capture each deployed software package with status and lifecycle dates so the inventory stays current.'
             ],
             fieldHints: {
+                projectIds: 'Select at least one project for the site.',
                 addrId: 'Address selection determines where the installation is located.',
                 softwareInstallations: 'Add every software deployment along with its status and the relevant dates.'
             }
@@ -238,7 +240,8 @@
             { id: 'brand', label: 'Brand', component: 'input', name: 'AudioDeviceBrand', required: false },
             { id: 'serial', label: 'Serial Number', component: 'input', name: 'DeviceSerialNr', required: false },
             { id: 'fw', label: 'Firmware', component: 'input', name: 'AudioDeviceFirmware', required: false },
-            { id: 'dtype', label: 'DeviceType', component: 'select', options: ['HEADSET','SPEAKER','MIC'], name: 'DeviceType' }
+            { id: 'dtype', label: 'DeviceType', component: 'select', options: ['HEADSET','SPEAKER','MIC'], name: 'DeviceType' },
+            { id: 'direction', label: 'Direction', component: 'select', options: ['Input','Output','Input + Output'], name: 'Direction' }
         ],
         City: [
             { id: 'cityId', label: 'CityID', component: 'input', dataset: { uppercase: true }, name: 'CityID', hint: 'Use the agreed city identifier (uppercase).' },
@@ -264,7 +267,7 @@
             { id: 'fw', label: 'Firmware', component: 'input', name: 'PhoneFirmware', required: false }
         ],
         Project: [
-            { id: 'sap', label: 'SAP ID', component: 'input', name: 'ProjectSAPID', required: false, hint: 'Optional internal reference (from SAP).' },
+            { id: 'sap', label: 'SAP ID', component: 'input', name: 'ProjectSAPID', hint: 'Required SAP identifier for the project.' },
             { id: 'pname', label: 'Project Name', component: 'input', name: 'ProjectName' },
             { id: 'variantId', label: 'Select deployment variant', component: 'asyncSelect', source: 'deploymentVariants', placeholder: 'Select deployment variant', allowManual: false, name: 'DeploymentVariantID', hint: 'Determines the LifeX deployment flavor.' },
             { id: 'bundle', label: 'Bundle Type', component: 'input', name: 'BundleType', required: false },
@@ -308,6 +311,7 @@
         ],
         Site: [
             { id: 'accountId', label: 'Select account', component: 'asyncSelect', source: 'accounts', allowManual: false, name: 'AccountID', placeholder: 'Select account', hint: 'Choose an account to provide context for the site.' },
+            { id: 'projectIds', label: 'Select project(s)', component: 'asyncSelect', source: 'projects', allowManual: false, multiple: true, name: 'projectIds', placeholder: 'Select project(s)', dependsOn: 'accountId', dependsOnMessage: 'Please select an account first', hint: 'Select at least one project for this site.' },
             { id: 'name', label: 'Site Name', component: 'input', name: 'SiteName' },
             { id: 'addrId', label: 'Select address', component: 'asyncSelect', source: 'addresses', allowManual: false, placeholder: 'Select address', name: 'AddressID', hint: 'Choose the physical location for this site.' },
             { id: 'zone', label: 'FireZone', component: 'input', name: 'FireZone', required: false },
@@ -370,3 +374,4 @@
         }
     };
 })(window);
+

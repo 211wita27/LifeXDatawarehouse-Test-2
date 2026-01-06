@@ -2380,6 +2380,10 @@
                     payload.DeviceType = normalized;
                 }
             }
+            delete payload.AudioDeviceID;
+            delete payload.audioDeviceID;
+            delete payload.audioDeviceId;
+            requestUrl = `/audio/${encodeURIComponent(currentId)}`;
         }
 
         setStatus('Saving changes …', 'info');
