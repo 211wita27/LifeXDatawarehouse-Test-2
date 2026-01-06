@@ -2438,9 +2438,6 @@
                         }
                     }
                 }
-                if(trimmed){
-                    successMessage+=` (${trimmed})`;
-                }
                 result.innerHTML=`<p class="success">✔ ${escapeHtml(successMessage)}</p>`;
             }else{
                 const trimmed=responseText?.trim();

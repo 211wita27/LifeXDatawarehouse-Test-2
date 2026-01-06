@@ -1,4 +1,4 @@
-﻿(function(global){
+(function(global){
     const pick = (obj, ...keys) => {
         if(!obj) return undefined;
         const entries = Object.keys(obj);
@@ -101,7 +101,7 @@
                 const countryCode = country ? String(country).toUpperCase() : undefined;
                 const labelParts = [name, countryCode].filter(Boolean);
                 const short = String(value).split('-')[0];
-                const label = labelParts.length>0 ? `${labelParts.join(' â€¢ ')} (${short})` : String(value);
+                const label = labelParts.length>0 ? `${labelParts.join(' - ')} (${short})` : String(value);
                 return {value, label, countryCode};
             }
         },
@@ -112,7 +112,7 @@
                 if(!value) return null;
                 const name = pick(item,'name','Name');
                 const release = pick(item,'release','Release');
-                const label = [name, release].filter(Boolean).join(' â€¢ ');
+                const label = [name, release].filter(Boolean).join(' - ');
                 return {value, label, displayLabel: label || String(value)};
             }
         },
@@ -124,7 +124,7 @@
                 const code = pick(item,'variantCode','VariantCode');
                 const name = pick(item,'variantName','VariantName');
                 const parts = [code, name].filter(Boolean);
-                const label = parts.length>0 ? parts.join(' â€“ ') : String(value);
+                const label = parts.length>0 ? parts.join(' - ') : String(value);
                 return {value, label};
             }
         }
@@ -175,7 +175,7 @@
             fieldHints: {
                 sap: 'SAP ID is required for project creation.',
                 accId: 'Selecting an account filters the available projects in dependent forms.',
-                addrId: 'Choose an address that represents the projectâ€™s main location.'
+                addrId: 'Choose an address that represents the project's main location.'
             }
         },
         Radio: {
