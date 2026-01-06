@@ -233,16 +233,31 @@ const shortcutStorage = (() => {
     };
     return {
         getLabel(id, fallback = '') {
-            return read(keyFor(id, 'label'), fallback);
+            const key = keyFor(id, 'label');
+            const stored = read(key, null);
+            if (stored === null) return fallback;
+            if (!stored.trim()) {
+                write(key, null);
+                return fallback;
+            }
+            return stored;
         },
         setLabel(id, value) {
-            write(keyFor(id, 'label'), (value ?? '').toString());
+            if (value === undefined || value === null) {
+                write(keyFor(id, 'label'), null);
+                return;
+            }
+            write(keyFor(id, 'label'), String(value));
         },
         getQuery(id, fallback = '') {
             return read(keyFor(id, 'query'), fallback);
         },
         setQuery(id, value) {
-            write(keyFor(id, 'query'), (value ?? '').toString());
+            if (value === undefined || value === null) {
+                write(keyFor(id, 'query'), null);
+                return;
+            }
+            write(keyFor(id, 'query'), String(value));
         },
     };
 })();
