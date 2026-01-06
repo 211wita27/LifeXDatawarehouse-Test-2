@@ -29,6 +29,11 @@ public class AudioDeviceController {
             "DeviceType",
             "Direction"
     );
+    private static final Set<String> REQUIRED_COLUMNS = Set.of(
+            "ClientID",
+            "DeviceType",
+            "Direction"
+    );
     private static final Set<String> UPDATE_COLUMNS = CREATE_COLUMNS;
     private static final Set<String> ALLOWED_DEVICE_TYPES = Set.of("HEADSET", "SPEAKER", "MIC");
     private static final Map<String, String> ALLOWED_DIRECTIONS = Map.of(
@@ -121,12 +126,11 @@ public class AudioDeviceController {
         }
 
         Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
+        requireRequiredKeys(filteredBody, REQUIRED_COLUMNS);
 
-        String sql = """
-            INSERT INTO AudioDevice
-            (ClientID, AudioDeviceBrand, DeviceSerialNr, AudioDeviceFirmware, DeviceType, Direction)
-            VALUES (:ClientID, :AudioDeviceBrand, :DeviceSerialNr, :AudioDeviceFirmware, :DeviceType, :Direction)
-            """;
+        String columns = String.join(", ", filteredBody.keySet());
+        String values = ":" + String.join(", :", filteredBody.keySet());
+        String sql = "INSERT INTO AudioDevice (" + columns + ") VALUES (" + values + ")";
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
         audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
@@ -231,6 +235,18 @@ public class AudioDeviceController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
         return filtered;
+    }
+
+    private void requireRequiredKeys(Map<String, Object> body, Set<String> required) {
+        for (String key : required) {
+            Object value = body.get(key);
+            if (value == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+            if (value instanceof String str && str.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+        }
     }
 
     private UUID parseUuid(String raw, String fieldName) {

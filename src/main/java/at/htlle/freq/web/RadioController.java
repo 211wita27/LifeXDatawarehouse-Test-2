@@ -29,6 +29,10 @@ public class RadioController {
             "Mode",
             "DigitalStandard"
     );
+    private static final Set<String> REQUIRED_COLUMNS = Set.of(
+            "SiteID",
+            "Mode"
+    );
     private static final Set<String> UPDATE_COLUMNS = CREATE_COLUMNS;
 
     /**
@@ -106,11 +110,11 @@ public class RadioController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
         Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
+        requireRequiredKeys(filteredBody, REQUIRED_COLUMNS);
 
-        String sql = """
-            INSERT INTO Radio (SiteID, AssignedClientID, RadioBrand, RadioSerialNr, Mode, DigitalStandard)
-            VALUES (:SiteID, :AssignedClientID, :RadioBrand, :RadioSerialNr, :Mode, :DigitalStandard)
-            """;
+        String columns = String.join(", ", filteredBody.keySet());
+        String values = ":" + String.join(", :", filteredBody.keySet());
+        String sql = "INSERT INTO Radio (" + columns + ") VALUES (" + values + ")";
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
         audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
@@ -211,6 +215,18 @@ public class RadioController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
         return filtered;
+    }
+
+    private void requireRequiredKeys(Map<String, Object> body, Set<String> required) {
+        for (String key : required) {
+            Object value = body.get(key);
+            if (value == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+            if (value instanceof String str && str.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+        }
     }
 
     private UUID parseUuid(String raw, String fieldName) {

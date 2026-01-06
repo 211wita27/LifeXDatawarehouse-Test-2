@@ -29,6 +29,10 @@ public class PhoneController {
             "Capacity",
             "PhoneFirmware"
     );
+    private static final Set<String> REQUIRED_COLUMNS = Set.of(
+            "SiteID",
+            "PhoneType"
+    );
     private static final Set<String> UPDATE_WHITELIST = CREATE_COLUMNS;
 
     /**
@@ -108,12 +112,11 @@ public class PhoneController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
         Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
+        requireRequiredKeys(filteredBody, REQUIRED_COLUMNS);
 
-        String sql = """
-            INSERT INTO PhoneIntegration
-            (SiteID, PhoneType, PhoneBrand, InterfaceName, Capacity, PhoneFirmware)
-            VALUES (:SiteID, :PhoneType, :PhoneBrand, :InterfaceName, :Capacity, :PhoneFirmware)
-            """;
+        String columns = String.join(", ", filteredBody.keySet());
+        String values = ":" + String.join(", :", filteredBody.keySet());
+        String sql = "INSERT INTO PhoneIntegration (" + columns + ") VALUES (" + values + ")";
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
         audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
@@ -238,6 +241,18 @@ public class PhoneController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
         return filtered;
+    }
+
+    private void requireRequiredKeys(Map<String, Object> body, Set<String> required) {
+        for (String key : required) {
+            Object value = body.get(key);
+            if (value == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+            if (value instanceof String str && str.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+        }
     }
 
     private UUID parseUuid(String raw, String fieldName) {

@@ -32,6 +32,10 @@ public class ServerController {
             "VirtualPlatform",
             "VirtualVersion"
     );
+    private static final Set<String> REQUIRED_COLUMNS = Set.of(
+            "SiteID",
+            "ServerName"
+    );
     private static final Set<String> UPDATE_COLUMNS = CREATE_COLUMNS;
 
     /**
@@ -113,13 +117,11 @@ public class ServerController {
     @ResponseStatus(HttpStatus.CREATED)
     public void create(@RequestBody Map<String, Object> body) {
         Map<String, Object> filteredBody = requireAllowedKeys(body, CREATE_COLUMNS);
+        requireRequiredKeys(filteredBody, REQUIRED_COLUMNS);
 
-        String sql = """
-            INSERT INTO Server (SiteID, ServerName, ServerBrand, ServerSerialNr,
-                                ServerOS, PatchLevel, VirtualPlatform, VirtualVersion)
-            VALUES (:SiteID, :ServerName, :ServerBrand, :ServerSerialNr,
-                    :ServerOS, :PatchLevel, :VirtualPlatform, :VirtualVersion)
-            """;
+        String columns = String.join(", ", filteredBody.keySet());
+        String values = ":" + String.join(", :", filteredBody.keySet());
+        String sql = "INSERT INTO Server (" + columns + ") VALUES (" + values + ")";
 
         jdbc.update(sql, new MapSqlParameterSource(filteredBody));
         audit.created(TABLE, extractIdentifiers(filteredBody), filteredBody);
@@ -221,6 +223,18 @@ public class ServerController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "empty body");
         }
         return filtered;
+    }
+
+    private void requireRequiredKeys(Map<String, Object> body, Set<String> required) {
+        for (String key : required) {
+            Object value = body.get(key);
+            if (value == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+            if (value instanceof String str && str.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, key + " is required");
+            }
+        }
     }
 
     private UUID parseUuid(String raw, String fieldName) {
