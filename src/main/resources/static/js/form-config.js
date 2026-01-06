@@ -227,7 +227,7 @@
             { id: 'email', label: 'Email', component: 'input', name: 'ContactEmail', required: false, inputType: 'email', autocomplete: 'email', inputmode: 'email', hint: 'Used for automated notifications.' },
             { id: 'phone', label: 'Phone', component: 'input', name: 'ContactPhone', required: false, inputType: 'tel', pattern: '^[+0-9()\s-]{5,}$', inputmode: 'tel', hint: 'Include the country code if possible.' },
             { id: 'vat', label: 'VAT ID', component: 'input', name: 'VatNumber', required: false, hint: 'Enter the tax number without spaces.' },
-            { id: 'country', label: 'Country', component: 'input', name: 'Country', required: false, hint: 'Two-letter ISO code, e.g. DE or US.' }
+            { id: 'country', label: 'Country', component: 'asyncSelect', source: 'countries', allowManual: false, placeholder: 'Select country', name: 'Country', required: false, hint: 'Select a two-letter ISO country code from the list.' }
         ],
         Address: [
             { id: 'street', label: 'Street', component: 'input', name: 'Street', hint: 'Include house number if available.' },
