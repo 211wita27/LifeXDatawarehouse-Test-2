@@ -289,7 +289,7 @@
         ],
         Server: [
             { id: 'siteId', label: 'Select site', component: 'asyncSelect', source: 'sites', allowManual: false, name: 'SiteID', hint: 'Servers must be tied to the site where they are deployed.' },
-            { id: 'name', label: 'Server Name', component: 'input', name: 'ServerName' },
+            { id: 'name', label: 'Hostname', component: 'input', name: 'ServerName' },
             { id: 'brand', label: 'Brand', component: 'input', name: 'ServerBrand', required: false },
             { id: 'serial', label: 'Serial Number', component: 'input', name: 'ServerSerialNr', required: false },
             { id: 'os', label: 'Operating System', component: 'input', name: 'ServerOS', required: false },
